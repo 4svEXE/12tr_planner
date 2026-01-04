@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getCharacterDailyBriefing } from '../services/geminiService';
 import { Character, Task, Project, TaskStatus } from '../types';
+import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
 import Typography from '../components/ui/Typography';
 import Button from '../components/ui/Button';
@@ -16,11 +17,16 @@ interface DashboardProps {
 type Period = 'day' | 'week' | 'month' | 'year';
 
 const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => {
+  const { aiEnabled } = useApp();
   const [briefing, setBriefing] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(aiEnabled);
   const [period, setPeriod] = useState<Period>('day');
 
   useEffect(() => {
+    if (!aiEnabled) {
+      setLoading(false);
+      return;
+    }
     const fetchBriefing = async () => {
       try {
         const data = await getCharacterDailyBriefing(character, tasks, projects);
@@ -32,16 +38,16 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
       }
     };
     fetchBriefing();
-  }, []);
+  }, [aiEnabled]);
 
   // Random Inspiration: Dreams and Achievements
   const randomDream = useMemo(() => {
-    const dreamNotes = tasks.filter(t => t.category === 'note' && (t.projectId === 'dreams' || t.tags.includes('dream')));
+    const dreamNotes = tasks.filter(t => !t.isDeleted && t.category === 'note' && (t.projectId === 'dreams' || t.tags.includes('dream')));
     return dreamNotes.length > 0 ? dreamNotes[Math.floor(Math.random() * dreamNotes.length)] : null;
   }, [tasks]);
 
   const randomAchievement = useMemo(() => {
-    const achievementNotes = tasks.filter(t => t.category === 'note' && (t.projectId === 'achievements' || t.tags.includes('achievement')));
+    const achievementNotes = tasks.filter(t => !t.isDeleted && t.category === 'note' && (t.projectId === 'achievements' || t.tags.includes('achievement')));
     return achievementNotes.length > 0 ? achievementNotes[Math.floor(Math.random() * achievementNotes.length)] : null;
   }, [tasks]);
 
@@ -77,12 +83,13 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
     return Math.round((actualCompleted / totalPotential) * 100);
   }, [tasks, period]);
 
+  // Fix: Mapping character.stats properties correctly to match the type definition in types.ts
   const stats = useMemo(() => [
     { label: 'Дисципліна', val: disciplineScore, variant: 'orange', icon: 'fa-shield-halved', dynamic: true },
     { label: 'Здоров\'я', val: character.stats.health, variant: 'rose', icon: 'fa-heart' },
-    { label: 'Багатство', val: character.stats.wealth, variant: 'emerald', icon: 'fa-coins' },
-    { label: 'Мудрість', val: character.stats.wisdom, variant: 'indigo', icon: 'fa-brain' },
-    { label: 'Соціум', val: character.stats.social, variant: 'yellow', icon: 'fa-users' },
+    { label: 'Багатство', val: character.stats.finance, variant: 'emerald', icon: 'fa-coins' },
+    { label: 'Мудрість', val: character.stats.education, variant: 'indigo', icon: 'fa-brain' },
+    { label: 'Соціум', val: character.stats.relationships, variant: 'yellow', icon: 'fa-users' },
   ], [disciplineScore, character.stats, period]);
 
   return (
@@ -166,16 +173,20 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex-1">
                 <Typography variant="h2" className="mb-2 leading-none text-2xl">
-                  {briefing?.questOfDay}
+                  {aiEnabled ? briefing?.questOfDay : "AI Асистент вимкнено в налаштуваннях."}
                 </Typography>
-                <div className="flex gap-4">
-                  <Badge variant="orange" icon="fa-bolt">500 XP</Badge>
-                  <Badge variant="yellow" icon="fa-coins">12 GP</Badge>
-                </div>
+                {aiEnabled && (
+                  <div className="flex gap-4">
+                    <Badge variant="orange" icon="fa-bolt">500 XP</Badge>
+                    <Badge variant="yellow" icon="fa-coins">12 GP</Badge>
+                  </div>
+                )}
               </div>
-              <Button icon="fa-fire-flame-curved" size="lg" className="rounded-2xl px-8 shadow-orange-200">
-                ПРИЙНЯТИ
-              </Button>
+              {aiEnabled && (
+                <Button icon="fa-fire-flame-curved" size="lg" className="rounded-2xl px-8 shadow-orange-200">
+                  ПРИЙНЯТИ
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -192,7 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
               </Typography>
             </div>
             <Typography variant="body" className="text-slate-300 italic text-sm leading-relaxed">
-              {briefing?.article || "Збираю мудрість зірок для тебе..."}
+              {aiEnabled ? (briefing?.article || "Збираю мудрість зірок для тебе...") : "Увімкніть AI асистента для отримання щоденних порад."}
             </Typography>
             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Поради для {character.views[0]}</span>

@@ -13,14 +13,22 @@ interface AppContextType {
   inboxCategories: InboxCategory[];
   activeTab: string;
   detailsWidth: number;
+  sidebarSettings: Record<string, boolean>;
+  isSidebarCollapsed: boolean;
+  aiEnabled: boolean;
   setDetailsWidth: (width: number) => void;
   setActiveTab: (tab: string) => void;
-  addTask: (title: string, category?: string) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  setAiEnabled: (enabled: boolean) => void;
+  updateSidebarSetting: (key: string, visible: boolean) => void;
+  updateCharacter: (updates: Partial<Character>) => void;
+  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection) => void;
   addProject: (project: Omit<Project, 'id' | 'progress' | 'status'>) => void;
   updateTask: (task: Task) => void;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
-  deleteTask: (taskId: string) => void;
+  deleteTask: (taskId: string, permanent?: boolean) => void;
+  restoreTask: (taskId: string) => void;
   moveTaskToCategory: (taskId: string, category: string, isPinned?: boolean) => void;
   moveTaskToProjectSection: (taskId: string, section: ProjectSection) => void;
   setProjectParent: (projectId: string, parentId: string | undefined) => void;
@@ -33,10 +41,8 @@ interface AppContextType {
   addTag: (name: string) => Tag;
   renameTag: (oldName: string, newName: string) => void;
   deleteTag: (tagName: string) => void;
-  // Diary methods
   saveDiaryEntry: (date: string, content: string) => void;
   deleteDiaryEntry: (id: string) => void;
-  // Inbox category methods
   addInboxCategory: (title: string) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
   deleteInboxCategory: (id: string) => void;
@@ -53,11 +59,34 @@ const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
   { id: 'useful', title: 'Корисне', icon: 'fa-bookmark', isPinned: false },
 ];
 
+const INITIAL_MOCK_PROJECTS: Project[] = [
+  { id: 'dreams', name: 'Мрії', color: '#a855f7', isStrategic: false, status: 'active', progress: 0, description: 'FOLDER_NOTE' },
+  { id: 'ideas', name: 'Ідеї', color: '#fbbf24', isStrategic: false, status: 'active', progress: 0, description: 'FOLDER_NOTE' },
+  { id: 'achievements', name: 'Ачівки', color: '#10b981', isStrategic: false, status: 'active', progress: 0, description: 'FOLDER_NOTE' },
+  { id: 'someday', name: 'Можливо колись', color: '#64748b', isStrategic: false, status: 'active', progress: 0, description: 'FOLDER_NOTE' },
+  { id: 'p1', name: 'Запуск AI Асистента', color: '#f97316', isStrategic: true, status: 'active', progress: 45, kpiTitle: 'Реалізація функцій', kpiTarget: 10, kpiCurrent: 4, kpiUnit: 'модулів', executionScore: 68 },
+  { id: 'p1_sub1', name: 'Фронтенд ядро', color: '#f97316', parentFolderId: 'p1', isStrategic: false, status: 'active', progress: 80 },
+];
+
+const INITIAL_MOCK_TASKS: Task[] = [
+  { id: 'in1', title: 'Оплатити рахунки за інтернет', category: 'tasks', status: TaskStatus.INBOX, priority: Priority.UI, difficulty: 1, xp: 20, tags: ['life'], createdAt: Date.now(), habitHistory: {} },
+  { id: 'na1', title: 'Зателефонувати постачальнику', status: TaskStatus.NEXT_ACTION, priority: Priority.UI, difficulty: 1, xp: 50, tags: ['work'], createdAt: Date.now(), habitHistory: {} },
+  { id: 'h1', title: 'Ранкова йога', status: TaskStatus.INBOX, priority: Priority.NUI, projectSection: 'habits', tags: ['habit', 'health'], difficulty: 2, xp: 30, createdAt: Date.now(), recurrence: 'daily', habitHistory: { '2024-05-20': { status: 'completed' }, '2024-05-21': { status: 'completed' } } },
+  { id: 'pt1', title: 'Налаштувати Redux Store', projectId: 'p1_sub1', projectSection: 'actions', status: TaskStatus.INBOX, priority: Priority.UI, difficulty: 2, xp: 100, tags: ['code'], createdAt: Date.now(), habitHistory: {} },
+];
+
+const INITIAL_DIARY: DiaryEntry[] = [
+  { id: 'de1', date: new Date().toISOString().split('T')[0], content: '# Чудовий ранок\nСьогодні я почав день з медитації. Відчуваю приплив енергії!', createdAt: Date.now(), updatedAt: Date.now() },
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('today');
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
+  const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
+  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled || false);
   
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
     id: 'c1',
@@ -67,31 +96,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     globalExecutionScore: 78
   });
 
-  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
-  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
+  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks && savedState.tasks.length > 0 ? savedState.tasks : INITIAL_MOCK_TASKS);
+  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary && savedState.diary.length > 0 ? savedState.diary : INITIAL_DIARY);
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || DEFAULT_INBOX_CATEGORIES);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
+  const [projects, setProjects] = useState<Project[]>(savedState?.projects && savedState.projects.length > 0 ? savedState.projects : INITIAL_MOCK_PROJECTS);
   const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
   const [character, setCharacter] = useState<Character>(savedState?.character || {
     name: 'Тален',
     race: 'Elf',
+    archetype: 'Strategist',
     level: 4,
     xp: 2450,
     gold: 152,
     bio: 'Розробник, що шукає шлях до ультимативної ефективності та потоку.',
+    vision: 'Побудувати найкращий у світі двигун життя, який допомагає мільйонам досягати цілей без вигорання.',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent',
+    energy: 85,
+    maxEnergy: 100,
+    focus: 92,
     goals: ['Побудувати найкращий у світі двигун життя'],
     views: ['Простота — це найвища витонченість'],
-    stats: { health: 85, wealth: 42, wisdom: 68, social: 30 }
+    skills: [
+      { name: 'Дисципліна', level: 5, xp: 450, icon: 'fa-shield-halved' },
+      { name: 'Фокус', level: 7, xp: 720, icon: 'fa-bullseye' },
+      { name: 'Комунікація', level: 3, xp: 120, icon: 'fa-comments' },
+    ],
+    achievements: [
+      { id: 'a1', title: 'Рання пташка', description: '7 днів поспіль підйом о 6:00', icon: 'fa-sun', unlockedAt: Date.now() },
+      { id: 'a2', title: 'Майстер фокусу', description: '100 годин глибокої роботи', icon: 'fa-brain' },
+    ],
+    stats: { health: 85, career: 42, finance: 68, education: 30, relationships: 55, rest: 40 }
   });
 
   useEffect(() => {
-    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth });
-  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth]);
+    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled });
+  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled]);
 
   const [undoInfo, setUndoInfo] = useState<{ taskId: string, prevStatus: TaskStatus } | null>(null);
   const undoTimerRef = useRef<number | null>(null);
 
-  const addTask = useCallback((title: string, categoryId: string = 'tasks') => {
+  const updateCharacter = useCallback((updates: Partial<Character>) => {
+    setCharacter(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const updateSidebarSetting = (key: string, visible: boolean) => {
+    setSidebarSettings(prev => ({ ...prev, [key]: visible }));
+  };
+
+  const addTask = useCallback((title: string, categoryId: string = 'tasks', projectId?: string, projectSection: ProjectSection = 'actions') => {
     const isPinnedCategory = inboxCategories.find(c => c.id === categoryId)?.isPinned || false;
     const newTask: Task = {
       id: Math.random().toString(36).substr(2, 9),
@@ -103,8 +155,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tags: [],
       createdAt: Date.now(),
       category: categoryId,
+      projectId: projectId,
+      projectSection: projectSection,
       isPinned: isPinnedCategory,
-      habitHistory: {}
+      habitHistory: {},
+      isDeleted: false
     };
     setTasks(prev => [newTask, ...prev]);
   }, [inboxCategories]);
@@ -202,8 +257,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
-  const deleteTask = useCallback((taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+  const deleteTask = useCallback((taskId: string, permanent: boolean = false) => {
+    setTasks(prev => {
+      if (permanent) return prev.filter(t => t.id !== taskId);
+      return prev.map(t => t.id === taskId ? { ...t, isDeleted: true } : t);
+    });
+  }, []);
+
+  const restoreTask = useCallback((taskId: string) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isDeleted: false } : t));
   }, []);
 
   const updateProject = useCallback((updatedProject: Project) => {
@@ -212,7 +274,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteProject = useCallback((projectId: string) => {
     setProjects(prev => prev.filter(p => p.id !== projectId));
-    // Move tasks to 'unsorted' or remove their project association
     setTasks(prev => prev.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t));
   }, []);
 
@@ -333,12 +394,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const value = useMemo(() => ({
     tasks, projects, cycle, character, tags, diary, inboxCategories, activeTab, setActiveTab,
-    detailsWidth, setDetailsWidth,
-    addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction,
+    detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
+    aiEnabled, setAiEnabled, updateCharacter,
+    addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction,
     saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
     pendingUndo: !!undoInfo,
     addTag, renameTag, deleteTag
-  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, activeTab, detailsWidth, undoInfo]);
+  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, activeTab, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, undoInfo, updateCharacter]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

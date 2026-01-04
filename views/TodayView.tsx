@@ -62,21 +62,23 @@ const TodayView: React.FC = () => {
   }, [isResizing, resize, stopResizing]);
 
   const sections = useMemo(() => {
-    const scheduled = tasks.filter(t => 
+    const activeTasks = tasks.filter(t => !t.isDeleted);
+    
+    const scheduled = activeTasks.filter(t => 
       t.status !== TaskStatus.DONE && 
       t.scheduledDate === todayTimestamp &&
       t.projectSection !== 'habits' &&
       !t.tags.includes('habit')
     );
 
-    const projectActions = tasks.filter(t => 
+    const projectActions = activeTasks.filter(t => 
       t.status !== TaskStatus.DONE && 
       t.projectId && 
       t.projectSection === 'actions' &&
       t.scheduledDate !== todayTimestamp 
     );
 
-    const habits = tasks.filter(t => 
+    const habits = activeTasks.filter(t => 
       (t.projectSection === 'habits' || t.tags.includes('habit')) &&
       t.status !== TaskStatus.DONE
     );
@@ -186,7 +188,7 @@ const TodayView: React.FC = () => {
               <div className="flex gap-2 text-right">
                 <Typography variant="tiny" className="text-slate-400 lowercase">Виконано</Typography>
                 <div className="text-xl font-black text-slate-900">
-                  {tasks.filter(t => t.status === TaskStatus.DONE && t.scheduledDate === todayTimestamp).length}
+                  {tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.scheduledDate === todayTimestamp).length}
                 </div>
               </div>
             </div>
@@ -236,14 +238,6 @@ const TodayView: React.FC = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e2e8f0; }
-        ${isResizing ? 'body { cursor: col-resize !important; user-select: none !important; }' : ''}
-      `}</style>
     </div>
   );
 };

@@ -9,9 +9,10 @@ import Badge from '../components/ui/Badge';
 
 interface InboxProps {
   showCompleted?: boolean;
+  showNextActions?: boolean;
 }
 
-const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
+const Inbox: React.FC<InboxProps> = ({ showCompleted = false, showNextActions = false }) => {
   const { 
     tasks, toggleTaskStatus, toggleTaskPin, addTask, 
     moveTaskToCategory, inboxCategories, addInboxCategory, 
@@ -43,10 +44,16 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
   const filteredTasks = useMemo(() => 
     tasks.filter(t => {
       const isHabit = t.projectSection === 'habits' || t.tags.includes('habit');
+      if (t.isDeleted || isHabit) return false;
+      
+      if (showNextActions) {
+        return t.status === TaskStatus.NEXT_ACTION;
+      }
+      
       const statusMatch = showCompleted ? t.status === TaskStatus.DONE : t.status !== TaskStatus.DONE;
-      return statusMatch && !isHabit;
+      return statusMatch;
     }),
-  [tasks, showCompleted]);
+  [tasks, showCompleted, showNextActions]);
 
   // Resizing logic
   const startResizing = useCallback((e: React.MouseEvent) => {
@@ -212,6 +219,8 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
     );
   }
 
+  const title = showNextActions ? 'Наступні дії' : showCompleted ? 'Архівація' : 'Вхідні';
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
@@ -219,8 +228,8 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="px-8 py-6 border-b border-slate-100 flex items-center justify-between z-10 bg-white/80 backdrop-blur-md sticky top-0">
             <div className="flex items-center gap-6">
-              <Typography variant="h1" className="text-2xl">{showCompleted ? 'Архівація' : 'Вхідні'}</Typography>
-              {!showCompleted && (
+              <Typography variant="h1" className="text-2xl">{title}</Typography>
+              {!showCompleted && !showNextActions && (
                 <div className="flex items-center gap-3">
                   <div className="h-4 w-px bg-slate-200"></div>
                   <button 
@@ -238,7 +247,7 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
           </header>
 
           {/* Global Quick Add Field */}
-          {!showCompleted && (
+          {!showCompleted && !showNextActions && (
             <div className="px-8 py-4 bg-slate-50/50 border-b border-slate-50">
               <form onSubmit={handleGlobalAdd} className="relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-500 transition-colors">
@@ -256,68 +265,74 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
           )}
 
           <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-20">
-            {inboxCategories.map(section => {
-              const sectionTasks = filteredTasks.filter(t => t.category === section.id || (section.isPinned && t.isPinned));
-              const isCollapsed = collapsedSections[section.id];
-              const isEditing = editingSectionId === section.id;
-              const isQuickAdding = quickAddSection === section.id;
-              
-              return (
-                <div 
-                  key={section.id}
-                  onDragOver={(e) => onDragOver(e, section.id)}
-                  onDrop={(e) => onDrop(e, section)}
-                  className={`flex flex-col border-b border-slate-50 transition-all ${
-                    dragOverSection === section.id ? 'bg-orange-50/30' : ''
-                  }`}
-                >
-                  {/* Horizontal Section Strip */}
+            {showNextActions ? (
+              <div className="flex flex-col bg-white">
+                {filteredTasks.map(renderTask)}
+              </div>
+            ) : (
+              inboxCategories.map(section => {
+                const sectionTasks = filteredTasks.filter(t => t.category === section.id || (section.isPinned && t.isPinned));
+                const isCollapsed = collapsedSections[section.id];
+                const isEditing = editingSectionId === section.id;
+                const isQuickAdding = quickAddSection === section.id;
+                
+                return (
                   <div 
-                    onClick={() => toggleCollapse(section.id)}
-                    className="group flex items-center gap-4 py-3 px-8 hover:bg-slate-50/50 cursor-pointer select-none transition-colors"
+                    key={section.id}
+                    onDragOver={(e) => onDragOver(e, section.id)}
+                    onDrop={(e) => onDrop(e, section)}
+                    className={`flex flex-col border-b border-slate-50 transition-all ${
+                      dragOverSection === section.id ? 'bg-orange-50/30' : ''
+                    }`}
                   >
-                    <i className={`fa-solid fa-chevron-right text-[10px] transition-transform text-slate-300 ${isCollapsed ? '' : 'rotate-90'}`}></i>
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <i className={`fa-solid ${section.icon} text-[11px] text-slate-400 group-hover:text-orange-500 transition-colors`}></i>
-                      {isEditing ? (
-                        <input 
-                          autoFocus
-                          value={editSectionValue}
-                          onChange={(e) => setEditSectionValue(e.target.value)}
-                          onBlur={() => saveSectionRename(section.id)}
-                          onKeyDown={(e) => e.key === 'Enter' && saveSectionRename(section.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[12px] font-black uppercase tracking-widest text-slate-800 bg-white border border-orange-200 rounded px-2 py-0.5 outline-none"
-                        />
-                      ) : (
-                        <Typography variant="tiny" className="text-slate-500 font-black group-hover:text-slate-900 truncate">{section.title}</Typography>
-                      )}
-                      <span className="text-[10px] font-bold text-slate-300 px-1.5 py-0.5 rounded-md border border-slate-100 bg-white">{sectionTasks.length}</span>
+                    {/* Horizontal Section Strip */}
+                    <div 
+                      onClick={() => toggleCollapse(section.id)}
+                      className="group flex items-center gap-4 py-3 px-8 hover:bg-slate-50/50 cursor-pointer select-none transition-colors"
+                    >
+                      <i className={`fa-solid fa-chevron-right text-[10px] transition-transform text-slate-300 ${isCollapsed ? '' : 'rotate-90'}`}></i>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <i className={`fa-solid ${section.icon} text-[11px] text-slate-400 group-hover:text-orange-500 transition-colors`}></i>
+                        {isEditing ? (
+                          <input 
+                            autoFocus
+                            value={editSectionValue}
+                            onChange={(e) => setEditSectionValue(e.target.value)}
+                            onBlur={() => saveSectionRename(section.id)}
+                            onKeyDown={(e) => e.key === 'Enter' && saveSectionRename(section.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[12px] font-black uppercase tracking-widest text-slate-800 bg-white border border-orange-200 rounded px-2 py-0.5 outline-none"
+                          />
+                        ) : (
+                          <Typography variant="tiny" className="text-slate-500 font-black group-hover:text-slate-900 truncate">{section.title}</Typography>
+                        )}
+                        <span className="text-[10px] font-bold text-slate-300 px-1.5 py-0.5 rounded-md border border-slate-100 bg-white">{sectionTasks.length}</span>
+                      </div>
+                      <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); setQuickAddSection(section.id); setCollapsedSections(p => ({...p, [section.id]: false})); }} className="text-[10px] text-slate-300 hover:text-orange-500 p-1"><i className="fa-solid fa-plus"></i></button>
+                        {!['tasks', 'pinned', 'unsorted'].includes(section.id) && (
+                          <>
+                            <button onClick={(e) => startEditingSection(e, section)} className="text-[10px] text-slate-300 hover:text-orange-500 p-1"><i className="fa-solid fa-pen"></i></button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteInboxCategory(section.id); }} className="text-[10px] text-slate-300 hover:text-rose-400 p-1"><i className="fa-solid fa-trash"></i></button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); setQuickAddSection(section.id); setCollapsedSections(p => ({...p, [section.id]: false})); }} className="text-[10px] text-slate-300 hover:text-orange-500 p-1"><i className="fa-solid fa-plus"></i></button>
-                      {!['tasks', 'pinned', 'unsorted'].includes(section.id) && (
-                        <>
-                          <button onClick={(e) => startEditingSection(e, section)} className="text-[10px] text-slate-300 hover:text-orange-500 p-1"><i className="fa-solid fa-pen"></i></button>
-                          <button onClick={(e) => { e.stopPropagation(); deleteInboxCategory(section.id); }} className="text-[10px] text-slate-300 hover:text-rose-400 p-1"><i className="fa-solid fa-trash"></i></button>
-                        </>
-                      )}
-                    </div>
+                    {!isCollapsed && (
+                      <div className="flex flex-col bg-white">
+                        {sectionTasks.map(renderTask)}
+                        {isQuickAdding && (
+                          <div className="px-14 py-2 border-l-2 border-orange-100 bg-orange-50/10">
+                            <input autoFocus value={quickAddValue} onChange={(e) => setQuickAddValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd(section.id)} onBlur={() => !quickAddValue && setQuickAddSection(null)} placeholder="Що додати?" className="w-full bg-transparent border-none py-1 text-[13px] font-medium text-slate-700 outline-none placeholder:text-slate-300" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {!isCollapsed && (
-                    <div className="flex flex-col bg-white">
-                      {sectionTasks.map(renderTask)}
-                      {isQuickAdding && (
-                        <div className="px-14 py-2 border-l-2 border-orange-100 bg-orange-50/10">
-                          <input autoFocus value={quickAddValue} onChange={(e) => setQuickAddValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd(section.id)} onBlur={() => !quickAddValue && setQuickAddSection(null)} placeholder="Що додати?" className="w-full bg-transparent border-none py-1 text-[13px] font-medium text-slate-700 outline-none placeholder:text-slate-300" />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {isAddingSection && (
+                );
+              })
+            )}
+            {isAddingSection && !showNextActions && (
               <div className="mx-8 mt-6 bg-slate-50 rounded-2xl border-2 border-dashed border-orange-200 p-6 animate-in zoom-in-95 duration-200">
                 <form onSubmit={handleAddSection} className="flex items-center gap-4">
                   <div className="flex-1">
@@ -329,6 +344,13 @@ const Inbox: React.FC<InboxProps> = ({ showCompleted = false }) => {
                     <Button variant="ghost" onClick={() => setIsAddingSection(false)} className="px-4 py-3 rounded-xl">СКАСУВАТИ</Button>
                   </div>
                 </form>
+              </div>
+            )}
+            {filteredTasks.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-32 text-center opacity-20">
+                <i className={`fa-solid ${showNextActions ? 'fa-bolt' : 'fa-inbox'} text-8xl mb-8`}></i>
+                <Typography variant="h2">Тут порожньо</Typography>
+                <Typography variant="body" className="mt-4">Ваш фокус ідеальний.</Typography>
               </div>
             )}
           </div>

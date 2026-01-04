@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus } from '../types';
+import Typography from './ui/Typography';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,166 +11,216 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
-  const { tasks, updateTask, scheduleTask, toggleTaskStatus } = useApp();
+  const { 
+    tasks, updateTask, scheduleTask, toggleTaskStatus, 
+    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings, updateSidebarSetting,
+    aiEnabled, setAiEnabled
+  } = useApp();
   
-  const [mainItems, setMainItems] = useState([
-    { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
+  const [showSettings, setShowSettings] = useState(false);
+
+  const primaryItems = [
     { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
-    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта світу' },
+    { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
     { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні', acceptDrop: true },
-    { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
-    { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки', acceptDrop: true },
-    { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
-    { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
+    { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні дії', acceptDrop: true },
     { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
+    { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
+    { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки', acceptDrop: true },
+  ];
+
+  const widgetItems = [
+    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта світу' },
+    { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
+    { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Глибокий фокус' },
     { id: 'finances', icon: 'fa-coins', label: 'Фінанси' },
     { id: 'contacts', icon: 'fa-users-between-lines', label: 'Нетворкінг' },
     { id: 'character', icon: 'fa-user-shield', label: 'Профіль героя' },
-  ]);
+  ];
 
-  const [bottomItems, setBottomItems] = useState([
+  const bottomItems = [
     { id: 'completed', icon: 'fa-check-double', label: 'Завершено', acceptDrop: true },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
-  ]);
+    { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
+  ];
 
-  const [draggedSidebarIndex, setDraggedSidebarIndex] = useState<{ section: 'main' | 'bottom', index: number } | null>(null);
+  const [draggedSidebarIndex, setDraggedSidebarIndex] = useState<{ section: string, index: number } | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-
-  const onDragStartSidebar = (section: 'main' | 'bottom', index: number) => {
-    setDraggedSidebarIndex({ section, index });
-  };
-
-  const onDragOverSidebar = (e: React.DragEvent, itemId: string, canAccept: boolean) => {
-    e.preventDefault();
-    if (canAccept) {
-      setDropTargetId(itemId);
-    }
-  };
 
   const handleGlobalDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     setDropTargetId(null);
-    
-    // Check if it's a sidebar reorder
-    if (draggedSidebarIndex) {
-      const targetSection = mainItems.some(i => i.id === targetId) ? 'main' : 'bottom';
-      if (draggedSidebarIndex.section !== targetSection) return;
-
-      const items = targetSection === 'main' ? [...mainItems] : [...bottomItems];
-      const targetIndex = items.findIndex(i => i.id === targetId);
-      
-      const [removed] = items.splice(draggedSidebarIndex.index, 1);
-      items.splice(targetIndex, 0, removed);
-
-      if (targetSection === 'main') setMainItems(items);
-      else setBottomItems(items);
-      setDraggedSidebarIndex(null);
-      return;
-    }
-
-    // Handle task drop
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
-
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
     switch (targetId) {
       case 'today':
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        scheduleTask(taskId, today.getTime());
+        scheduleTask(taskId, new Date().setHours(0,0,0,0));
         break;
       case 'inbox':
-        updateTask({ 
-          ...task, 
-          status: TaskStatus.INBOX, 
-          scheduledDate: undefined, 
-          projectId: undefined, 
-          category: 'unsorted' 
-        });
+        updateTask({ ...task, status: TaskStatus.INBOX, scheduledDate: undefined, projectId: undefined, category: 'unsorted', isDeleted: false });
+        break;
+      case 'next_actions':
+        updateTask({ ...task, status: TaskStatus.NEXT_ACTION, isDeleted: false });
         break;
       case 'notes':
-        updateTask({ ...task, category: 'note', status: TaskStatus.INBOX });
+        updateTask({ ...task, category: 'note', status: TaskStatus.INBOX, isDeleted: false });
         break;
       case 'completed':
-        if (task.status !== TaskStatus.DONE) {
-          toggleTaskStatus(task);
-        }
+        if (task.status !== TaskStatus.DONE) toggleTaskStatus(task);
         break;
-      default:
+      case 'trash':
+        updateTask({ ...task, isDeleted: true });
         break;
     }
   };
 
-  const renderMenuItem = (item: any, section: 'main' | 'bottom', index: number) => (
-    <div
-      key={item.id}
-      draggable
-      onDragStart={() => onDragStartSidebar(section, index)}
-      onDragOver={(e) => onDragOverSidebar(e, item.id, !!item.acceptDrop || !!draggedSidebarIndex)}
-      onDragLeave={() => setDropTargetId(null)}
-      onDrop={(e) => handleGlobalDrop(e, item.id)}
-      className={`relative group ${draggedSidebarIndex?.section === section && draggedSidebarIndex?.index === index ? 'dragging' : ''} ${
-        dropTargetId === item.id ? 'scale-105 z-20' : ''
-      }`}
-    >
-      <button
-        onClick={() => setActiveTab(item.id)}
-        className={`w-full flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg transition-all ${
-          activeTab === item.id 
-            ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm font-bold' 
-            : dropTargetId === item.id
-              ? 'bg-orange-600 text-white shadow-lg ring-4 ring-orange-100'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-        }`}
+  const renderMenuItem = (item: any) => {
+    if (sidebarSettings[item.id] === false) return null;
+    const isActive = activeTab === item.id;
+    
+    return (
+      <div
+        key={item.id}
+        onDragOver={(e) => { e.preventDefault(); item.acceptDrop && setDropTargetId(item.id); }}
+        onDragLeave={() => setDropTargetId(null)}
+        onDrop={(e) => handleGlobalDrop(e, item.id)}
+        className={`relative group ${dropTargetId === item.id ? 'scale-105 z-20' : ''}`}
       >
-        <div className="flex items-center gap-3">
-          <span className={`w-5 flex justify-center text-sm ${activeTab === item.id ? 'text-orange-600' : dropTargetId === item.id ? 'text-white' : ''}`}>
+        <button
+          onClick={() => setActiveTab(item.id)}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
+            isActive 
+              ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm font-bold' 
+              : dropTargetId === item.id
+                ? 'bg-orange-600 text-white shadow-lg ring-4 ring-orange-100'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+        >
+          <span className={`w-5 flex justify-center text-sm ${isActive ? 'text-orange-600' : ''}`}>
             <i className={`fa-solid ${item.icon}`}></i>
           </span>
-          <span className="hidden md:inline font-medium text-[11px] tracking-tight">{item.label}</span>
-        </div>
-        
-        {counts[item.id] !== undefined && counts[item.id] > 0 && dropTargetId !== item.id && (
-          <span className={`hidden md:flex h-4 min-w-[16px] items-center justify-center rounded-full text-[9px] font-bold px-1 border ${
-            activeTab === item.id ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-500 border-slate-200'
-          }`}>
-            {counts[item.id]}
-          </span>
-        )}
-      </button>
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 cursor-grab px-0.5 pointer-events-none">
-        <i className="fa-solid fa-grip-vertical text-[8px] text-slate-300"></i>
+          {!isSidebarCollapsed && (
+            <>
+              <span className="flex-1 text-left font-medium text-[11px] tracking-tight truncate">{item.label}</span>
+              {counts[item.id] > 0 && (
+                <span className="h-4 min-w-[16px] flex items-center justify-center rounded-full text-[9px] font-bold px-1 bg-slate-100 text-slate-500">
+                  {counts[item.id]}
+                </span>
+              )}
+            </>
+          )}
+        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="w-16 md:w-56 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0 z-40 transition-none">
-      <div className="p-4 text-xl font-bold font-heading text-orange-600 flex items-center gap-2">
-        <i className="fa-solid fa-bolt-lightning text-pink-500 text-base"></i>
-        <span className="hidden md:inline">12TR</span>
+    <div className={`${isSidebarCollapsed ? 'w-16' : 'w-56'} bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out`}>
+      <div className="p-4 flex items-center justify-between">
+        {!isSidebarCollapsed && (
+          <div className="text-xl font-bold font-heading text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-bolt-lightning text-pink-500 text-base"></i>
+            <span>12TR</span>
+          </div>
+        )}
+        <button 
+          onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
+          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
+        >
+          <i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'}`}></i>
+        </button>
       </div>
       
-      <nav className="flex-1 px-2 space-y-0.5 py-2 overflow-y-auto custom-scrollbar transition-none">
-        {mainItems.map((item, index) => renderMenuItem(item, 'main', index))}
+      <nav className="flex-1 px-2 space-y-0.5 py-2 overflow-y-auto custom-scrollbar">
+        {primaryItems.map(renderMenuItem)}
+        
+        <div className="my-4 mx-2 border-t border-slate-100"></div>
+        
+        {!isSidebarCollapsed && (
+          <div className="px-3 mb-2">
+            <span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Віджети</span>
+          </div>
+        )}
+        {widgetItems.map(renderMenuItem)}
       </nav>
 
-      <div className="px-2 py-2 border-t border-slate-100 space-y-0.5 transition-none">
-        <div className="px-3 mb-1 hidden md:block">
-          <span className="text-[8px] uppercase font-bold tracking-[0.2em] text-slate-400">Архів та мітки</span>
-        </div>
-        {bottomItems.map((item, index) => renderMenuItem(item, 'bottom', index))}
+      <div className="px-2 py-4 border-t border-slate-100 space-y-0.5">
+        {!isSidebarCollapsed && (
+          <div className="px-3 mb-2">
+            <span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Архів та мітки</span>
+          </div>
+        )}
+        {bottomItems.map(renderMenuItem)}
+        
+        <button 
+          onClick={() => setShowSettings(true)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
+        >
+          <span className="w-5 flex justify-center text-sm"><i className="fa-solid fa-gear"></i></span>
+          {!isSidebarCollapsed && <span className="font-medium text-[11px] tracking-tight">Налаштування</span>}
+        </button>
       </div>
 
-      <div className="p-3 border-t border-slate-100 transition-none">
-        <div className="bg-orange-50/50 rounded-lg p-2 hidden md:block border border-orange-100 text-center">
-          <p className="text-[9px] text-orange-400 mb-1 uppercase tracking-widest font-bold">Ref Code: 12TR-PRO</p>
-          <button className="text-[9px] w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-1 rounded shadow-sm">Unlock Unlimited</button>
+      {showSettings && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 tiktok-blur">
+          <div className="absolute inset-0 bg-slate-900/20" onClick={() => setShowSettings(false)}></div>
+          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <Typography variant="h2" className="text-xl">Налаштування інтерфейсу</Typography>
+              <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {/* AI Toggle */}
+              <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <i className="fa-solid fa-sparkles text-orange-500"></i>
+                       <div>
+                          <div className="text-xs font-black text-slate-800 uppercase">AI Асистент</div>
+                          <div className="text-[10px] text-orange-600 font-bold">Розумні брифінги та поради</div>
+                       </div>
+                    </div>
+                    <button 
+                      onClick={() => setAiEnabled(!aiEnabled)}
+                      className={`w-12 h-6 rounded-full transition-all relative ${aiEnabled ? 'bg-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
+                    </button>
+                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Typography variant="tiny" className="text-slate-400 ml-1">Видимість розділів</Typography>
+                {[...primaryItems, ...widgetItems, ...bottomItems].map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <i className={`fa-solid ${item.icon} text-slate-400 w-4 text-center`}></i>
+                      <span className="text-xs font-bold text-slate-700">{item.label}</span>
+                    </div>
+                    <button 
+                      onClick={() => updateSidebarSetting(item.id, sidebarSettings[item.id] !== false ? false : true)}
+                      className={`w-10 h-5 rounded-full transition-all relative ${sidebarSettings[item.id] !== false ? 'bg-slate-800' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-1' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
+            >
+              ЗБЕРЕГТИ
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

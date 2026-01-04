@@ -89,6 +89,7 @@ export interface Task {
   attachments?: Attachment[];
   comments?: Comment[];
   checklist?: ChecklistItem[];
+  isDeleted?: boolean;
   
   // Reminder & Recurrence fields
   reminderTime?: string; // e.g. "10:00"
@@ -125,20 +126,45 @@ export interface TwelveWeekYear {
   globalExecutionScore: number;
 }
 
+export interface Skill {
+  name: string;
+  level: number;
+  xp: number;
+  icon: string;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt?: number;
+}
+
 export interface Character {
   name: string;
   race: 'Gnome' | 'Elf' | 'Human' | 'Dwarf';
+  archetype: 'Strategist' | 'Builder' | 'Monk' | 'Explorer';
   level: number;
   xp: number;
   gold: number;
   bio: string;
+  vision: string;
+  avatarUrl: string;
+  energy: number;
+  maxEnergy: number;
+  focus: number;
   goals: string[];
   views: string[];
+  skills: Skill[];
+  achievements: Achievement[];
   stats: {
     health: number;
-    wealth: number;
-    wisdom: number;
-    social: number;
+    career: number;
+    finance: number;
+    education: number;
+    relationships: number;
+    rest: number;
   };
 }
 
@@ -151,4 +177,7 @@ export interface StoreState {
   diary?: DiaryEntry[];
   inboxCategories?: InboxCategory[];
   detailsWidth?: number;
+  sidebarSettings?: Record<string, boolean>;
+  isSidebarCollapsed?: boolean;
+  aiEnabled?: boolean;
 }

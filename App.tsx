@@ -13,10 +13,14 @@ import HabitsView from './views/HabitsView';
 import TodayView from './views/TodayView';
 import NotesView from './views/NotesView';
 import DiaryView from './views/DiaryView';
+import TrashView from './views/TrashView';
+import CharacterProfile from './views/CharacterProfile';
+import { TaskStatus } from './types';
 
 const MainLayout: React.FC = () => {
   const { 
-    activeTab, setActiveTab, tasks, pendingUndo, undoLastAction, character, projects, diary
+    activeTab, setActiveTab, tasks, pendingUndo, undoLastAction, character, projects, diary,
+    aiEnabled
   } = useApp();
   
   const [showFocusMode, setShowFocusMode] = React.useState(false);
@@ -26,33 +30,36 @@ const MainLayout: React.FC = () => {
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => 
-      t.status !== 'DONE' && 
+      !t.isDeleted &&
+      t.status !== TaskStatus.DONE && 
       (t.scheduledDate === todayTimestamp || (t.projectId && t.projectSection === 'actions'))
     ).length,
     inbox: tasks.filter(t => {
       const isHabit = t.projectSection === 'habits' || t.tags.includes('habit');
-      return t.status !== 'DONE' && t.category !== 'note' && !isHabit && !t.projectId && !t.scheduledDate;
+      return !t.isDeleted && t.status === TaskStatus.INBOX && t.category !== 'note' && !isHabit && !t.projectId && !t.scheduledDate;
     }).length,
-    notes: tasks.filter(t => t.category === 'note' && t.status !== 'DONE').length,
-    calendar: tasks.filter(t => t.status !== 'DONE' && !!t.scheduledDate).length,
-    projects: projects.filter(p => p.isStrategic).length,
-    habits: tasks.filter(t => (t.projectSection === 'habits' || t.tags.includes('habit')) && t.status !== 'DONE').length,
-    diary: diary.length
-  }), [tasks, projects, todayTimestamp, diary]);
+    next_actions: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.NEXT_ACTION).length,
+    notes: tasks.filter(t => !t.isDeleted && t.category === 'note' && t.status !== TaskStatus.DONE).length,
+    calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
+    trash: tasks.filter(t => t.isDeleted).length
+  }), [tasks, todayTimestamp]);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard character={character} tasks={tasks} projects={projects} />;
       case 'today': return <TodayView />;
+      case 'dashboard': return <Dashboard character={character} tasks={tasks.filter(t => !t.isDeleted)} projects={projects} />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
+      case 'next_actions': return <Inbox showNextActions />;
       case 'diary': return <DiaryView />;
       case 'notes': return <NotesView />;
       case 'habits': return <HabitsView />;
       case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;
-      case 'hashtags': return <Hashtags tasks={tasks} />;
+      case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
+      case 'trash': return <TrashView />;
+      case 'character': return <CharacterProfile />;
       case 'focus': return (
         <div className="flex flex-col items-center justify-center h-full p-12 text-center">
           <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-4xl mb-6">
@@ -81,7 +88,7 @@ const MainLayout: React.FC = () => {
 
         {showFocusMode && (
           <DeepFocus 
-            taskTitle={tasks[0]?.title || "Робота над проектом"} 
+            taskTitle={tasks.find(t => !t.isDeleted)?.title || "Робота над проектом"} 
             onExit={() => setShowFocusMode(false)} 
           />
         )}
@@ -104,8 +111,7 @@ const MainLayout: React.FC = () => {
           </div>
         )}
 
-        {/* Floating AI Button */}
-        {!isAiOpen && (
+        {aiEnabled && !isAiOpen && (
           <button 
             onClick={() => setIsAiOpen(true)}
             className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-pink-500 text-white shadow-2xl shadow-orange-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group z-40"
@@ -116,9 +122,8 @@ const MainLayout: React.FC = () => {
         )}
       </main>
 
-      {/* AI Assistant Drawer/Sidebar */}
       <div 
-        className={`fixed top-0 right-0 h-screen bg-white/80 border-l border-slate-100 flex flex-col tiktok-blur shadow-[-20px_0_50px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out z-[60] ${
+        className={`fixed top-0 right-0 h-screen bg-white/80 border-l border-slate-100 flex flex-col tiktok-blur shadow-[-20px_0_50px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out z-[100] ${
           isAiOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full'
         }`}
       >
@@ -136,7 +141,7 @@ const MainLayout: React.FC = () => {
 
         <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
           <div className="bg-orange-50 p-4 rounded-2xl rounded-tl-none border border-orange-100 text-sm font-medium leading-relaxed text-orange-800 shadow-sm animate-in slide-in-from-right-4">
-            Привіт! Я проаналізував твої плани. На сьогодні пріоритет — "{tasks[0]?.title}". Хочеш допоможу з наступним кроком?
+            Привіт! Я твій стратегічний асистент. Увімкнути чи налаштувати мої функції можна в меню налаштувань. Чим можу допомогти зараз?
           </div>
         </div>
 
