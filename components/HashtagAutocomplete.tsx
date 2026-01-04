@@ -20,6 +20,14 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   const [cursorPos, setCursorPos] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Auto-resize textarea logic
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
+    }
+  }, [value]);
+
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     const pos = e.target.selectionStart;
@@ -65,7 +73,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
         value={value}
         onChange={handleInput}
         placeholder={placeholder}
-        className={className}
+        className={`${className} overflow-hidden resize-none`}
         rows={1}
       />
       

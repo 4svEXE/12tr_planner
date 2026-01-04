@@ -49,7 +49,6 @@ interface AppContextType {
   addInboxCategory: (title: string) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
   deleteInboxCategory: (id: string) => void;
-  // Scheduling methods
   addTimeBlock: (block: Omit<TimeBlock, 'id'>) => void;
   updateTimeBlock: (block: TimeBlock) => void;
   deleteTimeBlock: (blockId: string) => void;
@@ -69,6 +68,111 @@ const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
   { id: 'useful', title: 'Корисне', icon: 'fa-bookmark', isPinned: false },
 ];
 
+const MOCK_PROJECTS: Project[] = [
+  {
+    id: 'mock-p1',
+    name: 'Легендарний Стартап',
+    description: 'Побудова глобальної SaaS платформи для стратегів',
+    color: '#f97316',
+    status: 'active',
+    progress: 35,
+    isStrategic: true,
+    kpiTitle: 'Реєстрації',
+    kpiTarget: 500,
+    kpiCurrent: 142,
+    kpiUnit: 'користувачів',
+    executionScore: 82
+  },
+  {
+    id: 'mock-sub-p1',
+    name: 'MVP Розробка',
+    description: 'Технічне ядро та основний функціонал',
+    color: '#f97316',
+    parentFolderId: 'mock-p1',
+    status: 'active',
+    progress: 55,
+    isStrategic: false
+  },
+  {
+    id: 'mock-p2',
+    name: 'Здоров\'я Гіганта',
+    description: 'Комплексна програма біохакінгу та енергії',
+    color: '#10b981',
+    status: 'active',
+    progress: 20,
+    isStrategic: true,
+    executionScore: 65
+  }
+];
+
+const TODAY = new Date().setHours(0,0,0,0);
+
+const MOCK_TASKS: Task[] = [
+  {
+    id: 'mock-t1',
+    title: 'Купити домен "strategy-engine.io"',
+    status: TaskStatus.NEXT_ACTION,
+    priority: Priority.UI,
+    difficulty: 1,
+    xp: 100,
+    tags: ['startup', 'finance'],
+    createdAt: Date.now(),
+    projectId: 'mock-p1',
+    projectSection: 'actions',
+    scheduledDate: TODAY
+  },
+  {
+    id: 'mock-t2',
+    title: 'Розробити схему бази даних',
+    status: TaskStatus.INBOX,
+    priority: Priority.NUI,
+    difficulty: 3,
+    xp: 350,
+    tags: ['dev'],
+    createdAt: Date.now(),
+    projectId: 'mock-sub-p1',
+    projectSection: 'actions'
+  },
+  {
+    id: 'mock-t3',
+    title: 'Ранкове планування (Ritual)',
+    status: TaskStatus.INBOX,
+    priority: Priority.UI,
+    difficulty: 1,
+    xp: 25,
+    tags: ['habit'],
+    createdAt: Date.now(),
+    projectId: 'mock-p1',
+    projectSection: 'habits',
+    recurrence: 'daily'
+  },
+  {
+    id: 'mock-t4',
+    title: 'Пробіжка 5км',
+    status: TaskStatus.INBOX,
+    priority: Priority.NUI,
+    difficulty: 2,
+    xp: 150,
+    tags: ['health', 'habit'],
+    createdAt: Date.now(),
+    projectId: 'mock-p2',
+    projectSection: 'habits',
+    recurrence: 'daily'
+  },
+  {
+    id: 'mock-t5',
+    title: 'Проаналізувати конкурентів',
+    status: TaskStatus.NEXT_ACTION,
+    priority: Priority.UNI,
+    difficulty: 2,
+    xp: 200,
+    tags: ['research'],
+    createdAt: Date.now(),
+    projectId: 'mock-p1',
+    projectSection: 'actions'
+  }
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
@@ -76,22 +180,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
-  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled || false);
+  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled || true);
   
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
-    id: 'c1', startDate: Date.now() - (1000 * 60 * 60 * 24 * 25), endDate: Date.now() + (1000 * 60 * 60 * 24 * 59), currentWeek: 4, globalExecutionScore: 78
+    id: 'c1', startDate: Date.now() - (1000 * 60 * 60 * 24 * 7), endDate: Date.now() + (1000 * 60 * 60 * 24 * 77), currentWeek: 2, globalExecutionScore: 82
   });
 
-  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
+  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || MOCK_TASKS);
   const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || DEFAULT_INBOX_CATEGORIES);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
+  const [projects, setProjects] = useState<Project[]>(savedState?.projects || MOCK_PROJECTS);
+  const [tags, setTags] = useState<Tag[]>(savedState?.tags || [
+    { id: 'tag-1', name: 'startup', color: '#f97316' },
+    { id: 'tag-2', name: 'dev', color: '#6366f1' },
+    { id: 'tag-3', name: 'health', color: '#10b981' }
+  ]);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
   const [character, setCharacter] = useState<Character>(savedState?.character || {
-    name: 'Тален', race: 'Elf', archetype: 'Strategist', level: 4, xp: 2450, gold: 152, bio: '...', vision: '...', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 85, maxEnergy: 100, focus: 92, goals: [], views: [], skills: [], achievements: [], stats: { health: 85, career: 42, finance: 68, education: 30, relationships: 55, rest: 40 }
+    name: 'Тален', race: 'Elf', archetype: 'Strategist', level: 4, xp: 2450, gold: 152, bio: 'Верховний стратег на шляху до цифрового панування.', vision: 'Створити систему, що звільняє людський розум.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 85, maxEnergy: 100, focus: 92, goals: ['Побудувати стартап', 'Пробігти марафон'], views: ['Дисципліна = Свобода'], skills: [{ name: 'Стратегія', level: 5, xp: 45, icon: 'fa-chess-king' }], achievements: [], stats: { health: 85, career: 42, finance: 68, education: 30, relationships: 55, rest: 40 }
   });
 
   useEffect(() => {
