@@ -8,53 +8,130 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import TaskDetails from '../components/TaskDetails';
 
-// Fix: Implement missing WeeklyReviewModal component
 const WeeklyReviewModal: React.FC<{ projectId: string; onClose: () => void }> = ({ projectId, onClose }) => {
-  const { projects, tasks, cycle } = useApp();
+  const { projects, tasks, cycle, updateTask } = useApp();
   const project = projects.find(p => p.id === projectId);
   
   if (!project) return null;
 
+  // Calculate the previous week's boundaries
+  const prevWeekIndex = cycle.currentWeek - 1;
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  
+  const weekStart = cycle.startDate + (prevWeekIndex - 1) * ONE_WEEK_MS;
+  const weekEnd = cycle.startDate + prevWeekIndex * ONE_WEEK_MS;
+
+  const weekTasks = useMemo(() => {
+    return tasks.filter(t => 
+      t.projectId === projectId && 
+      t.scheduledDate && 
+      t.scheduledDate >= weekStart && 
+      t.scheduledDate < weekEnd &&
+      !t.isDeleted
+    );
+  }, [tasks, projectId, weekStart, weekEnd]);
+
+  const completedTasks = weekTasks.filter(t => t.status === TaskStatus.DONE);
+  const pendingTasks = weekTasks.filter(t => t.status !== TaskStatus.DONE);
+  const score = weekTasks.length > 0 ? Math.round((completedTasks.length / weekTasks.length) * 100) : 0;
+
+  const rollForwardAll = () => {
+    const today = new Date().setHours(0,0,0,0);
+    pendingTasks.forEach(task => {
+      updateTask({ ...task, scheduledDate: today });
+    });
+    alert(`Перенесено ${pendingTasks.length} завдань на сьогодні!`);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 tiktok-blur animate-in fade-in duration-200">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose}></div>
-      <Card className="w-full max-w-2xl relative z-10 shadow-2xl border-none overflow-hidden rounded-[2.5rem]">
+      <Card className="w-full max-w-2xl relative z-10 shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
         <div className="p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <Typography variant="h2" className="text-2xl mb-1">Щотижневий Рев'ю: {project.name}</Typography>
-              <Typography variant="caption" className="text-slate-400">Тиждень {cycle.currentWeek} • Аналіз прогресу</Typography>
+              <Typography variant="h2" className="text-2xl mb-1 flex items-center gap-3">
+                <i className="fa-solid fa-calendar-check text-orange-500"></i>
+                Щотижневий Рев'ю
+              </Typography>
+              <Typography variant="caption" className="text-slate-400">Проєкт: {project.name} • Тиждень {prevWeekIndex}</Typography>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all border border-slate-100">
               <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
           
-          <div className="space-y-6">
-            <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
-              <Typography variant="h3" className="text-orange-800 mb-2">Як пройшов ваш тиждень?</Typography>
-              <p className="text-sm text-orange-700/80 leading-relaxed font-medium">
-                Відзначте свої успіхи та проаналізуйте перешкоди. В 12-тижневому році кожен тиждень — це як окремий місяць.
-              </p>
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+              <div className="text-[10px] font-black text-slate-400 uppercase mb-1">Виконано</div>
+              <div className="text-2xl font-black text-emerald-600">{completedTasks.length}</div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Card padding="sm" className="bg-slate-50 border-slate-100">
-                <Typography variant="tiny" className="text-slate-400 mb-1">Виконано завдань</Typography>
-                <div className="text-2xl font-black text-slate-900">
-                  {tasks.filter(t => t.projectId === projectId && t.status === TaskStatus.DONE).length}
-                </div>
-              </Card>
-              <Card padding="sm" className="bg-slate-50 border-slate-100">
-                <Typography variant="tiny" className="text-slate-400 mb-1">Ефективність</Typography>
-                <div className="text-2xl font-black text-orange-600">{project.executionScore || 0}%</div>
-              </Card>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+              <div className="text-[10px] font-black text-slate-400 uppercase mb-1">Залишилось</div>
+              <div className="text-2xl font-black text-orange-600">{pendingTasks.length}</div>
+            </div>
+            <div className="bg-orange-600 p-4 rounded-2xl text-center shadow-lg shadow-orange-100">
+              <div className="text-[10px] font-black text-white/70 uppercase mb-1">Ефективність</div>
+              <div className="text-2xl font-black text-white">{score}%</div>
             </div>
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <Button variant="white" onClick={onClose} className="flex-1 rounded-2xl">ЗАКРИТИ</Button>
-            <Button variant="primary" onClick={onClose} className="flex-[2] rounded-2xl">ЗАВЕРШИТИ РЕВ'Ю</Button>
+          <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2 mb-8 space-y-4">
+            {pendingTasks.length > 0 && (
+              <div>
+                <Typography variant="tiny" className="text-orange-500 mb-2 px-2">Незавершені квести (хвіст)</Typography>
+                <div className="space-y-2">
+                  {pendingTasks.map(t => (
+                    <div key={t.id} className="flex items-center gap-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl">
+                      <i className="fa-solid fa-triangle-exclamation text-orange-400 text-xs"></i>
+                      <span className="text-xs font-bold text-slate-700">{t.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {completedTasks.length > 0 && (
+              <div>
+                <Typography variant="tiny" className="text-slate-400 mb-2 px-2">Перемоги минулого тижня</Typography>
+                <div className="space-y-2">
+                  {completedTasks.map(t => (
+                    <div key={t.id} className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl opacity-60">
+                      <i className="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
+                      <span className="text-xs font-bold text-slate-700 line-through">{t.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {weekTasks.length === 0 && (
+              <div className="py-10 text-center opacity-30 italic text-sm">
+                Минулого тижня не було запланованих завдань для цього проєкту.
+              </div>
+            )}
+          </div>
+
+          <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+              <i className="fa-solid fa-wand-magic-sparkles text-sm"></i>
+            </div>
+            <div className="text-xs font-medium text-indigo-900 leading-relaxed">
+              <strong>Порада:</strong> Перенесіть незавершені завдання на сьогодні, щоб не втрачати імпульс. В 12-тижневому році кожна година на вагу золота.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="white" onClick={onClose} className="flex-1 rounded-2xl py-4">ПРОПУСТИТИ</Button>
+            {pendingTasks.length > 0 && (
+              <Button variant="primary" onClick={rollForwardAll} className="flex-[2] rounded-2xl py-4 shadow-orange-200 uppercase">
+                Перенести хвости ({pendingTasks.length})
+              </Button>
+            )}
+            {pendingTasks.length === 0 && weekTasks.length > 0 && (
+              <Button variant="primary" onClick={onClose} className="flex-[2] rounded-2xl py-4 shadow-orange-200">ЗАВЕРШИТИ РЕВ'Ю</Button>
+            )}
           </div>
         </div>
       </Card>

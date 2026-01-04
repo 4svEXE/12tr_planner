@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus, Priority, Project, InboxCategory, TimeBlock } from '../types';
 import Card from '../components/ui/Card';
@@ -12,12 +12,12 @@ type ViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
 
 const HOUR_HEIGHT = 60; // pixels per hour
 
-const TreeNode: React.FC<{ id: string; label: string; icon: string; type: 'folder' | 'task'; level: number; isOpen?: boolean; onToggle?: () => void; onAdd?: (e: React.MouseEvent) => void; onEdit?: (e: React.MouseEvent) => void; onDelete?: (e: React.MouseEvent) => void; onClick?: () => void; isDraggable?: boolean; onDragStart?: (e: React.DragEvent) => void; children?: React.ReactNode; }> = ({ id, label, icon, type, level, isOpen, onToggle, onAdd, onEdit, onDelete, onClick, isDraggable, onDragStart, children }) => (
+const TreeNode: React.FC<{ id: string; label: string; icon: string; type: 'folder' | 'task' | 'note'; level: number; isOpen?: boolean; onToggle?: () => void; onAdd?: (e: React.MouseEvent) => void; onEdit?: (e: React.MouseEvent) => void; onDelete?: (e: React.MouseEvent) => void; onClick?: () => void; isDraggable?: boolean; onDragStart?: (e: React.DragEvent) => void; children?: React.ReactNode; }> = ({ id, label, icon, type, level, isOpen, onToggle, onAdd, onEdit, onDelete, onClick, isDraggable, onDragStart, children }) => (
   <div className="flex flex-col">
     <div draggable={isDraggable} onDragStart={onDragStart} onClick={type === 'folder' ? onToggle : onClick} className={`group flex items-center gap-1.5 py-1 px-2 cursor-pointer hover:bg-slate-100 rounded-lg transition-colors relative ${level > 0 ? 'ml-3' : ''}`}>
       <div className="flex items-center gap-1">
          {type === 'folder' && <i className={`fa-solid fa-chevron-right text-[8px] text-slate-300 transition-transform ${isOpen ? 'rotate-90' : ''}`}></i>}
-         <i className={`fa-solid ${icon} text-[10px] w-4 text-center ${type === 'folder' ? 'text-orange-400' : 'text-slate-400'}`}></i>
+         <i className={`fa-solid ${icon} text-[10px] w-4 text-center ${type === 'folder' ? 'text-orange-400' : type === 'note' ? 'text-indigo-400' : 'text-slate-400'}`}></i>
       </div>
       <span className={`text-[11px] font-medium truncate flex-1 ${type === 'folder' ? 'text-slate-700 font-bold' : 'text-slate-500'}`}>{label}</span>
       <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -45,6 +45,24 @@ const Calendar: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [editingBlock, setEditingBlock] = useState<TimeBlock | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  const scheduleScrollRef = useRef<HTMLDivElement>(null);
+
+  // Automatic scroll to current time when switching to Day view
+  useEffect(() => {
+    if (viewMode === 'day' && scheduleScrollRef.current) {
+      const hours = currentTime.getHours();
+      const container = scheduleScrollRef.current;
+      const targetScroll = (hours * HOUR_HEIGHT) - (container.clientHeight / 2) + (HOUR_HEIGHT / 2);
+      
+      setTimeout(() => {
+        container.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }, [viewMode, currentDate]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -120,7 +138,6 @@ const Calendar: React.FC = () => {
     if (taskId) scheduleTask(taskId, timestamp);
   };
 
-  // Get start of the current week (Monday)
   const weekDays = useMemo(() => {
     const startOfWeek = new Date(currentDate);
     const day = startOfWeek.getDay();
@@ -143,7 +160,7 @@ const Calendar: React.FC = () => {
         onDelete={(e) => { e.stopPropagation(); if(confirm('Видалити?')) deleteProject(p.id); }}>
         {renderProjectTree(p.id, level + 1)}
         {tasks.filter(t => t.projectId === p.id && !t.scheduledDate && !t.isDeleted).map(t => (
-          <TreeNode key={t.id} id={t.id} label={t.title} icon="fa-file-lines" type="task" level={level + 1} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)}
+          <TreeNode key={t.id} id={t.id} label={t.title} icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-file-lines'} type={t.category === 'note' ? 'note' : 'task'} level={level + 1} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)}
             onEdit={(e) => { e.stopPropagation(); setSelectedTaskId(t.id); }} onDelete={(e) => { e.stopPropagation(); deleteTask(t.id); }} />
         ))}
       </TreeNode>
@@ -164,15 +181,15 @@ const Calendar: React.FC = () => {
            <TreeNode id="root_inbox" label="ВХІДНІ" icon="fa-inbox" type="folder" level={-1} isOpen={expandedNodes['root_inbox']} onToggle={() => toggleNode('root_inbox')}>
               {inboxCategories.map(cat => (
                 <TreeNode key={cat.id} id={cat.id} label={cat.title} icon={cat.icon} type="folder" level={0} isOpen={expandedNodes[`cat_${cat.id}`]} onToggle={() => toggleNode(`cat_${cat.id}`)} onAdd={(e) => { e.stopPropagation(); const t = prompt('Назва:'); if(t) addTask(t, cat.id); }}>
-                  {tasks.filter(t => t.category === cat.id && !t.scheduledDate && !t.isDeleted && t.status !== TaskStatus.DONE).map(t => (
-                    <TreeNode key={t.id} id={t.id} label={t.title} icon="fa-file-lines" type="task" level={1} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)} onEdit={() => setSelectedTaskId(t.id)} onDelete={() => deleteTask(t.id)} />
+                  {tasks.filter(t => (t.category === cat.id || (cat.id === 'notes' && t.category === 'note')) && !t.scheduledDate && !t.isDeleted && t.status !== TaskStatus.DONE).map(t => (
+                    <TreeNode key={t.id} id={t.id} label={t.title} icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-file-lines'} type={t.category === 'note' ? 'note' : 'task'} level={1} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)} onEdit={() => setSelectedTaskId(t.id)} onDelete={() => deleteTask(t.id)} />
                   ))}
                 </TreeNode>
               ))}
            </TreeNode>
            <TreeNode id="root_next" label="НАСТУПНІ ДІЇ" icon="fa-bolt" type="folder" level={-1} isOpen={expandedNodes['root_next']} onToggle={() => toggleNode('root_next')}>
               {tasks.filter(t => t.status === TaskStatus.NEXT_ACTION && !t.scheduledDate && !t.isDeleted).map(t => (
-                <TreeNode key={t.id} id={t.id} label={t.title} icon="fa-file-bolt" type="task" level={0} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)} onEdit={() => setSelectedTaskId(t.id)} onDelete={() => deleteTask(t.id)} />
+                <TreeNode key={t.id} id={t.id} label={t.title} icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-file-bolt'} type={t.category === 'note' ? 'note' : 'task'} level={0} onClick={() => setSelectedTaskId(t.id)} isDraggable onDragStart={(e) => onDragStart(e, t.id)} onEdit={() => setSelectedTaskId(t.id)} onDelete={() => deleteTask(t.id)} />
               ))}
            </TreeNode>
            <TreeNode id="root_projects" label="ПРОЄКТИ" icon="fa-folder-tree" type="folder" level={-1} isOpen={expandedNodes['root_projects']} onToggle={() => toggleNode('root_projects')}>
@@ -253,7 +270,7 @@ const Calendar: React.FC = () => {
                     </div>
                   </header>
 
-                  <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                  <div ref={scheduleScrollRef} className="flex-1 overflow-y-auto custom-scrollbar relative">
                     <div className="absolute left-0 top-0 w-full" style={{ height: 24 * HOUR_HEIGHT }}>
                        {Array.from({ length: 24 }, (_, i) => (
                          <div key={i} className="flex items-start border-t border-slate-50" style={{ height: HOUR_HEIGHT }}>
@@ -375,7 +392,7 @@ const Calendar: React.FC = () => {
                       ))}
                       
                       <button 
-                        onClick={() => { const t = prompt('Що плануємо?'); if(t) addTask(t, 'unsorted', undefined, 'actions'); /* Need context fix to support scheduledDate in addTask or use updateTask later */ }}
+                        onClick={() => { const t = prompt('Що плануємо?'); if(t) addTask(t, 'unsorted', undefined, 'actions'); }}
                         className="w-full py-4 rounded-3xl border-2 border-dashed border-slate-200 text-slate-300 hover:border-orange-200 hover:text-orange-400 hover:bg-white transition-all text-[10px] font-black uppercase tracking-widest"
                       >
                         + ДОДАТИ КВЕСТ

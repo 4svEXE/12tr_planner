@@ -124,7 +124,7 @@ const MainLayout: React.FC = () => {
 
       <div 
         className={`fixed top-0 right-0 h-screen bg-white/80 border-l border-slate-100 flex flex-col tiktok-blur shadow-[-20px_0_50px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out z-[100] ${
-          isAiOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full'
+          isAiOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full invisible pointer-events-none'
         }`}
       >
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
