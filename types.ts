@@ -1,0 +1,154 @@
+
+export enum TaskStatus {
+  INBOX = 'INBOX',
+  NEXT_ACTION = 'NEXT_ACTION',
+  DOING = 'DOING',
+  DONE = 'DONE',
+  WAITING = 'WAITING',
+  REFERENCE = 'REFERENCE'
+}
+
+export enum Priority {
+  UI = 'UI',
+  UNI = 'UNI',
+  NUI = 'NUI',
+  NUNI = 'NUNI'
+}
+
+export type ProjectSection = 'actions' | 'bosses' | 'goals' | 'habits' | 'planner';
+
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly';
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  createdAt: number;
+}
+
+export interface Comment {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: number;
+}
+
+export interface HabitDayData {
+  status: 'completed' | 'skipped' | 'none';
+  note?: string;
+}
+
+export interface DiaryEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface InboxCategory {
+  id: string;
+  title: string;
+  icon: string;
+  isPinned: boolean;
+}
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  content?: string;
+  status: TaskStatus;
+  priority: Priority;
+  difficulty: number;
+  xp: number;
+  tags: string[];
+  projectId?: string;
+  projectSection?: ProjectSection;
+  goalId?: string;
+  createdAt: number;
+  dueDate?: number;
+  scheduledDate?: number; 
+  isPinned?: boolean;
+  isTactic?: boolean; 
+  category?: string;
+  attachments?: Attachment[];
+  comments?: Comment[];
+  checklist?: ChecklistItem[];
+  
+  // Reminder & Recurrence fields
+  reminderTime?: string; // e.g. "10:00"
+  reminderEnabled?: boolean;
+  recurrence?: RecurrenceType;
+
+  // Habit specific: history[dateString] = status/note data
+  habitHistory?: Record<string, HabitDayData>;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  parentFolderId?: string; 
+  status: 'active' | 'archived';
+  progress: number;
+  
+  // 12 Week Year Fields
+  isStrategic: boolean;
+  kpiTitle?: string;
+  kpiTarget?: number;
+  kpiCurrent?: number;
+  kpiUnit?: string;
+  executionScore?: number;
+}
+
+export interface TwelveWeekYear {
+  id: string;
+  startDate: number;
+  endDate: number;
+  currentWeek: number;
+  globalExecutionScore: number;
+}
+
+export interface Character {
+  name: string;
+  race: 'Gnome' | 'Elf' | 'Human' | 'Dwarf';
+  level: number;
+  xp: number;
+  gold: number;
+  bio: string;
+  goals: string[];
+  views: string[];
+  stats: {
+    health: number;
+    wealth: number;
+    wisdom: number;
+    social: number;
+  };
+}
+
+export interface StoreState {
+  tasks: Task[];
+  projects: Project[];
+  character: Character;
+  tags: Tag[];
+  cycle: TwelveWeekYear;
+  diary?: DiaryEntry[];
+  inboxCategories?: InboxCategory[];
+  detailsWidth?: number;
+}
