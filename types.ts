@@ -46,6 +46,21 @@ export interface HabitDayData {
   note?: string;
 }
 
+export interface TimeBlock {
+  id: string;
+  title: string;
+  startHour: number;
+  endHour: number;
+  type: 'work' | 'rest' | 'routine' | 'study';
+  dayOfWeek?: number; // 0-6, if set, repeats weekly
+}
+
+export interface RoutinePreset {
+  id: string;
+  name: string;
+  blocks: Omit<TimeBlock, 'id'>[];
+}
+
 export interface DiaryEntry {
   id: string;
   date: string; // YYYY-MM-DD
@@ -180,4 +195,7 @@ export interface StoreState {
   sidebarSettings?: Record<string, boolean>;
   isSidebarCollapsed?: boolean;
   aiEnabled?: boolean;
+  timeBlocks?: TimeBlock[]; // Unified list of blocks
+  blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>; // date -> blockId -> status
+  routinePresets?: RoutinePreset[];
 }
