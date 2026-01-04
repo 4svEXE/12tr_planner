@@ -25,8 +25,8 @@ interface AppContextType {
   setAiEnabled: (enabled: boolean) => void;
   updateSidebarSetting: (key: string, visible: boolean) => void;
   updateCharacter: (updates: Partial<Character>) => void;
-  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection) => void;
-  addProject: (project: Omit<Project, 'id' | 'progress' | 'status'>) => void;
+  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection) => string;
+  addProject: (project: Omit<Project, 'id' | 'progress' | 'status'>) => string;
   updateTask: (task: Task) => void;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
@@ -140,27 +140,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeBlocks(prev => [...prev.filter(b => b.dayOfWeek !== dayOfWeek), ...newBlocks]);
   }, [routinePresets]);
 
-  // Rest of state logic remains identical...
   const updateCharacter = useCallback((updates: Partial<Character>) => setCharacter(prev => ({ ...prev, ...updates })), []);
   const updateSidebarSetting = (key: string, visible: boolean) => setSidebarSettings(prev => ({ ...prev, [key]: visible }));
+  
   const addTask = useCallback((title: string, categoryId: string = 'tasks', projectId?: string, projectSection: ProjectSection = 'actions') => {
-    const newTask: Task = { id: Math.random().toString(36).substr(2, 9), title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection, habitHistory: {}, isDeleted: false };
+    const id = Math.random().toString(36).substr(2, 9);
+    const newTask: Task = { id, title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection, habitHistory: {}, isDeleted: false };
     setTasks(prev => [newTask, ...prev]);
+    return id;
   }, []);
+
   const addProject = useCallback((projectData: Omit<Project, 'id' | 'progress' | 'status'>) => {
-    const newProject: Project = { ...projectData, id: Math.random().toString(36).substr(2, 9), progress: 0, status: 'active' };
+    const id = Math.random().toString(36).substr(2, 9);
+    const newProject: Project = { ...projectData, id, progress: 0, status: 'active' };
     setProjects(prev => [newProject, ...prev]);
+    return id;
   }, []);
+
   const updateTask = useCallback((t: Task) => setTasks(prev => prev.map(old => old.id === t.id ? t : old)), []);
   const updateProject = useCallback((p: Project) => setProjects(prev => prev.map(old => old.id === p.id ? p : old)), []);
   const deleteTask = useCallback((id: string, perm = false) => setTasks(prev => perm ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, isDeleted: true } : t)), []);
   const restoreTask = useCallback((id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, isDeleted: false } : t)), []);
   const deleteProject = useCallback((id: string) => setProjects(prev => prev.filter(p => p.id !== id)), []);
   const scheduleTask = useCallback((id: string, date: number | undefined) => setTasks(prev => prev.map(t => t.id === id ? { ...t, scheduledDate: date } : t)), []);
+  
   const toggleTaskStatus = useCallback((task: Task) => {
     const isNowDone = task.status !== TaskStatus.DONE;
     updateTask({ ...task, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX });
   }, [updateTask]);
+
   const toggleHabitStatus = useCallback((id: string, d: string, s?: any, n?: string) => {
     setTasks(prev => prev.map(t => {
       if (t.id === id) {
@@ -171,6 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return t;
     }));
   }, []);
+
   const moveTaskToCategory = (id: string, cat: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, category: cat } : t));
   const moveTaskToProjectSection = (id: string, sec: ProjectSection) => setTasks(prev => prev.map(t => t.id === id ? { ...t, projectSection: sec } : t));
   const setProjectParent = (id: string, pId: string | undefined) => setProjects(prev => prev.map(p => p.id === id ? { ...p, parentFolderId: pId } : p));

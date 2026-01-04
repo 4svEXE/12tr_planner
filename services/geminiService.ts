@@ -42,8 +42,64 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
   return JSON.parse(response.text);
 };
 
+export const planProjectStrategically = async (
+  projectTitle: string,
+  projectDescription: string,
+  character: Character
+) => {
+  const prompt = `
+    Ти — верховний стратег і наставник Героя: ${character.name} (${character.race} ${character.archetype}).
+    Візія героя: ${character.vision}
+    Цілі: ${character.goals.join(", ")}
+
+    Допоможи спланувати новий стратегічний проєкт: "${projectTitle}".
+    Опис проєкту: ${projectDescription}
+
+    Твоє завдання — розробити план за методологією GTD та 12-тижневого року:
+    1. "Наступні дії" (Next Actions) — 3-5 конкретних фізичних кроків для негайного старту.
+    2. "Підпроєкти" (Bosses) — 2-3 великі етапи, кожен з яких містить 3 власні завдання.
+    3. "Звички" (Habits) — 1-2 щоденні або щотижневі дії для підтримки імпульсу.
+
+    Відповідай УКРАЇНСЬКОЮ МОВОЮ у форматі JSON.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          nextActions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          subprojects: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                tasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["title", "tasks"]
+            }
+          },
+          habits: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        },
+        required: ["nextActions", "subprojects", "habits"]
+      }
+    }
+  });
+
+  return JSON.parse(response.text);
+};
+
 export const suggestNextAction = async (project: Project, currentTasks: Task[]) => {
-  // Use TaskStatus enum for comparison instead of string literal
   const completedTasks = currentTasks.filter(t => t.status === TaskStatus.DONE).map(t => t.title).join(", ");
   const prompt = `
     На основі проєкту "${project.name}" та цих завершених завдань: ${completedTasks},
