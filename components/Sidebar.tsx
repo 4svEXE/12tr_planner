@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { TaskStatus } from '../types';
+import { TaskStatus, ThemeType } from '../types';
 import Typography from './ui/Typography';
+import Button from './ui/Button';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,7 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const { 
     tasks, updateTask, scheduleTask, toggleTaskStatus, 
     isSidebarCollapsed, setSidebarCollapsed, sidebarSettings, updateSidebarSetting,
-    aiEnabled, setAiEnabled
+    aiEnabled, setAiEnabled, theme, setTheme
   } = useApp();
   
   const [showSettings, setShowSettings] = useState(false);
@@ -43,6 +43,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'completed', icon: 'fa-check-double', label: 'Завершено', acceptDrop: true },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
+  ];
+
+  const themes: { id: ThemeType; label: string; color: string; isDark?: boolean }[] = [
+    { id: 'classic', label: 'Класика', color: '#f97316' },
+    { id: 'midnight', label: 'Опівніч', color: '#10b981', isDark: true },
+    { id: 'nordic', label: 'Північ', color: '#3b82f6' },
+    { id: 'sakura', label: 'Сакура', color: '#ec4899' },
+    { id: 'forest', label: 'Ліс', color: '#16a34a' },
+    { id: 'amethyst', label: 'Аметист', color: '#8b5cf6' },
+    { id: 'volcano', label: 'Вулкан', color: '#ef4444' },
+    { id: 'slate', label: 'Графіт', color: '#334155', isDark: true },
   ];
 
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -167,42 +178,79 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       {showSettings && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 tiktok-blur">
           <div className="absolute inset-0 bg-slate-900/20" onClick={() => setShowSettings(false)}></div>
-          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <Typography variant="h2" className="text-xl">Налаштування інтерфейсу</Typography>
-              <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark"></i></button>
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <Typography variant="h2" className="text-xl">Налаштування</Typography>
+              <button onClick={() => setShowSettings(false)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
             </div>
             
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+            <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+              {/* Theme Selector */}
+              <div>
+                <Typography variant="tiny" className="text-slate-400 mb-4 block">Оберіть тему оформлення</Typography>
+                <div className="grid grid-cols-4 gap-3">
+                  {themes.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t.id)}
+                      className={`group flex flex-col items-center gap-2 p-2 rounded-2xl border-2 transition-all ${
+                        theme === t.id ? 'border-orange-500 bg-orange-50/50 scale-105 shadow-sm' : 'border-slate-50 hover:border-slate-100 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="relative">
+                        <div 
+                          className="w-10 h-10 rounded-full shadow-inner border border-white/20" 
+                          style={{ backgroundColor: t.color }}
+                        ></div>
+                        {t.isDark && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[8px] border border-white">
+                            <i className="fa-solid fa-moon"></i>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-slate-500 group-hover:text-slate-900">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Toggle */}
+              <div className="p-5 bg-orange-50/50 rounded-3xl border border-orange-100/50">
                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <i className="fa-solid fa-sparkles text-orange-500"></i>
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-orange-500">
+                         <i className="fa-solid fa-sparkles"></i>
+                       </div>
                        <div>
-                          <div className="text-xs font-black text-slate-800 uppercase">AI Асистент</div>
-                          <div className="text-[10px] text-orange-600 font-bold">Розумні брифінги та поради</div>
+                          <div className="text-xs font-black text-slate-900 uppercase tracking-tight">AI Асистент</div>
+                          <div className="text-[10px] text-orange-600 font-bold">Персоналізовані поради та брифінги</div>
                        </div>
                     </div>
                     <button 
                       onClick={() => setAiEnabled(!aiEnabled)}
-                      className={`w-12 h-6 rounded-full transition-all relative ${aiEnabled ? 'bg-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-300'}`}
+                      className={`w-12 h-6 rounded-full transition-all relative ${aiEnabled ? 'bg-orange-500' : 'bg-slate-200'}`}
                     >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
                     </button>
                  </div>
               </div>
 
+              {/* Section Visibility */}
               <div className="space-y-2">
-                <Typography variant="tiny" className="text-slate-400 ml-1">Видимість розділів</Typography>
+                <Typography variant="tiny" className="text-slate-400 mb-2 block">Видимість розділів</Typography>
                 {[...primaryItems, ...widgetItems, ...bottomItems].map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-2xl border border-slate-100/50">
                     <div className="flex items-center gap-3">
-                      <i className={`fa-solid ${item.icon} text-slate-400 w-4 text-center`}></i>
+                      <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-slate-400">
+                        <i className={`fa-solid ${item.icon} text-xs`}></i>
+                      </div>
                       <span className="text-xs font-bold text-slate-700">{item.label}</span>
                     </div>
                     <button 
                       onClick={() => updateSidebarSetting(item.id, sidebarSettings[item.id] !== false ? false : true)}
-                      className={`w-10 h-5 rounded-full transition-all relative ${sidebarSettings[item.id] !== false ? 'bg-slate-800' : 'bg-slate-300'}`}
+                      className={`w-10 h-5 rounded-full transition-all relative ${sidebarSettings[item.id] !== false ? 'bg-slate-800' : 'bg-slate-200'}`}
                     >
                       <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-1' : 'left-1'}`}></div>
                     </button>
@@ -210,12 +258,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                 ))}
               </div>
             </div>
-            <button 
-              onClick={() => setShowSettings(false)}
-              className="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
+
+            <Button 
+              onClick={() => setShowSettings(false)} 
+              className="w-full mt-10 py-4 rounded-3xl text-xs tracking-widest"
             >
-              ЗБЕРЕГТИ
-            </button>
+              ЗБЕРЕГТИ ТА ЗАКРИТИ
+            </Button>
           </div>
         </div>
       )}

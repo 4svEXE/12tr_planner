@@ -19,6 +19,8 @@ export type ProjectSection = 'actions' | 'bosses' | 'goals' | 'habits' | 'planne
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'custom';
 
+export type ThemeType = 'classic' | 'midnight' | 'nordic' | 'sakura' | 'forest' | 'amethyst' | 'volcano' | 'slate';
+
 export interface Tag {
   id: string;
   name: string;
@@ -203,4 +205,5 @@ export interface StoreState {
   blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
   routinePresets?: RoutinePreset[];
   activeTab?: string;
+  theme?: ThemeType;
 }

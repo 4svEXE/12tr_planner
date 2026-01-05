@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Task, Project, Character, Tag, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset } from '../types';
+import { Task, Project, Character, Tag, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType } from '../types';
 import { saveState, loadState } from '../store';
 
 interface AppContextType {
@@ -15,12 +15,14 @@ interface AppContextType {
   blockHistory: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
   routinePresets: RoutinePreset[];
   activeTab: string;
+  theme: ThemeType;
   detailsWidth: number;
   sidebarSettings: Record<string, boolean>;
   isSidebarCollapsed: boolean;
   aiEnabled: boolean;
   setDetailsWidth: (width: number) => void;
   setActiveTab: (tab: string) => void;
+  setTheme: (theme: ThemeType) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setAiEnabled: (enabled: boolean) => void;
   updateSidebarSetting: (key: string, visible: boolean) => void;
@@ -155,6 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const savedState = loadState();
 
   const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'today');
+  const [theme, setTheme] = useState<ThemeType>(savedState?.theme || 'classic');
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
@@ -176,9 +179,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     name: 'Стратег', race: 'Elf', archetype: 'Strategist', level: 1, xp: 0, gold: 0, bio: 'Новий шлях починається.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
   });
 
+  // Apply theme to document element
   useEffect(() => {
-    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab });
-  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme });
+  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme]);
 
   const addTimeBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => {
     const newBlock: TimeBlock = { ...blockData, id: Math.random().toString(36).substr(2, 9) };
@@ -293,14 +301,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleTaskPin = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t));
 
   const value = useMemo(() => ({
-    tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab,
+    tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter,
     addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction: () => {},
     saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
     addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
     pendingUndo: false, addTag, renameTag, deleteTag
-  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled]);
+  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
