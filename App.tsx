@@ -9,6 +9,7 @@ import Calendar from './views/Calendar';
 import Hashtags from './views/Hashtags';
 import DeepFocus from './views/DeepFocus';
 import ProjectsView from './views/ProjectsView';
+import StructureView from './views/StructureView';
 import HabitsView from './views/HabitsView';
 import TodayView from './views/TodayView';
 import NotesView from './views/NotesView';
@@ -57,6 +58,7 @@ const MainLayout: React.FC = () => {
       case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;
+      case 'structure': return <StructureView />;
       case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
       case 'trash': return <TrashView />;
       case 'character': return <CharacterProfile />;

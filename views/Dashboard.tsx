@@ -51,6 +51,20 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
     return achievementNotes.length > 0 ? achievementNotes[Math.floor(Math.random() * achievementNotes.length)] : null;
   }, [tasks]);
 
+  // New logic for Random Insight from "Insights" folder
+  const randomInsight = useMemo(() => {
+    const insightsFolder = projects.find(p => p.name.toLowerCase().includes('інсайти'));
+    if (!insightsFolder) return null;
+
+    const insightNotes = tasks.filter(t => 
+      !t.isDeleted && 
+      t.category === 'note' && 
+      t.projectId === insightsFolder.id
+    );
+
+    return insightNotes.length > 0 ? insightNotes[Math.floor(Math.random() * insightNotes.length)] : null;
+  }, [tasks, projects]);
+
   // Calculate Discipline based on habits and selected period
   const disciplineScore = useMemo(() => {
     const habits = tasks.filter(t => t.projectSection === 'habits' || t.tags.includes('habit'));
@@ -116,7 +130,27 @@ const Dashboard: React.FC<DashboardProps> = ({ character, tasks, projects }) => 
         </div>
       </div>
 
-      {/* Random Dreams & Achievements Row - Moved up for prominence */}
+      {/* Insights Section - Added for prominent display of your wisdom */}
+      {randomInsight && (
+        <Card padding="lg" className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 relative overflow-hidden group shadow-md">
+           <div className="absolute -right-4 -bottom-4 opacity-10 text-emerald-900 text-7xl group-hover:scale-125 transition-transform duration-700">
+              <i className="fa-solid fa-lightbulb"></i>
+           </div>
+           <div className="relative z-10">
+              <Typography variant="tiny" className="text-emerald-600 mb-2 font-black flex items-center gap-2">
+                 <i className="fa-solid fa-sparkles animate-pulse"></i> Твій Інсайт
+              </Typography>
+              <Typography variant="h2" className="text-slate-900 text-xl mb-2 leading-snug">
+                {randomInsight.title}
+              </Typography>
+              <Typography variant="body" className="text-emerald-800 italic font-medium">
+                {randomInsight.content}
+              </Typography>
+           </div>
+        </Card>
+      )}
+
+      {/* Random Dreams & Achievements Row */}
       {(randomDream || randomAchievement) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {randomDream && (

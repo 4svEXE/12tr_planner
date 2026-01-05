@@ -115,6 +115,8 @@ export interface Task {
   habitHistory?: Record<string, HabitDayData>;
 }
 
+export type ProjectType = 'goal' | 'subproject' | 'folder';
+
 export interface Project {
   id: string;
   name: string;
@@ -123,6 +125,7 @@ export interface Project {
   parentFolderId?: string; 
   status: 'active' | 'archived';
   progress: number;
+  type?: ProjectType;
   
   // 12 Week Year Fields
   isStrategic: boolean;
@@ -195,7 +198,9 @@ export interface StoreState {
   sidebarSettings?: Record<string, boolean>;
   isSidebarCollapsed?: boolean;
   aiEnabled?: boolean;
-  timeBlocks?: TimeBlock[]; // Unified list of blocks
-  blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>; // date -> blockId -> status
+  timeBlocks?: TimeBlock[]; 
+  blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
   routinePresets?: RoutinePreset[];
+  // Fix: activeTab was missing in StoreState, leading to type errors in AppContext
+  activeTab?: string;
 }

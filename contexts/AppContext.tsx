@@ -64,44 +64,50 @@ const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
   { id: 'unsorted', title: 'Несортовано', icon: 'fa-box-open', isPinned: false },
   { id: 'tasks', title: 'Завдання', icon: 'fa-check-to-slot', isPinned: false },
   { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false },
-  { id: 'hypothesis', title: 'Гіпотези', icon: 'fa-flask', isPinned: false },
-  { id: 'useful', title: 'Корисне', icon: 'fa-bookmark', isPinned: false },
 ];
 
 const MOCK_PROJECTS: Project[] = [
   {
-    id: 'mock-p1',
-    name: 'Легендарний Стартап',
-    description: 'Побудова глобальної SaaS платформи для стратегів',
+    id: 'goal-1',
+    name: 'Запустити стартап 12TR',
+    description: 'Глобальна Ціль: Вихід на ринок за 12 тижнів',
     color: '#f97316',
     status: 'active',
-    progress: 35,
+    progress: 15,
     isStrategic: true,
-    kpiTitle: 'Реєстрації',
-    kpiTarget: 500,
-    kpiCurrent: 142,
-    kpiUnit: 'користувачів',
-    executionScore: 82
+    type: 'goal',
+    executionScore: 45
   },
   {
-    id: 'mock-sub-p1',
+    id: 'sub-1',
     name: 'MVP Розробка',
-    description: 'Технічне ядро та основний функціонал',
-    color: '#f97316',
-    parentFolderId: 'mock-p1',
+    description: 'Технічний підпроєкт',
+    color: '#6366f1',
+    parentFolderId: 'goal-1',
     status: 'active',
-    progress: 55,
-    isStrategic: false
+    progress: 30,
+    isStrategic: false,
+    type: 'subproject'
   },
   {
-    id: 'mock-p2',
-    name: 'Здоров\'я Гіганта',
-    description: 'Комплексна програма біохакінгу та енергії',
+    id: 'sub-2',
+    name: 'Маркетингова кампанія',
+    description: 'Охоплення перших 1000 клієнтів',
+    color: '#ec4899',
+    parentFolderId: 'goal-1',
+    status: 'active',
+    progress: 5,
+    isStrategic: false,
+    type: 'subproject'
+  },
+  {
+    id: 'folder-insights',
+    name: 'Інсайти',
     color: '#10b981',
     status: 'active',
-    progress: 20,
-    isStrategic: true,
-    executionScore: 65
+    progress: 0,
+    isStrategic: false,
+    type: 'folder'
   }
 ];
 
@@ -109,45 +115,31 @@ const TODAY = new Date().setHours(0,0,0,0);
 
 const MOCK_TASKS: Task[] = [
   {
-    id: 'mock-t1',
-    title: 'Купити домен "strategy-engine.io"',
+    id: 'task-1',
+    title: 'Налаштувати репозиторій проекту',
     status: TaskStatus.NEXT_ACTION,
     priority: Priority.UI,
-    difficulty: 1,
-    xp: 100,
-    tags: ['startup', 'finance'],
-    createdAt: Date.now(),
-    projectId: 'mock-p1',
-    projectSection: 'actions',
-    scheduledDate: TODAY
-  },
-  {
-    id: 'mock-t2',
-    title: 'Розробити схему бази даних',
-    status: TaskStatus.INBOX,
-    priority: Priority.NUI,
-    difficulty: 3,
-    xp: 350,
+    difficulty: 2,
+    xp: 200,
     tags: ['dev'],
     createdAt: Date.now(),
-    projectId: 'mock-sub-p1',
+    projectId: 'sub-1',
     projectSection: 'actions'
   },
   {
-    id: 'mock-t3',
-    title: 'Ранкове планування (Ritual)',
+    id: 'task-2',
+    title: 'Створити лендінг для збору лідів',
     status: TaskStatus.INBOX,
-    priority: Priority.UI,
-    difficulty: 1,
-    xp: 25,
-    tags: ['habit'],
+    priority: Priority.NUI,
+    difficulty: 3,
+    xp: 400,
+    tags: ['marketing'],
     createdAt: Date.now(),
-    projectId: 'mock-p1',
-    projectSection: 'habits',
-    recurrence: 'daily'
+    projectId: 'sub-2',
+    projectSection: 'actions'
   },
   {
-    id: 'mock-t4',
+    id: 'habit-1',
     title: 'Пробіжка 5км',
     status: TaskStatus.INBOX,
     priority: Priority.NUI,
@@ -155,56 +147,42 @@ const MOCK_TASKS: Task[] = [
     xp: 150,
     tags: ['health', 'habit'],
     createdAt: Date.now(),
-    projectId: 'mock-p2',
+    projectId: 'goal-1',
     projectSection: 'habits',
     recurrence: 'daily'
-  },
-  {
-    id: 'mock-t5',
-    title: 'Проаналізувати конкурентів',
-    status: TaskStatus.NEXT_ACTION,
-    priority: Priority.UNI,
-    difficulty: 2,
-    xp: 200,
-    tags: ['research'],
-    createdAt: Date.now(),
-    projectId: 'mock-p1',
-    projectSection: 'actions'
   }
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
-  const [activeTab, setActiveTab] = useState('today');
+  // Fix: Property 'activeTab' now exists on type 'StoreState' after updating types.ts
+  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'today');
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
-  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled || true);
+  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled ?? false);
   
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
-    id: 'c1', startDate: Date.now() - (1000 * 60 * 60 * 24 * 7), endDate: Date.now() + (1000 * 60 * 60 * 24 * 77), currentWeek: 2, globalExecutionScore: 82
+    id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0
   });
 
   const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || MOCK_TASKS);
   const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || DEFAULT_INBOX_CATEGORIES);
   const [projects, setProjects] = useState<Project[]>(savedState?.projects || MOCK_PROJECTS);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags || [
-    { id: 'tag-1', name: 'startup', color: '#f97316' },
-    { id: 'tag-2', name: 'dev', color: '#6366f1' },
-    { id: 'tag-3', name: 'health', color: '#10b981' }
-  ]);
+  const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
   const [character, setCharacter] = useState<Character>(savedState?.character || {
-    name: 'Тален', race: 'Elf', archetype: 'Strategist', level: 4, xp: 2450, gold: 152, bio: 'Верховний стратег на шляху до цифрового панування.', vision: 'Створити систему, що звільняє людський розум.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 85, maxEnergy: 100, focus: 92, goals: ['Побудувати стартап', 'Пробігти марафон'], views: ['Дисципліна = Свобода'], skills: [{ name: 'Стратегія', level: 5, xp: 45, icon: 'fa-chess-king' }], achievements: [], stats: { health: 85, career: 42, finance: 68, education: 30, relationships: 55, rest: 40 }
+    name: 'Стратег', race: 'Elf', archetype: 'Strategist', level: 1, xp: 0, gold: 0, bio: 'Новий шлях починається.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
   });
 
+  // Fix: Added activeTab to saveState and its dependency array for full persistence
   useEffect(() => {
-    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets });
-  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets]);
+    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab });
+  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab]);
 
   const addTimeBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => {
     const newBlock: TimeBlock = { ...blockData, id: Math.random().toString(36).substr(2, 9) };
