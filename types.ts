@@ -53,6 +53,7 @@ export interface TimeBlock {
   title: string;
   startHour: number;
   endHour: number;
+  color?: string;
   type: 'work' | 'rest' | 'routine' | 'study';
   dayOfWeek?: number; // 0-6, if set, repeats weekly
 }
@@ -76,6 +77,7 @@ export interface InboxCategory {
   title: string;
   icon: string;
   isPinned: boolean;
+  color?: 'slate' | 'orange' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'violet';
 }
 
 export interface ChecklistItem {
