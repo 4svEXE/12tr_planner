@@ -111,8 +111,6 @@ const MOCK_PROJECTS: Project[] = [
   }
 ];
 
-const TODAY = new Date().setHours(0,0,0,0);
-
 const MOCK_TASKS: Task[] = [
   {
     id: 'task-1',
@@ -156,7 +154,6 @@ const MOCK_TASKS: Task[] = [
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
-  // Fix: Property 'activeTab' now exists on type 'StoreState' after updating types.ts
   const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'today');
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
@@ -179,7 +176,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     name: 'Стратег', race: 'Elf', archetype: 'Strategist', level: 1, xp: 0, gold: 0, bio: 'Новий шлях починається.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
   });
 
-  // Fix: Added activeTab to saveState and its dependency array for full persistence
   useEffect(() => {
     saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab });
   }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab]);
@@ -231,7 +227,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const addTask = useCallback((title: string, categoryId: string = 'tasks', projectId?: string, projectSection: ProjectSection = 'actions') => {
     const id = Math.random().toString(36).substr(2, 9);
-    const newTask: Task = { id, title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection, habitHistory: {}, isDeleted: false };
+    const isHabit = projectSection === 'habits';
+    const newTask: Task = { 
+      id, 
+      title, 
+      status: TaskStatus.INBOX, 
+      priority: Priority.NUI, 
+      difficulty: 1, 
+      xp: isHabit ? 150 : 50, 
+      tags: isHabit ? ['habit'] : [], 
+      createdAt: Date.now(), 
+      category: categoryId, 
+      projectId, 
+      projectSection, 
+      recurrence: isHabit ? 'daily' : 'none',
+      recurrenceDays: isHabit ? [1, 2, 3, 4, 5, 6, 0] : undefined,
+      habitHistory: {}, 
+      isDeleted: false 
+    };
     setTasks(prev => [newTask, ...prev]);
     return id;
   }, []);

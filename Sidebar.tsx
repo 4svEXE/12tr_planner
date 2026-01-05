@@ -1,8 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus } from '../types';
 import Typography from './ui/Typography';
+// Fix: Added missing Button import to resolve UI compilation error.
+import Button from './ui/Button';
 
 interface SidebarProps {
   activeTab: string;
@@ -81,6 +82,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     if (sidebarSettings[item.id] === false) return null;
     const isActive = activeTab === item.id;
     
+    const handleClick = () => {
+      setActiveTab(item.id);
+    };
+
     return (
       <div
         key={item.id}
@@ -90,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         className={`relative group ${dropTargetId === item.id ? 'scale-105 z-20' : ''}`}
       >
         <button
-          onClick={() => setActiveTab(item.id)}
+          onClick={handleClick}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
             isActive 
               ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm font-bold' 
@@ -136,29 +141,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       
       <nav className="flex-1 px-2 space-y-0.5 py-2 overflow-y-auto custom-scrollbar">
         {primaryItems.map(renderMenuItem)}
-        
         <div className="my-4 mx-2 border-t border-slate-100"></div>
-        
-        {!isSidebarCollapsed && (
-          <div className="px-3 mb-2">
-            <span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Віджети</span>
-          </div>
-        )}
+        {!isSidebarCollapsed && <div className="px-3 mb-2"><span className="text-[8px] uppercase font-black text-slate-300">Віджети</span></div>}
         {widgetItems.map(renderMenuItem)}
       </nav>
 
       <div className="px-2 py-4 border-t border-slate-100 space-y-0.5">
-        {!isSidebarCollapsed && (
-          <div className="px-3 mb-2">
-            <span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Архів та мітки</span>
-          </div>
-        )}
         {bottomItems.map(renderMenuItem)}
-        
-        <button 
-          onClick={() => setShowSettings(true)}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
-        >
+        <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-50 transition-all">
           <span className="w-5 flex justify-center text-sm"><i className="fa-solid fa-gear"></i></span>
           {!isSidebarCollapsed && <span className="font-medium text-[11px] tracking-tight">Налаштування</span>}
         </button>
@@ -167,55 +157,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       {showSettings && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 tiktok-blur">
           <div className="absolute inset-0 bg-slate-900/20" onClick={() => setShowSettings(false)}></div>
-          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <Typography variant="h2" className="text-xl">Налаштування інтерфейсу</Typography>
-              <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <i className="fa-solid fa-sparkles text-orange-500"></i>
-                       <div>
-                          <div className="text-xs font-black text-slate-800 uppercase">AI Асистент</div>
-                          <div className="text-[10px] text-orange-600 font-bold">Розумні брифінги та поради</div>
-                       </div>
-                    </div>
-                    <button 
-                      onClick={() => setAiEnabled(!aiEnabled)}
-                      className={`w-12 h-6 rounded-full transition-all relative ${aiEnabled ? 'bg-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
-                    </button>
-                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Typography variant="tiny" className="text-slate-400 ml-1">Видимість розділів</Typography>
-                {[...primaryItems, ...widgetItems, ...bottomItems].map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <i className={`fa-solid ${item.icon} text-slate-400 w-4 text-center`}></i>
-                      <span className="text-xs font-bold text-slate-700">{item.label}</span>
-                    </div>
-                    <button 
-                      onClick={() => updateSidebarSetting(item.id, sidebarSettings[item.id] !== false ? false : true)}
-                      className={`w-10 h-5 rounded-full transition-all relative ${sidebarSettings[item.id] !== false ? 'bg-slate-800' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-1' : 'left-1'}`}></div>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowSettings(false)}
-              className="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
-            >
-              ЗБЕРЕГТИ
-            </button>
+          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 relative">
+            <Typography variant="h2" className="text-xl mb-6">Налаштування</Typography>
+            <Button onClick={() => setShowSettings(false)} className="w-full rounded-xl">ЗАКРИТИ</Button>
           </div>
         </div>
       )}

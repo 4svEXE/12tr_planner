@@ -17,7 +17,7 @@ export enum Priority {
 
 export type ProjectSection = 'actions' | 'bosses' | 'goals' | 'habits' | 'planner';
 
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'custom';
 
 export interface Tag {
   id: string;
@@ -110,6 +110,7 @@ export interface Task {
   reminderTime?: string; // e.g. "10:00"
   reminderEnabled?: boolean;
   recurrence?: RecurrenceType;
+  recurrenceDays?: number[]; // 0-6 (Sun-Sat) or 1-7 (Mon-Sun) based on JS convention
 
   // Habit specific: history[dateString] = status/note data
   habitHistory?: Record<string, HabitDayData>;
@@ -201,6 +202,5 @@ export interface StoreState {
   timeBlocks?: TimeBlock[]; 
   blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
   routinePresets?: RoutinePreset[];
-  // Fix: activeTab was missing in StoreState, leading to type errors in AppContext
   activeTab?: string;
 }
