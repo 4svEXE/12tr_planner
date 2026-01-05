@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useRe
 import { Task, Project, Character, Tag, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType } from '../types';
 import { saveState, loadState } from '../store';
 
+export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
+
 interface AppContextType {
   tasks: Task[];
   projects: Project[];
@@ -20,6 +22,10 @@ interface AppContextType {
   sidebarSettings: Record<string, boolean>;
   isSidebarCollapsed: boolean;
   aiEnabled: boolean;
+  calendarDate: number;
+  calendarViewMode: CalendarViewMode;
+  setCalendarDate: (date: number) => void;
+  setCalendarViewMode: (mode: CalendarViewMode) => void;
   setDetailsWidth: (width: number) => void;
   setActiveTab: (tab: string) => void;
   setTheme: (theme: ThemeType) => void;
@@ -163,6 +169,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
   const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled ?? false);
   
+  const [calendarDate, setCalendarDate] = useState<number>(Date.now());
+  const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
+
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
     id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0
   });
@@ -304,11 +313,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter,
+    calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction: () => {},
     saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
     addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
     pendingUndo: false, addTag, renameTag, deleteTag
-  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled]);
+  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

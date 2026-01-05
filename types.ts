@@ -100,6 +100,8 @@ export interface Task {
   createdAt: number;
   dueDate?: number;
   scheduledDate?: number; 
+  endDate?: number; // For multi-day events
+  isEvent?: boolean; // Distinguish between task and event
   isPinned?: boolean;
   isTactic?: boolean; 
   category?: string;
