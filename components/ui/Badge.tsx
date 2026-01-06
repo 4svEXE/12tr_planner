@@ -6,9 +6,10 @@ interface BadgeProps {
   variant?: 'orange' | 'emerald' | 'rose' | 'slate' | 'yellow';
   icon?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-const Badge: React.FC<BadgeProps> = ({ children, variant = 'slate', icon, className = '' }) => {
+const Badge: React.FC<BadgeProps> = ({ children, variant = 'slate', icon, className = '', style }) => {
   const variants = {
     orange: 'bg-orange-50 text-orange-600 border-orange-100',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
@@ -18,7 +19,10 @@ const Badge: React.FC<BadgeProps> = ({ children, variant = 'slate', icon, classN
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider ${variants[variant]} ${className}`}>
+    <span 
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider ${variants[variant]} ${className}`}
+      style={style}
+    >
       {icon && <i className={`fa-solid ${icon}`}></i>}
       {children}
     </span>

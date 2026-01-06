@@ -36,21 +36,21 @@ const MiniCalendar: React.FC = () => {
   };
 
   return (
-    <div className="px-1 py-2 mb-4 mx-1">
-      <div className="flex justify-between gap-1">
+    <div className="px-1 py-0.5 mb-0.5 mx-0.5">
+      <div className="flex justify-between gap-0">
         {weekDays.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString();
           const hasEvent = hasEventOnDay(d);
           return (
-            <button key={i} onClick={() => handleDateClick(d)} className="flex flex-col items-center gap-1 group">
-              <span className="text-[7px] font-black text-slate-300 uppercase leading-none group-hover:text-orange-500 transition-colors">
+            <button key={i} onClick={() => handleDateClick(d)} className="flex flex-col items-center gap-0 group shrink-0">
+              <span className="text-[5px] font-black text-slate-300 uppercase leading-none group-hover:text-[var(--primary)] transition-colors">
                 {d.toLocaleString('uk-UA', { weekday: 'short' }).slice(0, 2)}
               </span>
-              <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] font-black transition-all ${isToday ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-500 hover:bg-slate-100'}`}>
+              <div className={`w-[18px] h-[18px] rounded-md flex items-center justify-center text-[7px] font-black transition-all ${isToday ? 'bg-[var(--primary)] text-white shadow shadow-[var(--primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)]'}`}>
                 {d.getDate()}
               </div>
               <div className="h-0.5 flex items-center justify-center">
-                {hasEvent && <div className="w-1 h-0.5 rounded-full bg-orange-400"></div>}
+                {hasEvent && <div className="w-0.5 h-0.5 rounded-full bg-pink-400"></div>}
               </div>
             </button>
           );

@@ -29,10 +29,15 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [tempEndDate, setTempEndDate] = useState<number | undefined>(task.endDate);
   const [isEvent, setIsEvent] = useState<boolean>(task.isEvent || false);
 
+  // Time states
+  const [selectedHour, setSelectedHour] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getHours() : 9);
+  const [selectedMinute, setSelectedMinute] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getMinutes() : 0);
+
   const [localTitle, setLocalTitle] = useState(task.title);
   const [localContent, setLocalContent] = useState(task.content || "");
   const [isPreview, setIsPreview] = useState(true);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const linkedProject = projects.find(p => p.id === task.projectId);
 
@@ -42,6 +47,11 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     setTempSelectedDate(task.scheduledDate);
     setTempEndDate(task.endDate);
     setIsEvent(task.isEvent || false);
+    if (task.scheduledDate) {
+      const d = new Date(task.scheduledDate);
+      setSelectedHour(d.getHours());
+      setSelectedMinute(d.getMinutes());
+    }
   }, [task.id]);
 
   useEffect(() => {
@@ -53,16 +63,26 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     return () => clearTimeout(timer);
   }, [localTitle, localContent, isEvent]);
 
-  const handleManualSaveAndClose = () => {
+  // Focus textarea when switching from preview
+  useEffect(() => {
+    if (!isPreview && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isPreview]);
+
+  const handleApplyDate = () => {
+    let finalDate = tempSelectedDate;
+    if (finalDate) {
+      const d = new Date(finalDate);
+      d.setHours(selectedHour, selectedMinute, 0, 0);
+      finalDate = d.getTime();
+    }
     updateTask({ 
       ...task, 
-      title: localTitle, 
-      content: localContent, 
-      isEvent,
-      scheduledDate: tempSelectedDate,
+      scheduledDate: finalDate,
       endDate: tempEndDate
     });
-    onClose();
+    setShowDatePicker(false);
   };
 
   const handleAddSubtask = (e: React.FormEvent) => {
@@ -83,30 +103,46 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     for (let i = 0; i < firstDayOfMonth; i++) calendarDays.push(null);
     for (let i = 1; i <= daysInMonth; i++) calendarDays.push(new Date(year, month, i));
 
+    const todayTs = new Date().setHours(0,0,0,0);
+
     return (
       <div className="mt-2">
         <div className="flex items-center justify-between mb-2">
-          <Typography variant="tiny" className="text-[10px] lowercase font-black">{currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}</Typography>
+          <Typography variant="tiny" className="text-[10px] font-black text-[var(--text-main)]">{currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}</Typography>
           <div className="flex gap-1">
             <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-left text-[8px]"></i></button>
             <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-right text-[8px]"></i></button>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
-          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => <div key={w} className="text-[7px] font-black text-slate-200">{w}</div>)}
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => <div key={w} className="text-[7px] font-black text-slate-300 uppercase">{w}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {calendarDays.map((d, i) => {
             if (!d) return <div key={i} />;
             const ts = d.setHours(0,0,0,0);
-            const isStart = tempSelectedDate === ts;
-            const isEnd = tempEndDate === ts;
+            const isSelected = tempSelectedDate && new Date(tempSelectedDate).setHours(0,0,0,0) === ts;
+            const isEnd = tempEndDate && new Date(tempEndDate).setHours(0,0,0,0) === ts;
+            const isToday = ts === todayTs;
             
             return (
-              <button key={i} onClick={() => { 
-                if (dateType === 'start') setTempSelectedDate(ts); 
-                else setTempEndDate(ts);
-              }} className={`h-6 w-6 rounded-lg flex items-center justify-center text-[9px] font-bold ${isStart || isEnd ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{d.getDate()}</button>
+              <button 
+                key={i} 
+                onClick={() => { 
+                  if (dateType === 'start') setTempSelectedDate(ts); 
+                  else setTempEndDate(ts);
+                }} 
+                className={`h-6 w-6 rounded-lg flex items-center justify-center text-[9px] font-bold relative ${
+                  isSelected || isEnd 
+                    ? 'bg-[var(--primary)] text-white' 
+                    : isToday 
+                      ? 'border border-[var(--primary)] text-[var(--primary)]' 
+                      : 'text-[var(--text-main)] hover:bg-[var(--sidebar-item-hover)]'
+                }`}
+              >
+                {d.getDate()}
+                {isToday && !isSelected && <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-pink-500 rounded-full"></div>}
+              </button>
             );
           })}
         </div>
@@ -115,112 +151,140 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   };
 
   const renderMarkdown = (content: string) => {
-    const rawHtml = marked.parse(content || "_Тут ще немає записів..._");
+    const rawHtml = marked.parse(content || "_Тут ще немає записів. Натисніть, щоб додати..._");
     return { __html: rawHtml };
   };
 
   return (
-    <div className="w-full flex flex-col h-full bg-white border-l border-slate-100 transition-none relative">
-      <header className="flex items-center justify-between p-6 border-b border-slate-50 shrink-0">
-        <div className="flex gap-3 relative">
-            <div className="flex items-center bg-slate-50/80 rounded-2xl p-1 gap-1 border border-slate-100">
-              <button onClick={() => { setDateType('start'); setShowDatePicker(true); }} className={`h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tempSelectedDate ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-                <i className="fa-solid fa-calendar-day mr-2"></i>
-                {tempSelectedDate ? new Date(tempSelectedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) : 'Дату'}
-              </button>
-            </div>
+    <div className="w-full flex flex-col h-full bg-[var(--bg-card)] border-l border-[var(--border-color)] transition-none relative">
+      <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)] shrink-0">
+        <div className="flex gap-2 relative">
+            <button 
+              onClick={() => { setDateType('start'); setShowDatePicker(true); }} 
+              className={`h-7 px-3 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${tempSelectedDate ? 'bg-[var(--primary)] text-white' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`}
+            >
+              <i className="fa-solid fa-calendar-day"></i>
+              {tempSelectedDate ? new Date(tempSelectedDate).toLocaleString('uk-UA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Обрати дату'}
+            </button>
+
           {showDatePicker && (
-            <div ref={datePickerRef} className="absolute top-12 left-0 w-64 bg-white shadow-2xl rounded-2xl border border-slate-100 z-[100] p-5 animate-in fade-in zoom-in-95 duration-200 tiktok-blur">
-              <Typography variant="tiny" className="mb-4 text-orange-500 font-black">Обрати дату</Typography>
+            <div ref={datePickerRef} className="absolute top-9 left-0 w-64 bg-[var(--bg-card)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[100] p-4 tiktok-blur">
+              <Typography variant="tiny" className="mb-3 text-[var(--primary)] font-black text-[8px]">Планування</Typography>
               {renderCalendar()}
-              <div className="mt-6 flex gap-2">
-                 <button onClick={() => { if(dateType==='start') setTempSelectedDate(undefined); else setTempEndDate(undefined); setShowDatePicker(false); }} className="flex-1 py-3 text-[9px] font-black text-rose-500 uppercase hover:bg-rose-50 rounded-xl">Очистити</button>
-                 <button onClick={() => setShowDatePicker(false)} className="flex-1 bg-slate-900 text-white rounded-xl py-3 text-[9px] font-black uppercase">Готoво</button>
+              
+              <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[8px] font-black uppercase text-[var(--text-muted)]">Час виконання</span>
+                  <div className="flex items-center gap-1">
+                    <input 
+                      type="number" min="0" max="23" value={selectedHour} 
+                      onChange={e => setSelectedHour(parseInt(e.target.value) || 0)}
+                      className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <span className="text-[10px] font-bold">:</span>
+                    <input 
+                      type="number" min="0" max="59" value={selectedMinute} 
+                      onChange={e => setSelectedMinute(parseInt(e.target.value) || 0)}
+                      className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                 <button onClick={() => { setTempSelectedDate(undefined); setTempEndDate(undefined); setShowDatePicker(false); updateTask({...task, scheduledDate: undefined}); }} className="flex-1 py-2 text-[8px] font-black text-rose-500 uppercase hover:bg-rose-50 rounded-lg">Очистити</button>
+                 <button onClick={handleApplyDate} className="flex-1 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg py-2 text-[8px] font-black uppercase tracking-widest">Готoво</button>
               </div>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsEvent(!isEvent)} className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${isEvent ? 'bg-pink-100 text-pink-600' : 'bg-slate-50 text-slate-300 hover:text-slate-600'}`} title="Подія">
-             <i className="fa-solid fa-calendar-star"></i>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setIsEvent(!isEvent)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isEvent ? 'bg-pink-100 text-pink-600' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`} title="Подія">
+             <i className="fa-solid fa-calendar-star text-xs"></i>
           </button>
-          <button onClick={onClose} className="w-10 h-10 rounded-2xl hover:bg-slate-100 text-slate-300 flex items-center justify-center transition-all"><i className="fa-solid fa-xmark"></i></button>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--sidebar-item-hover)] text-[var(--text-muted)] flex items-center justify-center"><i className="fa-solid fa-xmark text-xs"></i></button>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-8 space-y-8">
-          {/* Title - Simple Input instead of Textarea */}
+        <div className="p-6 space-y-6">
           <div className="flex flex-col">
             <input
               type="text"
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
               placeholder="Назва квесту..."
-              className="w-full bg-transparent text-2xl font-black text-slate-900 border-none focus:ring-0 p-0 placeholder:text-slate-100 leading-tight mb-2"
+              className="w-full bg-transparent text-[16px] font-black text-[var(--text-main)] border-none focus:ring-0 p-0 placeholder:opacity-20 leading-tight mb-2 outline-none"
             />
-            <div className="flex flex-wrap gap-2 items-center mt-2">
+            <div className="flex flex-wrap gap-2 items-center mt-1">
               {linkedProject ? (
-                <Badge variant="orange" className="px-3 py-1 rounded-xl bg-orange-50 border-orange-100">{linkedProject.name}</Badge>
+                <Badge variant="orange" className="px-2 py-0.5 rounded-lg text-[11px]">{linkedProject.name}</Badge>
               ) : (
-                <button className="text-[10px] font-black text-slate-300 uppercase hover:text-orange-500 tracking-widest">+ Проєкт</button>
+                <button className="text-[11px] font-black text-[var(--text-muted)] uppercase hover:text-[var(--primary)] tracking-widest">+ Проєкт</button>
               )}
-              {task.tags.map(tag => (
-                <Badge key={tag} variant="slate" className="px-3 py-1 rounded-xl lowercase">#{tag}</Badge>
-              ))}
+              {task.tags.map(tagName => {
+                const tagObj = tags.find(t => t.name === tagName);
+                return (
+                  <Badge 
+                    key={tagName} 
+                    className="px-2 py-0.5 rounded-lg lowercase text-[11px] font-bold"
+                    style={tagObj ? { backgroundColor: `${tagObj.color}20`, color: tagObj.color, borderColor: `${tagObj.color}40` } : {}}
+                  >
+                    #{tagName}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
 
-          {/* Checklist vs Notes Switcher */}
-          <div className="flex gap-6 border-b border-slate-100">
-            <button onClick={() => setActiveTab('notes')} className={`pb-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${activeTab === 'notes' ? 'border-orange-500 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>Нотатки</button>
-            <button onClick={() => setActiveTab('checklist')} className={`pb-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${activeTab === 'checklist' ? 'border-orange-500 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>Чек-лист ({(task.checklist || []).length})</button>
+          <div className="flex gap-4 border-b border-[var(--border-color)]">
+            <button onClick={() => setActiveTab('notes')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'notes' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Нотатки</button>
+            <button onClick={() => setActiveTab('checklist')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'checklist' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Чек-лист ({(task.checklist || []).length})</button>
           </div>
 
-          <div className="min-h-[300px] animate-in fade-in duration-300">
+          <div className="min-h-[200px]">
             {activeTab === 'checklist' ? (
-              <div className="space-y-4">
-                <form onSubmit={handleAddSubtask} className="relative group">
+              <div className="space-y-3">
+                <form onSubmit={handleAddSubtask}>
                    <input 
                     value={newChecklistItem} 
                     onChange={e => setNewChecklistItem(e.target.value)} 
                     placeholder="+ Додати підпункт..." 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold focus:ring-4 focus:ring-orange-100 outline-none transition-all" 
+                    className="w-full bg-[var(--bg-main)] border-none rounded-xl py-2 px-4 text-[13px] font-bold focus:ring-0 outline-none" 
                    />
                 </form>
-                <div className="space-y-2 mt-6">
+                <div className="space-y-1 mt-4">
                    {(task.checklist || []).map(item => (
-                     <div key={item.id} className="flex items-center gap-4 group/item py-2 px-1 hover:bg-slate-50 rounded-xl transition-all">
-                        <button onClick={() => toggleChecklistItem(task.id, item.id)} className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${item.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 bg-white text-transparent'}`}><i className="fa-solid fa-check text-[9px]"></i></button>
-                        <span className={`text-sm flex-1 ${item.completed ? 'text-slate-300 line-through' : 'text-slate-700 font-medium'}`}>{item.title}</span>
-                        <button onClick={() => removeChecklistItem(task.id, item.id)} className="opacity-0 group-hover/item:opacity-100 text-slate-300 hover:text-rose-500 transition-all"><i className="fa-solid fa-trash-can text-xs"></i></button>
+                     <div key={item.id} className="flex items-center gap-3 py-1.5 px-2 hover:bg-black/5 rounded-lg group/item">
+                        <button onClick={() => toggleChecklistItem(task.id, item.id)} className={`w-4 h-4 rounded border flex items-center justify-center ${item.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-card)] text-transparent'}`}><i className="fa-solid fa-check text-[7px]"></i></button>
+                        <span className={`text-[13px] flex-1 truncate ${item.completed ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] font-medium'}`}>{item.title}</span>
+                        <button onClick={() => removeChecklistItem(task.id, item.id)} className="opacity-0 group-hover/item:opacity-100 text-[var(--text-muted)] hover:text-rose-500"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
                      </div>
                    ))}
-                   {(task.checklist || []).length === 0 && (
-                     <div className="text-center py-12 text-slate-200 uppercase text-[10px] font-black tracking-widest">Немає підпунктів</div>
-                   )}
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                   <Typography variant="tiny" className="text-slate-300">опис та контекст</Typography>
-                   <button onClick={() => setIsPreview(!isPreview)} className="text-[10px] text-orange-500 font-black uppercase hover:underline">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center mb-1">
+                   <Typography variant="tiny" className="text-[var(--text-muted)] text-[9px]">Контекст</Typography>
+                   <button onClick={() => setIsPreview(!isPreview)} className="text-[9px] text-[var(--primary)] font-black uppercase hover:underline">
                       {isPreview ? 'Редагувати' : 'Огляд'}
                    </button>
                 </div>
                 {isPreview ? (
                   <div 
-                    className="prose prose-slate prose-sm max-w-none text-[14px] leading-relaxed text-slate-600"
+                    onClick={() => setIsPreview(false)}
+                    className="prose prose-slate prose-sm max-w-none text-[13px] text-[var(--text-main)] leading-relaxed cursor-text min-h-[300px]"
                     dangerouslySetInnerHTML={renderMarkdown(localContent)}
                   />
                 ) : (
                   <textarea
+                    ref={textareaRef}
                     value={localContent}
                     onChange={(e) => setLocalContent(e.target.value)}
-                    autoFocus
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 text-[14px] text-slate-700 focus:ring-4 focus:ring-orange-100 outline-none transition-all resize-none min-h-[400px]"
-                    placeholder="Додай деталі про цей квест..."
+                    onBlur={() => setIsPreview(true)}
+                    className="w-full bg-transparent border-none p-0 text-[13px] text-[var(--text-main)] focus:ring-0 outline-none resize-none min-h-[400px] leading-relaxed"
+                    placeholder="Деталі..."
                   />
                 )}
               </div>
@@ -229,14 +293,13 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
         </div>
       </div>
       
-      <footer className="p-8 bg-slate-50/50 border-t border-slate-100 shrink-0">
-        <Button 
-          variant="primary" 
-          onClick={handleManualSaveAndClose} 
-          className="w-full py-4 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.25em] shadow-xl shadow-orange-200"
+      <footer className="p-4 border-t border-[var(--border-color)] shrink-0">
+        <button 
+          onClick={() => { updateTask({...task, title: localTitle, content: localContent, scheduledDate: tempSelectedDate }); onClose(); }} 
+          className="w-full py-2.5 rounded-xl bg-[var(--primary)] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20"
         >
-          ЗБЕРЕГТИ ЗМІНИ
-        </Button>
+          ЗБЕРЕГТИ ТА ЗАКРИТИ
+        </button>
       </footer>
     </div>
   );

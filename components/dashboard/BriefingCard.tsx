@@ -13,9 +13,9 @@ interface BriefingCardProps {
 const BriefingCard: React.FC<BriefingCardProps> = ({ aiEnabled, briefing, loading }) => {
   if (loading) {
     return (
-      <Card blur className="border-orange-100 animate-pulse min-h-[160px] flex items-center justify-center">
+      <Card blur className="border-orange-100 min-h-[160px] flex items-center justify-center">
         <div className="text-center">
-          <i className="fa-solid fa-sparkles text-orange-400 animate-spin mb-2"></i>
+          <i className="fa-solid fa-sparkles text-orange-400 mb-2"></i>
           <Typography variant="tiny" className="text-slate-400">Формування квесту...</Typography>
         </div>
       </Card>

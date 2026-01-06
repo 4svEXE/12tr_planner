@@ -23,7 +23,7 @@ const StrategyMap: React.FC = () => {
           <p className="text-slate-400">Виконуйте завдання, щоб досліджувати нові території та знаходити скарби.</p>
         </div>
         <div className="bg-slate-900 px-6 py-2 rounded-full border border-slate-800 text-yellow-400 font-bold flex items-center gap-3">
-          <i className="fa-solid fa-compass animate-spin-slow"></i> Дослідження: 12%
+          <i className="fa-solid fa-compass"></i> Дослідження: 12%
         </div>
       </div>
 
@@ -33,18 +33,18 @@ const StrategyMap: React.FC = () => {
             <div
               key={`${r}-${c}`}
               onClick={() => unlockTile(r, c)}
-              className={`w-14 h-14 md:w-20 md:h-20 rounded-xl transition-all duration-700 cursor-pointer flex items-center justify-center relative overflow-hidden group ${
+              className={`w-14 h-14 md:w-20 md:h-20 rounded-xl cursor-pointer flex items-center justify-center relative overflow-hidden group ${
                 isFoggy 
                   ? 'bg-slate-800 border border-slate-700 hover:bg-slate-700' 
                   : 'bg-emerald-900/20 border border-emerald-500/30 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]'
               }`}
             >
               {isFoggy ? (
-                <div className="text-slate-600 group-hover:scale-125 transition-transform">
+                <div className="text-slate-600 group-hover:scale-125">
                   <i className="fa-solid fa-cloud"></i>
                 </div>
               ) : (
-                <div className="text-2xl animate-pulse text-white">
+                <div className="text-2xl text-white">
                   {Math.random() > 0.9 ? (
                     <i className="fa-solid fa-gem text-cyan-400"></i>
                   ) : Math.random() > 0.7 ? (

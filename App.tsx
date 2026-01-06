@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './views/Dashboard';
@@ -15,24 +15,54 @@ import NotesView from './views/NotesView';
 import DiaryView from './views/DiaryView';
 import TrashView from './views/TrashView';
 import CharacterProfile from './views/CharacterProfile';
-import { TaskStatus } from './types';
+import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
   const { 
-    activeTab, setActiveTab, tasks, pendingUndo, undoLastAction, character, projects, diary,
+    activeTab, setActiveTab, tasks, pendingUndo, undoLastAction, character, projects,
     aiEnabled
   } = useApp();
   
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [notifications, setNotifications] = useState<{id: string, task: Task}[]>([]);
 
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
+
+  // Notification logic
+  useEffect(() => {
+    const checkSchedule = () => {
+      const now = Date.now();
+      const oneMinuteAgo = now - 60000;
+      
+      const dueTasks = tasks.filter(t => 
+        !t.isDeleted && 
+        t.status !== TaskStatus.DONE && 
+        t.scheduledDate && 
+        t.scheduledDate <= now && 
+        t.scheduledDate > oneMinuteAgo
+      );
+
+      if (dueTasks.length > 0) {
+        dueTasks.forEach(task => {
+          setNotifications(prev => [{ id: Math.random().toString(), task }, ...prev]);
+        });
+      }
+    };
+
+    const interval = setInterval(checkSchedule, 60000);
+    return () => clearInterval(interval);
+  }, [tasks]);
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => 
       !t.isDeleted &&
       t.status !== TaskStatus.DONE && 
-      (t.scheduledDate === todayTimestamp || (t.projectId && t.projectSection === 'actions'))
+      (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)
     ).length,
     inbox: tasks.filter(t => {
       const isHabit = t.projectSection === 'habits' || t.tags.includes('habit');
@@ -69,7 +99,7 @@ const MainLayout: React.FC = () => {
           <p className="text-slate-500 mb-8 max-w-sm">Обери завдання для занурення. Жодних сповіщень, тільки ти і твоя мета.</p>
           <button 
             onClick={() => setShowFocusMode(true)}
-            className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black shadow-xl hover:bg-orange-700 transition-all"
+            className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black shadow-xl hover:bg-orange-700"
           >
             УВІЙТИ В ПОТІК
           </button>
@@ -80,10 +110,10 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800 transition-none selection:bg-orange-100 selection:text-orange-900 overflow-hidden">
+    <div className="flex min-h-screen bg-slate-50 text-slate-800 selection:bg-orange-100 selection:text-orange-900 overflow-hidden">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
       
-      <main className="flex-1 overflow-y-auto relative transition-all duration-300 ease-in-out">
+      <main className="flex-1 overflow-y-auto relative">
         {renderContent()}
 
         {showFocusMode && (
@@ -92,6 +122,24 @@ const MainLayout: React.FC = () => {
             onExit={() => setShowFocusMode(false)} 
           />
         )}
+
+        {/* Notifications Stack */}
+        <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
+          {notifications.map(n => (
+            <div key={n.id} className="pointer-events-auto bg-[var(--text-main)] text-[var(--bg-card)] p-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10 tiktok-blur w-72">
+              <div className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white shrink-0">
+                <i className="fa-solid fa-bolt"></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-black uppercase text-[var(--primary)] mb-1">Час квесту!</div>
+                <div className="text-[11px] font-bold truncate leading-tight">{n.task.title}</div>
+              </div>
+              <button onClick={() => removeNotification(n.id)} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center">
+                <i className="fa-solid fa-xmark text-[9px]"></i>
+              </button>
+            </div>
+          ))}
+        </div>
 
         {pendingUndo && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4">
@@ -106,7 +154,7 @@ const MainLayout: React.FC = () => {
               >
                 Відмінити
               </button>
-              <div className="absolute bottom-0 left-0 h-1 bg-orange-500 w-full animate-progress-fast"></div>
+              <div className="absolute bottom-0 left-0 h-1 bg-orange-500 w-full"></div>
             </div>
           </div>
         )}
@@ -114,16 +162,15 @@ const MainLayout: React.FC = () => {
         {aiEnabled && !isAiOpen && (
           <button 
             onClick={() => setIsAiOpen(true)}
-            className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-pink-500 text-white shadow-2xl shadow-orange-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group z-40"
+            className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-pink-500 text-white shadow-2xl shadow-orange-200 flex items-center justify-center group z-40"
           >
-            <div className="absolute inset-0 rounded-2xl bg-orange-400 animate-ping opacity-20 pointer-events-none"></div>
-            <i className="fa-solid fa-sparkles text-xl group-hover:rotate-12 transition-transform"></i>
+            <i className="fa-solid fa-sparkles text-xl"></i>
           </button>
         )}
       </main>
 
       <div 
-        className={`fixed top-0 right-0 h-screen bg-white/80 border-l border-slate-100 flex flex-col tiktok-blur shadow-[-20px_0_50px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out z-[100] ${
+        className={`fixed top-0 right-0 h-screen bg-white/80 border-l border-slate-100 flex flex-col tiktok-blur shadow-[-20px_0_50px_rgba(0,0,0,0.05)] z-[100] ${
           isAiOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full invisible pointer-events-none'
         }`}
       >
@@ -133,14 +180,14 @@ const MainLayout: React.FC = () => {
           </h3>
           <button 
             onClick={() => setIsAiOpen(false)}
-            className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
+            className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"
           >
             <i className="fa-solid fa-chevron-right text-xs"></i>
           </button>
         </div>
 
         <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
-          <div className="bg-orange-50 p-4 rounded-2xl rounded-tl-none border border-orange-100 text-sm font-medium leading-relaxed text-orange-800 shadow-sm animate-in slide-in-from-right-4">
+          <div className="bg-orange-50 p-4 rounded-2xl rounded-tl-none border border-orange-100 text-sm font-medium leading-relaxed text-orange-800 shadow-sm">
             Привіт! Я твій стратегічний асистент. Увімкнути чи налаштувати мої функції можна в меню налаштувань. Чим можу допомогти зараз?
           </div>
         </div>
@@ -150,7 +197,7 @@ const MainLayout: React.FC = () => {
             <input 
               type="text" 
               placeholder="Спитай що завгодно..." 
-              className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-5 pr-12 text-sm focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+              className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-5 pr-12 text-sm focus:ring-2 focus:ring-orange-500 font-medium"
             />
             <button className="absolute right-2 top-2 w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
               <i className="fa-solid fa-paper-plane text-xs"></i>
@@ -160,8 +207,6 @@ const MainLayout: React.FC = () => {
       </div>
 
       <style>{`
-        @keyframes progress-fast { from { width: 100%; } to { width: 0%; } }
-        .animate-progress-fast { animation: progress-fast 5s linear forwards; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>

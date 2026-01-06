@@ -12,29 +12,106 @@
     :root {
       --primary: #f97316;
       --primary-rgb: 249, 115, 22;
-      --primary-dark: #ea580c;
-      --primary-soft: #fff7ed;
-      --accent: #ec4899;
       --bg-main: #f8fafc;
       --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
       --text-main: #1e293b;
       --text-muted: #64748b;
       --border-color: #f1f5f9;
-      --card-bg: #ffffff;
+      --sidebar-item-hover: #f8fafc;
+      --sidebar-item-active: #fff7ed;
+      --sidebar-text-active: #f97316;
     }
 
     [data-theme="midnight"] {
       --primary: #10b981;
-      --primary-rgb: 16, 185, 129;
-      --primary-dark: #059669;
-      --primary-soft: #064e3b;
-      --accent: #06b6d4;
       --bg-main: #020617;
       --bg-sidebar: #0f172a;
+      --bg-card: #1e293b;
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
+      --border-color: #334155;
+      --sidebar-item-hover: #1e293b;
+      --sidebar-item-active: #10b98120;
+      --sidebar-text-active: #10b981;
+    }
+
+    [data-theme="nordic"] {
+      --primary: #6366f1;
+      --bg-main: #0f172a;
+      --bg-sidebar: #1e293b;
+      --bg-card: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #475569;
+      --sidebar-item-hover: #334155;
+      --sidebar-item-active: #6366f130;
+      --sidebar-text-active: #818cf8;
+    }
+
+    [data-theme="sakura"] {
+      --primary: #ec4899;
+      --bg-main: #fff1f2;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #831843;
+      --text-muted: #f472b6;
+      --border-color: #ffe4e6;
+      --sidebar-item-hover: #fff1f2;
+      --sidebar-item-active: #fdf2f8;
+      --sidebar-text-active: #db2777;
+    }
+
+    [data-theme="forest"] {
+      --primary: #059669;
+      --bg-main: #f0fdf4;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #064e3b;
+      --text-muted: #10b981;
+      --border-color: #d1fae5;
+      --sidebar-item-hover: #f0fdf4;
+      --sidebar-item-active: #ecfdf5;
+      --sidebar-text-active: #059669;
+    }
+
+    [data-theme="amethyst"] {
+      --primary: #a855f7;
+      --bg-main: #faf5ff;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #3b0764;
+      --text-muted: #c084fc;
+      --border-color: #f3e8ff;
+      --sidebar-item-hover: #faf5ff;
+      --sidebar-item-active: #f5f3ff;
+      --sidebar-text-active: #9333ea;
+    }
+
+    [data-theme="volcano"] {
+      --primary: #ef4444;
+      --bg-main: #fef2f2;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #7f1d1d;
+      --text-muted: #f87171;
+      --border-color: #fee2e2;
+      --sidebar-item-hover: #fef2f2;
+      --sidebar-item-active: #fef2f2;
+      --sidebar-text-active: #dc2626;
+    }
+
+    [data-theme="slate"] {
+      --primary: #94a3b8;
+      --bg-main: #0f172a;
+      --bg-sidebar: #020617;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
       --border-color: #1e293b;
-      --card-bg: #1e293b;
+      --sidebar-item-hover: #1e293b;
+      --sidebar-item-active: #ffffff10;
+      --sidebar-text-active: #f1f5f9;
     }
 
     body {
@@ -43,56 +120,42 @@
       color: var(--text-main);
       margin: 0;
       overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
       -webkit-font-smoothing: antialiased;
     }
 
-    .strikethrough-animation {
-      position: relative;
-      display: inline-block;
+    /* Вимкнення анімацій */
+    * {
+      transition: none !important;
+      animation: none !important;
     }
-    .strikethrough-animation::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      width: 0;
-      height: 1.5px;
-      background: currentColor;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .tiktok-blur {
+      backdrop-filter: blur(20px);
+      background: rgba(var(--bg-card), 0.8);
     }
-    .strikethrough-active::after {
-      width: 100%;
+
+    .sidebar-item-active {
+      background: var(--sidebar-item-active);
+      color: var(--sidebar-text-active);
     }
 
     .custom-scrollbar::-webkit-scrollbar {
-      width: 5px;
+      width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #e2e8f0;
+      background: var(--border-color);
       border-radius: 10px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #cbd5e1;
-    }
-
-    .tiktok-blur {
-      backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.7);
-    }
     
-    .task-item-shadow {
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 1px 0 rgba(0,0,0,0.01);
-    }
-
-    .dragging-task {
-      opacity: 0.6;
-      transform: scale(0.98);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
+    /* Global Overrides to use Variables */
+    main { background-color: var(--bg-main); }
+    .bg-white { background-color: var(--bg-card) !important; }
+    .text-slate-900, .text-slate-800, .text-slate-700 { color: var(--text-main) !important; }
+    .text-slate-400, .text-slate-500 { color: var(--text-muted) !important; }
+    .border-slate-100, .border-slate-200 { border-color: var(--border-color) !important; }
   </style>
 <script type="importmap">
 {

@@ -77,10 +77,67 @@ const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
   { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false },
 ];
 
+const SEED_PROJECTS: Project[] = [
+  { id: 'p1', name: 'Майстерність Frontend', description: 'Стати top-tier інженером', color: '#f97316', status: 'active', progress: 35, type: 'goal', isStrategic: true, executionScore: 78 },
+  { id: 'p1_sub1', name: 'Gemini AI Integration', description: 'Впровадження ШІ функцій', color: '#f97316', status: 'active', progress: 60, type: 'subproject', parentFolderId: 'p1', isStrategic: false },
+  { id: 'p2', name: 'Фізична Енергія', description: 'Спорт та здоровʼя', color: '#10b981', status: 'active', progress: 45, type: 'goal', isStrategic: true, executionScore: 92 },
+  { id: 'p3', name: 'Капітал 100k', description: 'Фінансова незалежність', color: '#6366f1', status: 'active', progress: 12, type: 'goal', isStrategic: true, executionScore: 45 },
+  { id: 'p4', name: 'Книга "Двигун Життя"', description: 'Написати чернетку методології', color: '#ec4899', status: 'active', progress: 5, type: 'goal', isStrategic: true, executionScore: 20 },
+];
+
+const today00 = new Date().setHours(0,0,0,0);
+const now = Date.now();
+
+const SEED_TASKS: Task[] = [
+  // Next Actions
+  { id: 't1', title: 'Налаштувати Streaming API для Gemini', status: TaskStatus.NEXT_ACTION, priority: Priority.UI, difficulty: 3, xp: 150, tags: ['coding', 'ai'], createdAt: now, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', habitHistory: {}, checklist: [] },
+  { id: 't4', title: 'Скласти список ETF для портфеля', status: TaskStatus.NEXT_ACTION, priority: Priority.UNI, difficulty: 2, xp: 80, tags: ['finance'], createdAt: now, category: 'tasks', projectId: 'p3', projectSection: 'actions', habitHistory: {}, checklist: [] },
+  
+  // Scheduled with Time (will trigger toasts)
+  { id: 't_sched_1', title: 'Зустріч по архітектурі ШІ', status: TaskStatus.INBOX, priority: Priority.UI, difficulty: 2, xp: 100, tags: ['meeting'], createdAt: now, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', scheduledDate: now + 300000, habitHistory: {}, checklist: [] },
+  
+  // Events
+  { id: 'e1', title: 'Вебінар: Майбутнє LLM', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 40, tags: ['education'], createdAt: now, isEvent: true, scheduledDate: today00 + (18 * 3600000), habitHistory: {}, checklist: [] },
+  
+  // Inbox
+  { id: 't_inbox_1', title: 'Замінити масло в авто', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 2, xp: 50, tags: ['life'], createdAt: now, category: 'unsorted', habitHistory: {}, checklist: [] },
+  { id: 't_inbox_2', title: 'Ідея: Гейміфікація щоденника', status: TaskStatus.INBOX, priority: Priority.NUNI, difficulty: 1, xp: 20, tags: ['ideas'], createdAt: now, category: 'unsorted', habitHistory: {}, checklist: [] },
+  
+  // Habits
+  { id: 'h1', title: 'Ранкова йога 15хв', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 100, tags: ['habit', 'health'], createdAt: now, category: 'tasks', projectId: 'p2', projectSection: 'habits', habitHistory: { 
+    [new Date(now - 86400000).toISOString().split('T')[0]]: { status: 'completed' },
+    [new Date(now - 172800000).toISOString().split('T')[0]]: { status: 'completed' }
+  }, checklist: [] },
+  { id: 'h2', title: 'Читати 20 сторінок', status: TaskStatus.INBOX, priority: Priority.UNI, difficulty: 1, xp: 120, tags: ['habit', 'study'], createdAt: now, category: 'tasks', projectId: 'p4', projectSection: 'habits', habitHistory: {
+    [new Date(now - 86400000).toISOString().split('T')[0]]: { status: 'completed' }
+  }, checklist: [] },
+
+  // Done
+  { id: 't2', title: 'Прочитати SDK Docs', status: TaskStatus.DONE, priority: Priority.UNI, difficulty: 1, xp: 50, tags: ['docs'], createdAt: now - 86400000, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', habitHistory: {}, checklist: [] },
+];
+
+const SEED_TIME_BLOCKS: TimeBlock[] = [
+  { id: 'b1', title: 'Глибока робота', startHour: 9, endHour: 12, type: 'work', color: '#f97316', dayOfWeek: new Date().getDay() },
+  { id: 'b2', title: 'Обід та відпочинок', startHour: 13, endHour: 14, type: 'rest', color: '#10b981', dayOfWeek: new Date().getDay() },
+  { id: 'b3', title: 'Тренування', startHour: 17, endHour: 18, type: 'work', color: '#6366f1', dayOfWeek: new Date().getDay() },
+  { id: 'b4', title: 'Вечірнє рев\'ю', startHour: 21, endHour: 22, type: 'routine', color: '#ec4899', dayOfWeek: new Date().getDay() },
+];
+
+const SEED_DIARY: DiaryEntry[] = [
+  { id: 'd1', date: new Date(now - 86400000).toISOString().split('T')[0], content: '# Підсумки дня\n\nСьогодні вдалося налаштувати базову структуру проєкту. **Gemini** працює стабільно. Потрібно більше уваги приділити UX.', createdAt: now - 86400000, updatedAt: now - 86400000 }
+];
+
+const SEED_TAGS: Tag[] = [
+  { id: 'tag1', name: 'coding', color: '#dcfce7' },
+  { id: 'tag2', name: 'finance', color: '#fee2e2' },
+  { id: 'tag3', name: 'ai', color: '#e0e7ff' },
+  { id: 'tag4', name: 'health', color: '#fef3c7' },
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
-  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'today');
+  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'dashboard');
   const [theme, setTheme] = useState<ThemeType>(savedState?.theme || 'classic');
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
@@ -91,19 +148,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
 
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
-    id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0
+    id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 65
   });
 
-  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
-  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
+  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks?.length ? savedState.tasks : SEED_TASKS);
+  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary?.length ? savedState.diary : SEED_DIARY);
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || DEFAULT_INBOX_CATEGORIES);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
+  const [projects, setProjects] = useState<Project[]>(savedState?.projects?.length ? savedState.projects : SEED_PROJECTS);
+  const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : SEED_TAGS);
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks?.length ? savedState.timeBlocks : SEED_TIME_BLOCKS);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
   const [character, setCharacter] = useState<Character>(savedState?.character || {
-    name: 'Стратег', race: 'Elf', archetype: 'Strategist', level: 1, xp: 0, gold: 0, bio: 'Новий шлях починається.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
+    name: 'Talent', race: 'Elf', archetype: 'Strategist', level: 5, xp: 450, gold: 120, bio: 'Верховний стратег цифрових світів.', vision: 'Побудувати досконалий двигун життя через код та дисципліну.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 85, maxEnergy: 100, focus: 90, goals: ['Master Frontend', 'Run 10km', 'Write a book'], views: ['Growth Mindset', 'Radical Transparency'], skills: [{ name: 'React', level: 8, xp: 85, icon: 'fa-brands fa-react' }, { name: 'Strategy', level: 6, xp: 60, icon: 'fa-chess' }], achievements: [{ id: 'a1', title: 'Перша ціль', description: 'Завершено стратегічний проект', icon: 'fa-trophy', unlockedAt: Date.now() }], stats: { health: 70, career: 85, finance: 60, education: 90, relationships: 75, rest: 50 }
   });
 
   useEffect(() => {

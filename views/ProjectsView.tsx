@@ -164,7 +164,7 @@ const ProjectCardTabs: React.FC<{
   onSubprojectClick: (sId: string) => void,
   selectedTaskId: string | null
 }> = ({ project, activeTabs, setActiveTabs, onTaskClick, onSubprojectClick, selectedTaskId }) => {
-  const { projects, tasks, addTask, updateTask, toggleTaskStatus } = useApp();
+  const { projects, tasks, addTask, updateTask, toggleTaskStatus, addProject } = useApp();
   const [inlineAddValue, setInlineAddValue] = useState('');
 
   const currentTab = activeTabs[project.id] || 'actions';
@@ -189,9 +189,22 @@ const ProjectCardTabs: React.FC<{
   ];
 
   const handleAddHabit = () => {
-    // Skip prompt and directly create a new habit then open its details in the sidebar
     const newHabitId = addTask('Нова звичка', 'tasks', project.id, 'habits');
     onTaskClick(newHabitId);
+  };
+
+  const handleAddSubproject = () => {
+    const name = prompt('Назва підпроєкту (Boss):');
+    if (name) {
+      addProject({
+        name,
+        color: project.color,
+        description: `Boss для цілі ${project.name}`,
+        isStrategic: false,
+        parentFolderId: project.id,
+        type: 'subproject'
+      });
+    }
   };
 
   return (
@@ -208,7 +221,7 @@ const ProjectCardTabs: React.FC<{
 
       <div className="space-y-2">
         {currentTab === 'actions' ? (
-          <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const tid = e.dataTransfer.getData('taskId'); if(tid) { const t = tasks.find(x => x.id === tid); if(t) updateTask({...t, status: TaskStatus.NEXT_ACTION, projectSection: 'actions'}); } }} className="min-h-[100px] space-y-2 rounded-2xl bg-slate-50/50 p-2">
+          <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const tid = e.dataTransfer.getData('taskId'); if(tid) { const t = tasks.find(x => x.id === tid); if(t) updateTask({...t, status: TaskStatus.NEXT_ACTION, projectSection: 'actions', projectId: project.id}); } }} className="min-h-[100px] space-y-2 rounded-2xl bg-slate-50/50 p-2">
             <div className="flex gap-2 mb-2">
               <input value={inlineAddValue} onChange={e => setInlineAddValue(e.target.value)} placeholder="+ Додати дію..." className="flex-1 bg-white border border-slate-100 rounded-xl px-3 py-1.5 text-[11px] font-bold" />
               <button onClick={() => { if(inlineAddValue) { addTask(inlineAddValue, 'tasks', project.id, 'actions'); setInlineAddValue(''); }}} className="w-8 h-8 bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md"><i className="fa-solid fa-plus text-[10px]"></i></button>
@@ -228,17 +241,20 @@ const ProjectCardTabs: React.FC<{
           </div>
         ) : currentTab === 'bosses' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div onClick={() => { const n = prompt('Назва підпроєкту:'); if(n) addTask(n, 'tasks', project.id, 'bosses'); }} className="bg-slate-50 border-2 border-dashed border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white min-h-[80px]">
-               <i className="fa-solid fa-plus text-slate-300"></i>
-               <span className="text-[9px] font-black uppercase text-slate-400">Додати підпроєкт</span>
+            <div onClick={handleAddSubproject} className="bg-slate-50 border-2 border-dashed border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white min-h-[100px] transition-all group">
+               <i className="fa-solid fa-plus text-slate-300 group-hover:text-orange-500 group-hover:scale-110 transition-all"></i>
+               <span className="text-[9px] font-black uppercase text-slate-400 group-hover:text-orange-600">Додати підпроєкт</span>
             </div>
             {subProjects.map(sub => (
-              <div key={sub.id} className="bg-white p-3 rounded-2xl border border-slate-100 hover:border-orange-200 transition-all cursor-pointer shadow-sm flex flex-col gap-2" onClick={() => onSubprojectClick(sub.id)}>
+              <div key={sub.id} className="bg-white p-3 rounded-2xl border border-slate-100 hover:border-orange-200 transition-all cursor-pointer shadow-sm flex flex-col gap-2 group" onClick={() => onSubprojectClick(sub.id)}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg" style={{ backgroundColor: sub.color }}><i className="fa-solid fa-skull"></i></div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg group-hover:scale-105 transition-transform" style={{ backgroundColor: sub.color }}><i className="fa-solid fa-skull"></i></div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] font-black text-slate-900 truncate uppercase tracking-tight leading-none mb-1">{sub.name}</div>
-                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-orange-500 to-pink-500" style={{ width: `${sub.progress}%` }}></div></div>
+                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500" style={{ width: `${sub.progress}%` }}></div>
+                    </div>
+                    <div className="mt-1 text-[7px] font-black text-slate-300 uppercase">{tasks.filter(t => t.projectId === sub.id && !t.isDeleted).length} квестів</div>
                   </div>
                 </div>
               </div>
