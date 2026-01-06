@@ -30,6 +30,13 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [isEvent, setIsEvent] = useState<boolean>(task.isEvent || false);
 
   // Time states
+  const hasInitialTime = useMemo(() => {
+    if (!task.scheduledDate) return false;
+    const d = new Date(task.scheduledDate);
+    return d.getHours() !== 0 || d.getMinutes() !== 0;
+  }, [task.scheduledDate]);
+
+  const [includeTime, setIncludeTime] = useState<boolean>(hasInitialTime);
   const [selectedHour, setSelectedHour] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getHours() : 9);
   const [selectedMinute, setSelectedMinute] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getMinutes() : 0);
 
@@ -47,8 +54,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     setTempSelectedDate(task.scheduledDate);
     setTempEndDate(task.endDate);
     setIsEvent(task.isEvent || false);
-    if (task.scheduledDate) {
-      const d = new Date(task.scheduledDate);
+    
+    const d = task.scheduledDate ? new Date(task.scheduledDate) : null;
+    const hasTime = d ? (d.getHours() !== 0 || d.getMinutes() !== 0) : false;
+    setIncludeTime(hasTime);
+    
+    if (d) {
       setSelectedHour(d.getHours());
       setSelectedMinute(d.getMinutes());
     }
@@ -74,7 +85,11 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     let finalDate = tempSelectedDate;
     if (finalDate) {
       const d = new Date(finalDate);
-      d.setHours(selectedHour, selectedMinute, 0, 0);
+      if (includeTime) {
+        d.setHours(selectedHour, selectedMinute, 0, 0);
+      } else {
+        d.setHours(0, 0, 0, 0);
+      }
       finalDate = d.getTime();
     }
     updateTask({ 
@@ -83,14 +98,6 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
       endDate: tempEndDate
     });
     setShowDatePicker(false);
-  };
-
-  const handleAddSubtask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newChecklistItem.trim()) {
-      addChecklistItem(task.id, newChecklistItem.trim());
-      setNewChecklistItem('');
-    }
   };
 
   const renderCalendar = () => {
@@ -150,9 +157,26 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     );
   };
 
+  const handleAddSubtask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newChecklistItem.trim()) {
+      addChecklistItem(task.id, newChecklistItem.trim());
+      setNewChecklistItem('');
+    }
+  };
+
   const renderMarkdown = (content: string) => {
     const rawHtml = marked.parse(content || "_Тут ще немає записів. Натисніть, щоб додати..._");
     return { __html: rawHtml };
+  };
+
+  const getFormattedDateTime = () => {
+    if (!tempSelectedDate) return 'Обрати дату';
+    const d = new Date(tempSelectedDate);
+    const datePart = d.toLocaleString('uk-UA', { day: 'numeric', month: 'short' });
+    if (!includeTime) return datePart;
+    const timePart = d.toLocaleString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart}, ${timePart}`;
   };
 
   return (
@@ -164,7 +188,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               className={`h-7 px-3 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${tempSelectedDate ? 'bg-[var(--primary)] text-white' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`}
             >
               <i className="fa-solid fa-calendar-day"></i>
-              {tempSelectedDate ? new Date(tempSelectedDate).toLocaleString('uk-UA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Обрати дату'}
+              {getFormattedDateTime()}
             </button>
 
           {showDatePicker && (
@@ -174,20 +198,31 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               
               <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[8px] font-black uppercase text-[var(--text-muted)]">Час виконання</span>
-                  <div className="flex items-center gap-1">
-                    <input 
-                      type="number" min="0" max="23" value={selectedHour} 
-                      onChange={e => setSelectedHour(parseInt(e.target.value) || 0)}
-                      className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
-                    />
-                    <span className="text-[10px] font-bold">:</span>
-                    <input 
-                      type="number" min="0" max="59" value={selectedMinute} 
-                      onChange={e => setSelectedMinute(parseInt(e.target.value) || 0)}
-                      className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
-                    />
+                  <div className="flex items-center gap-2">
+                     <input 
+                       type="checkbox" 
+                       id="includeTime" 
+                       checked={includeTime} 
+                       onChange={e => setIncludeTime(e.target.checked)}
+                       className="w-3 h-3 rounded border-slate-300 text-[var(--primary)] focus:ring-[var(--primary)]"
+                     />
+                     <label htmlFor="includeTime" className="text-[8px] font-black uppercase text-[var(--text-muted)] cursor-pointer">Вказати час</label>
                   </div>
+                  {includeTime && (
+                    <div className="flex items-center gap-1">
+                      <input 
+                        type="number" min="0" max="23" value={selectedHour} 
+                        onChange={e => setSelectedHour(parseInt(e.target.value) || 0)}
+                        className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                      />
+                      <span className="text-[10px] font-bold">:</span>
+                      <input 
+                        type="number" min="0" max="59" value={selectedMinute} 
+                        onChange={e => setSelectedMinute(parseInt(e.target.value) || 0)}
+                        className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -199,8 +234,14 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsEvent(!isEvent)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isEvent ? 'bg-pink-100 text-pink-600' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`} title="Подія">
-             <i className="fa-solid fa-calendar-star text-xs"></i>
+          {/* Позначення події (isEvent) з іконкою календаря */}
+          <button 
+            onClick={() => setIsEvent(!isEvent)} 
+            className={`h-8 px-3 rounded-lg flex items-center gap-2 transition-all ${isEvent ? 'bg-pink-500 text-white shadow-lg' : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)]'}`} 
+            title={isEvent ? "Це подія" : "Це квест"}
+          >
+             <i className={`fa-solid ${isEvent ? 'fa-calendar-check' : 'fa-shuttle-space'} text-[10px]`}></i>
+             <span className="text-[9px] font-black uppercase tracking-widest">{isEvent ? 'Подія' : 'Квест'}</span>
           </button>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--sidebar-item-hover)] text-[var(--text-muted)] flex items-center justify-center"><i className="fa-solid fa-xmark text-xs"></i></button>
         </div>
@@ -295,7 +336,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
       
       <footer className="p-4 border-t border-[var(--border-color)] shrink-0">
         <button 
-          onClick={() => { updateTask({...task, title: localTitle, content: localContent, scheduledDate: tempSelectedDate }); onClose(); }} 
+          onClick={() => { updateTask({...task, title: localTitle, content: localContent, scheduledDate: tempSelectedDate, isEvent }); onClose(); }} 
           className="w-full py-2.5 rounded-xl bg-[var(--primary)] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20"
         >
           ЗБЕРЕГТИ ТА ЗАКРИТИ

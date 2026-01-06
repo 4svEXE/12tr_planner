@@ -107,7 +107,20 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const renderTask = (task: Task) => {
     const isEditing = editingTaskId === task.id;
     const project = projects.find(p => p.id === task.projectId);
-    const dateFormatted = task.scheduledDate ? new Date(task.scheduledDate).toLocaleString('uk-UA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+    
+    // Форматування дати: приховуємо час, якщо він 00:00
+    const getFormattedDate = (ts: number) => {
+      const d = new Date(ts);
+      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+      const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+      if (hasTime) {
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+      }
+      return d.toLocaleString('uk-UA', options);
+    };
+
+    const dateFormatted = task.scheduledDate ? getFormattedDate(task.scheduledDate) : null;
 
     return (
       <div 
@@ -151,7 +164,10 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                     task.status === TaskStatus.DONE ? 'opacity-30 line-through' : 'text-[var(--text-main)]'
                   }`}
                 >
-                  {task.title}
+                  <span className="flex items-center gap-2">
+                    {task.isEvent && <i className="fa-solid fa-calendar text-[8px] text-pink-400"></i>}
+                    {task.title}
+                  </span>
                   {dateFormatted && <span className="ml-2 px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--primary)] text-[7px] rounded-md font-black uppercase tracking-tighter border border-[var(--border-color)]"><i className="fa-solid fa-calendar-check mr-1 opacity-50"></i>{dateFormatted}</span>}
                 </div>
               )}

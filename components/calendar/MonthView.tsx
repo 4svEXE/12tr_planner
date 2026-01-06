@@ -43,18 +43,19 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
         
         return (
           <div key={i} onDragOver={(e) => onDragOver(e, ts)} onDragLeave={onDragLeave} onDrop={(e) => onDrop(e, ts)}
-            className={`min-h-[120px] p-2 flex flex-col transition-all relative group ${isCurrentMonth ? 'bg-white' : 'bg-slate-50/50'} ${dragOverDay === ts ? 'bg-orange-50 ring-2 ring-orange-200 z-10' : ''}`}>
+            className={`min-h-[120px] p-2 flex flex-col transition-all relative group ${isCurrentMonth ? 'bg-white' : 'bg-slate-50/50'} ${dragOverDay === ts ? 'bg-[var(--primary)]/10 ring-2 ring-[var(--primary)] z-10' : ''}`}>
             <div className="flex items-center justify-between mb-2 px-1">
               <span className={`text-xs font-black w-7 h-7 flex items-center justify-center rounded-xl transition-all ${isTodayCell ? 'bg-orange-600 text-white shadow-xl shadow-orange-100 scale-110' : isCurrentMonth ? 'text-slate-900 group-hover:text-orange-600' : 'text-slate-300'}`}>{date.getDate()}</span>
-              {/* Opens the Sidebar selector for Task or Event */}
               <button onClick={(e) => { e.stopPropagation(); onAddQuickEvent(ts); }} className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-xl bg-slate-900 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"><i className="fa-solid fa-plus text-[10px]"></i></button>
             </div>
             <div className="flex-1 space-y-1 mt-1 overflow-hidden">
               {dayTasksList.slice(0, 5).map(t => (
                 <div 
                   key={t.id} 
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData('taskId', t.id); }}
                   onClick={(e) => { e.stopPropagation(); onSelectTask(t.id); }} 
-                  className={`text-[9px] font-black truncate px-2 py-1.5 rounded-xl border transition-all cursor-pointer ${t.isEvent ? 'bg-pink-600 text-white border-pink-700 shadow-sm hover:brightness-110' : 'bg-white border-slate-100 text-slate-700 hover:border-orange-200 hover:bg-orange-50/20'}`}
+                  className={`text-[9px] font-black truncate px-2 py-1.5 rounded-xl border transition-all cursor-grab active:cursor-grabbing ${t.isEvent ? 'bg-pink-600 text-white border-pink-700 shadow-sm hover:brightness-110' : 'bg-white border-slate-100 text-slate-700 hover:border-orange-200 hover:bg-orange-50/20'}`}
                 >
                   <div className="flex items-center gap-1.5">
                     {t.isEvent ? <i className="fa-solid fa-calendar-star text-[7px] animate-pulse"></i> : <div className="w-1 h-1 rounded-full bg-orange-400"></div>}
