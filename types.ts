@@ -125,6 +125,7 @@ export interface Task {
   comments?: Comment[];
   checklist?: ChecklistItem[];
   isDeleted?: boolean;
+  color?: string; // Color for habits
   
   // Reminder & Recurrence fields
   reminderTime?: string; // e.g. "10:00"
