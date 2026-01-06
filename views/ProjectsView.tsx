@@ -148,17 +148,17 @@ const SubProjectPanel: React.FC<{ subProject: Project, onClose: () => void }> = 
                  const isDoing = t.status === TaskStatus.DOING;
                  return (
                    <div key={t.id} draggable onDragStart={(e) => e.dataTransfer.setData('taskId', t.id)}
-                     className={`flex items-center gap-2 p-1.5 bg-slate-50/50 border border-slate-100 rounded-lg group hover:bg-white hover:border-orange-200 transition-all cursor-grab active:cursor-grabbing ${isDoing ? 'opacity-40 grayscale' : ''}`}>
+                     className={`flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-100 rounded-xl group hover:bg-white hover:border-orange-200 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing ${isDoing ? 'opacity-40 grayscale' : ''}`}>
                       <button onClick={() => toggleTaskStatus(t)} className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${t.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200'}`}>
                         {t.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[7px]"></i>}
                       </button>
-                      <span className={`text-[10px] font-bold flex-1 truncate ${t.status === TaskStatus.DONE ? 'text-slate-300 line-through' : 'text-slate-700'}`}>{t.title}</span>
-                      <button onClick={() => deleteTask(t.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
+                      <span className={`text-[13px] font-bold flex-1 truncate ${t.status === TaskStatus.DONE ? 'text-slate-300 line-through' : 'text-slate-700'}`}>{t.title}</span>
+                      <button onClick={() => deleteTask(t.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all"><i className="fa-solid fa-trash-can text-[10px]"></i></button>
                    </div>
                  );
                })}
                <form onSubmit={e => { e.preventDefault(); if(newAction.trim()){ addTask(newAction.trim(), 'tasks', subProject.id, 'actions'); setNewAction(''); }}} className="pt-2">
-                  <input value={newAction} onChange={e=>setNewAction(e.target.value)} placeholder="+ Нова дія..." className="w-full bg-transparent border-b border-dashed border-slate-200 py-1 text-[10px] font-bold outline-none focus:border-orange-300 transition-colors" />
+                  <input value={newAction} onChange={e=>setNewAction(e.target.value)} placeholder="+ Нова дія..." className="w-full bg-transparent border-b border-dashed border-slate-200 py-1 text-[13px] font-bold outline-none focus:border-orange-300 transition-colors" />
                </form>
             </div>
          </section>
@@ -233,85 +233,85 @@ const GoalCard: React.FC<{
   return (
     <Card padding="none" className={`bg-white border-slate-100 shadow-sm overflow-hidden transition-all ${isExpanded ? 'shadow-xl ring-1 ring-orange-100 scale-[1.01]' : 'hover:border-orange-200'}`}>
       <div className="flex items-stretch">
-        <div className="w-1 shrinking-0 transition-all" style={{ backgroundColor: goal.color }}></div>
-        <div onClick={onToggle} className="flex-1 p-3 cursor-pointer flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-[1rem] flex items-center justify-center text-white shadow-lg shrink-0 transition-transform group-hover:scale-105 relative" style={{ backgroundColor: goal.color }}>
-             <i className="fa-solid fa-flag-checkered text-xs"></i>
+        <div className="w-1.5 shrink-0 transition-all" style={{ backgroundColor: goal.color }}></div>
+        <div onClick={onToggle} className="flex-1 p-3.5 cursor-pointer flex items-center gap-4 group">
+          <div className="w-11 h-11 rounded-[1.2rem] flex items-center justify-center text-white shadow-lg shrink-0 transition-transform group-hover:scale-105 relative" style={{ backgroundColor: goal.color }}>
+             <i className="fa-solid fa-flag-checkered text-sm"></i>
              {goal.sphere && (
-               <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-lg bg-white shadow-md flex items-center justify-center text-[7px] text-slate-900 border border-slate-50"><i className={`fa-solid ${sphereIcons[goal.sphere] || 'fa-mountain'}`}></i></div>
+               <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-lg bg-white shadow-md flex items-center justify-center text-[8px] text-slate-900 border border-slate-50"><i className={`fa-solid ${sphereIcons[goal.sphere] || 'fa-mountain'}`}></i></div>
              )}
           </div>
           <div className="flex-1 min-w-0">
              <div className="flex items-center gap-2 mb-0.5">
-               <Typography variant="h3" className="text-sm font-black uppercase tracking-tight text-slate-800 truncate">{goal.name}</Typography>
-               <Badge variant="orange" className="text-[6px] py-0 px-1">{executionScore}% XP</Badge>
+               <Typography variant="h3" className="text-[15px] font-black uppercase tracking-tight text-slate-800 truncate">{goal.name}</Typography>
+               <Badge variant="orange" className="text-[7px] py-0 px-1">{executionScore}% XP</Badge>
              </div>
              <div className="flex items-center gap-2">
-                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{goal.sphere || 'Вільна сфера'}</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{goal.sphere || 'Вільна сфера'}</span>
              </div>
           </div>
           <div className="shrink-0 flex items-center gap-2">
              <div className="h-6 w-px bg-slate-100"></div>
-             <i className={`fa-solid fa-chevron-right text-[8px] text-slate-300 transition-transform ${isExpanded ? 'rotate-90 text-orange-500' : ''}`}></i>
+             <i className={`fa-solid fa-chevron-right text-[10px] text-slate-300 transition-transform ${isExpanded ? 'rotate-90 text-orange-500' : ''}`}></i>
           </div>
         </div>
       </div>
 
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 bg-slate-50/10 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
-           <div className="flex justify-between items-center mb-3">
-              <div className="flex gap-1 bg-slate-100/50 p-0.5 rounded-lg border border-slate-100">
+        <div className="px-5 pb-5 pt-3 bg-slate-50/10 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
+           <div className="flex justify-between items-center mb-4">
+              <div className="flex gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-100">
                 {[{ id: 'actions', label: 'Дії', icon: 'fa-bolt' }, { id: 'subprojects', label: 'Етапи', icon: 'fa-layer-group' }, { id: 'habits', label: 'Звички', icon: 'fa-repeat' }].map(t => (
-                  <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={`px-2.5 py-1 text-[7px] font-black uppercase tracking-widest transition-all rounded-md flex items-center gap-1.5 ${activeTab === t.id ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                    <i className={`fa-solid ${t.icon} text-[8px]`}></i> {t.label}
+                  <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={`px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-all rounded-lg flex items-center gap-1.5 ${activeTab === t.id ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <i className={`fa-solid ${t.icon} text-[9px]`}></i> {t.label}
                   </button>
                 ))}
               </div>
-              <div className="flex gap-1">
-                 <button onClick={() => onEdit(goal)} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-orange-600 hover:border-orange-200 transition-all flex items-center justify-center shadow-sm"><i className="fa-solid fa-gear text-[10px]"></i></button>
-                 <button onClick={() => { if(confirm('Видалити ціль?')) deleteProject(goal.id); }} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all flex items-center justify-center shadow-sm"><i className="fa-solid fa-trash-can text-[10px]"></i></button>
+              <div className="flex gap-1.5">
+                 <button onClick={() => onEdit(goal)} className="w-8 h-8 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-orange-600 hover:border-orange-200 transition-all flex items-center justify-center shadow-sm"><i className="fa-solid fa-gear text-xs"></i></button>
+                 <button onClick={() => { if(confirm('Видалити ціль?')) deleteProject(goal.id); }} className="w-8 h-8 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all flex items-center justify-center shadow-sm"><i className="fa-solid fa-trash-can text-xs"></i></button>
               </div>
            </div>
 
-           <div className="space-y-2">
-              <form onSubmit={handleInlineSubmit} className="flex gap-1.5">
-                 <input value={inlineInputValue} onChange={e => setInlineInputValue(e.target.value)} placeholder={activeTab === 'actions' ? "Додати тактичний крок..." : activeTab === 'subprojects' ? "Новий етап..." : "Звичка..."} className="flex-1 bg-white border border-slate-200 rounded-lg py-1.5 px-3 text-[10px] font-bold focus:ring-2 focus:ring-orange-100 outline-none transition-all shadow-inner" />
-                 <button type="submit" disabled={!inlineInputValue.trim()} className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center disabled:opacity-30 shadow-lg hover:bg-orange-600 transition-all"><i className="fa-solid fa-plus text-xs"></i></button>
+           <div className="space-y-3">
+              <form onSubmit={handleInlineSubmit} className="flex gap-2">
+                 <input value={inlineInputValue} onChange={e => setInlineInputValue(e.target.value)} placeholder={activeTab === 'actions' ? "Додати тактичний крок..." : activeTab === 'subprojects' ? "Новий етап..." : "Звичка..."} className="flex-1 bg-white border border-slate-200 rounded-xl py-2 px-4 text-[13px] font-bold focus:ring-4 focus:ring-orange-100 outline-none transition-all shadow-inner" />
+                 <button type="submit" disabled={!inlineInputValue.trim()} className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center disabled:opacity-30 shadow-lg hover:bg-orange-600 transition-all"><i className="fa-solid fa-plus"></i></button>
               </form>
 
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                  {activeTab === 'actions' && visibleGoalActions.map(task => {
                    const tProject = projects.find(p => p.id === task.projectId);
                    const isDoing = task.status === TaskStatus.DOING;
                    const isSub = tProject?.type === 'subproject';
                    return (
                     <div key={task.id} draggable onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)} onClick={() => onTaskClick(task.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg bg-white border group transition-all cursor-pointer ${isDoing ? 'opacity-50 grayscale border-slate-100' : 'border-slate-50 hover:border-orange-200 hover:bg-slate-50 shadow-sm'} ${selectedTaskId === task.id ? 'ring-2 ring-orange-200' : ''}`}>
-                       <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 hover:border-orange-400'}`}>
-                          {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[7px]"></i>}
+                      className={`flex items-center gap-3 p-3 rounded-xl bg-white border group transition-all cursor-pointer ${isDoing ? 'opacity-60 grayscale border-slate-100' : 'border-slate-50 hover:border-orange-200 hover:bg-slate-50 shadow-sm'} ${selectedTaskId === task.id ? 'ring-2 ring-orange-200' : ''}`}>
+                       <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 hover:border-orange-400'}`}>
+                          {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[9px]"></i>}
                        </button>
                        <div className="flex-1 min-w-0">
-                         <div className={`text-[10px] font-bold truncate ${task.status === TaskStatus.DONE ? 'text-slate-300 line-through' : 'text-slate-700'}`}>{task.title}</div>
+                         <div className={`text-[13px] font-bold truncate ${task.status === TaskStatus.DONE ? 'text-slate-300 line-through' : 'text-slate-700'}`}>{task.title}</div>
                          <div className="flex items-center gap-2 mt-0.5">
-                            {tProject && isSub && <span className="text-[6px] font-black uppercase text-orange-400 opacity-70 px-1 bg-orange-50 rounded"># {tProject.name}</span>}
-                            {isDoing && <Badge variant="slate" className="text-[5px] py-0 px-1 opacity-50">В процесі</Badge>}
+                            {tProject && isSub && <span className="text-[7px] font-black uppercase text-orange-400 opacity-70 px-1 bg-orange-50 rounded"># {tProject.name}</span>}
+                            {isDoing && <Badge variant="slate" className="text-[6px] py-0 px-1 opacity-50">В процесі</Badge>}
                          </div>
                        </div>
-                       <i className="fa-solid fa-chevron-right text-[7px] text-slate-200 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all"></i>
+                       <i className="fa-solid fa-chevron-right text-[8px] text-slate-200 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all"></i>
                     </div>
                  )})}
 
                  {activeTab === 'subprojects' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                        {subProjects.map(sp => (
-                         <div key={sp.id} onClick={() => onSubProjectClick(sp.id)} className="bg-white p-3 rounded-[1.25rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group flex flex-col justify-between h-20">
+                         <div key={sp.id} onClick={() => onSubProjectClick(sp.id)} className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group flex flex-col justify-between h-24">
                             <div className="flex items-center justify-between">
-                               <div className="w-7 h-7 rounded-lg text-white flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform" style={{ backgroundColor: sp.color || goal.color }}><i className="fa-solid fa-layer-group text-[10px]"></i></div>
-                               <Badge variant="orange" className="text-[5px]">{sp.progress}%</Badge>
+                               <div className="w-8 h-8 rounded-xl text-white flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform" style={{ backgroundColor: sp.color || goal.color }}><i className="fa-solid fa-layer-group text-xs"></i></div>
+                               <Badge variant="orange" className="text-[6px]">{sp.progress}%</Badge>
                             </div>
                             <div>
-                               <div className="text-[9px] font-black text-slate-800 uppercase truncate mb-1">{sp.name}</div>
-                               <div className="h-0.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${sp.progress}%` }}></div></div>
+                               <div className="text-[10px] font-black text-slate-800 uppercase truncate mb-1.5">{sp.name}</div>
+                               <div className="h-1 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${sp.progress}%` }}></div></div>
                             </div>
                          </div>
                        ))}
@@ -319,12 +319,12 @@ const GoalCard: React.FC<{
                  )}
 
                  {activeTab === 'habits' && goalHabits.map(h => (
-                   <div key={h.id} onClick={() => onHabitClick(h.id)} className={`p-2 bg-white border rounded-lg flex items-center justify-between shadow-sm group cursor-pointer transition-all ${selectedHabitId === h.id ? 'border-orange-400 ring-2 ring-orange-50' : 'border-slate-50 hover:border-orange-200'}`}>
-                      <div className="flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-[9px] shadow-sm"><i className="fa-solid fa-repeat"></i></div>
-                         <span className="text-[10px] font-bold text-slate-700">{h.title}</span>
+                   <div key={h.id} onClick={() => onHabitClick(h.id)} className={`p-3 bg-white border rounded-xl flex items-center justify-between shadow-sm group cursor-pointer transition-all ${selectedHabitId === h.id ? 'border-orange-400 ring-2 ring-orange-50' : 'border-slate-50 hover:border-orange-200'}`}>
+                      <div className="flex items-center gap-3">
+                         <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-[10px] shadow-sm"><i className="fa-solid fa-repeat"></i></div>
+                         <span className="text-[13px] font-bold text-slate-700">{h.title}</span>
                       </div>
-                      <Badge variant="emerald" className="text-[6px] py-0 px-1">DAILY</Badge>
+                      <Badge variant="emerald" className="text-[7px] py-0 px-1">DAILY</Badge>
                    </div>
                  ))}
               </div>
@@ -436,19 +436,19 @@ const ProjectsView: React.FC = () => {
                         <div key={goal.id} className="space-y-1.5">
                            <div className="flex items-center gap-1.5 px-1 mt-2">
                               <div className="w-1 h-2 rounded-full" style={{ backgroundColor: goal.color }}></div>
-                              <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">{goal.name}</span>
+                              <span className="text-[10px] font-black uppercase tracking-tight text-slate-400">{goal.name}</span>
                            </div>
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
                               {allVisibleActions.map(t => {
                                 const isSub = projects.find(p => p.id === t.projectId && p.type === 'subproject');
                                 return (
-                                 <Card key={t.id} padding="none" onClick={() => setSelectedTaskId(t.id)} className={`bg-white border-slate-100 hover:border-orange-200 transition-all flex items-center gap-2 p-2 group cursor-pointer ${t.status === TaskStatus.DOING ? 'opacity-60 grayscale border-slate-200 bg-slate-50 shadow-none' : 'shadow-sm'}`}>
-                                    <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${t.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 hover:border-orange-400'}`}>
-                                       {t.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[6px]"></i>}
+                                 <Card key={t.id} padding="none" onClick={() => setSelectedTaskId(t.id)} className={`bg-white border-slate-100 hover:border-orange-200 transition-all flex items-center gap-2 p-2.5 group cursor-pointer ${t.status === TaskStatus.DOING ? 'opacity-60 grayscale border-slate-200 bg-slate-50 shadow-none' : 'shadow-sm'}`}>
+                                    <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${t.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 hover:border-orange-400'}`}>
+                                       {t.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[7px]"></i>}
                                     </button>
                                     <div className="flex-1 min-w-0">
-                                       <span className={`text-[10px] font-bold truncate block ${t.status === TaskStatus.DONE ? 'line-through opacity-30' : 'text-slate-700'}`}>{t.title}</span>
-                                       {isSub && <span className="text-[6px] font-black text-orange-400 uppercase truncate px-1 bg-orange-50 rounded"># {isSub.name}</span>}
+                                       <span className={`text-[13px] font-bold truncate block ${t.status === TaskStatus.DONE ? 'line-through opacity-30' : 'text-slate-700'}`}>{t.title}</span>
+                                       {isSub && <span className="text-[7px] font-black text-orange-400 uppercase truncate px-1 bg-orange-50 rounded"># {isSub.name}</span>}
                                     </div>
                                  </Card>
                               )})}
@@ -459,7 +459,7 @@ const ProjectsView: React.FC = () => {
                 </div>
              </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-6 space-y-3 px-4 pb-32">
+            <div className="max-w-3xl mx-auto py-6 space-y-4 px-4 pb-32">
               <div className="flex items-center justify-between px-2 mb-1">
                  <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Стратегічні цілі циклу</Typography>
                  <Badge variant="orange" icon="fa-mountain-sun" className="text-[7px]">{filteredGoals.length} ЦІЛЕЙ</Badge>

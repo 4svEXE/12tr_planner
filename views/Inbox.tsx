@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Task, TaskStatus, InboxCategory, Priority } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Task, TaskStatus, Project, Priority } from '../types';
 import TaskDetails from '../components/TaskDetails';
 import { useApp } from '../contexts/AppContext';
 import Typography from '../components/ui/Typography';
@@ -27,56 +27,91 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingSectionValue, setEditingSectionValue] = useState('');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   const [addingTaskToSectionId, setAddingTaskToSectionId] = useState<string | null>(null);
   const [sectionTaskTitle, setSectionTaskTitle] = useState('');
 
-  useEffect(() => {
-    const initialState: Record<string, boolean> = { ...collapsedSections };
-    inboxCategories.forEach(section => {
-      const sectionTasksCount = tasks.filter(t => 
-        !t.isDeleted && 
-        ((section.isPinned && t.isPinned) || (!section.isPinned && t.category === section.id && !t.isPinned))
-      ).length;
-      
-      if (collapsedSections[section.id] === undefined && sectionTasksCount === 0 && ['pinned', 'notes'].includes(section.id)) {
-        initialState[section.id] = true;
-      }
-    });
-    setCollapsedSections(initialState);
-  }, [inboxCategories]);
+  // Об'єднуємо системні категорії та проекти для відображення
+  const displayCategories = useMemo(() => {
+    if (showNextActions) {
+      const projectSections = projects.filter(p => p.type === 'goal' && p.status === 'active').map(p => ({
+        id: p.id,
+        title: p.name,
+        icon: 'fa-flag-checkered',
+        color: 'slate' as const,
+        isPinned: false,
+        isProject: true,
+        projectColor: p.color
+      }));
+      // Додаємо також звичайні вхідні категорії, щоб бачити NEXT_ACTION без проекту
+      return [...inboxCategories, ...projectSections];
+    }
+    return inboxCategories;
+  }, [showNextActions, inboxCategories, projects]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
       if (t.isDeleted || t.projectSection === 'habits') return false;
-      if (showNextActions) return t.status === TaskStatus.NEXT_ACTION;
+      
+      if (showNextActions) {
+        // У наступних діях ми показуємо:
+        // 1. Все зі статусом NEXT_ACTION
+        // 2. Все що не DONE і має проект (як підказку GTD)
+        return t.status === TaskStatus.NEXT_ACTION || (t.status !== TaskStatus.DONE && !!t.projectId);
+      }
+      
       if (showCompleted) return t.status === TaskStatus.DONE;
-      return t.status === TaskStatus.INBOX && !t.scheduledDate;
+      
+      // Вхідні: тільки статус INBOX і без прив'язки до дати/проекту
+      return t.status === TaskStatus.INBOX && !t.scheduledDate && !t.projectId;
     });
   }, [tasks, showCompleted, showNextActions]);
 
   const displayedTasks = useMemo(() => {
-    if (!searchQuery) return filteredTasks;
-    const lowerQuery = searchQuery.toLowerCase();
-    return filteredTasks.filter(t => 
-      t.title.toLowerCase().includes(lowerQuery) || 
-      t.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
-    );
+    let base = filteredTasks;
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      base = base.filter(t => 
+        t.title.toLowerCase().includes(lowerQuery) || 
+        t.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+      );
+    }
+    return base;
   }, [filteredTasks, searchQuery]);
 
   const handleQuickAdd = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!quickTaskTitle.trim()) return;
-    addTask(quickTaskTitle.trim(), 'unsorted');
+    
+    // В обох режимах додаємо в 'unsorted' за замовчуванням
+    if (showNextActions) {
+        // Якщо додаємо в "Наступні дії", одразу ставимо статус NEXT_ACTION
+        const tid = addTask(quickTaskTitle.trim(), 'unsorted');
+        const t = tasks.find(x => x.id === tid);
+        if (t) updateTask({...t, status: TaskStatus.NEXT_ACTION});
+    } else {
+        addTask(quickTaskTitle.trim(), 'unsorted');
+    }
     setQuickTaskTitle('');
   };
 
-  const handleAddToSection = (sectionId: string) => {
+  const handleAddToSection = (sectionId: string, isProject: boolean) => {
     if (!sectionTaskTitle.trim()) return;
-    addTask(sectionTaskTitle.trim(), sectionId);
+    if (showNextActions) {
+        if (isProject) {
+            // Додаємо в проект зі статусом NEXT_ACTION
+            const tid = addTask(sectionTaskTitle.trim(), 'tasks', sectionId, 'actions');
+            const task = tasks.find(t => t.id === tid);
+            if (task) updateTask({...task, status: TaskStatus.NEXT_ACTION, projectId: sectionId});
+        } else {
+            // Додаємо в категорію вхідних зі статусом NEXT_ACTION
+            const tid = addTask(sectionTaskTitle.trim(), sectionId);
+            const task = tasks.find(t => t.id === tid);
+            if (task) updateTask({...task, status: TaskStatus.NEXT_ACTION, category: sectionId});
+        }
+    } else {
+        addTask(sectionTaskTitle.trim(), sectionId);
+    }
     setSectionTaskTitle('');
     setAddingTaskToSectionId(null);
     setCollapsedSections(prev => ({ ...prev, [sectionId]: false }));
@@ -91,56 +126,29 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
     }
   };
 
-  const getSectionBg = (color?: string) => {
-    switch (color) {
-      case 'orange': return 'bg-orange-400/5';
-      case 'emerald': return 'bg-emerald-400/5';
-      case 'indigo': return 'bg-indigo-400/5';
-      case 'rose': return 'bg-rose-400/5';
-      case 'amber': return 'bg-amber-400/5';
-      case 'violet': return 'bg-violet-400/5';
-      case 'slate': return 'bg-slate-400/5';
-      default: return 'bg-transparent';
-    }
-  };
-
   const renderTask = (task: Task) => {
     const isEditing = editingTaskId === task.id;
     const project = projects.find(p => p.id === task.projectId);
-    const person = people.find(p => p.id === task.personId);
+    const isDoing = task.status === TaskStatus.DOING;
     
-    // Форматування дати: приховуємо час, якщо він 00:00
-    const getFormattedDate = (ts: number) => {
-      const d = new Date(ts);
-      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
-      const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-      if (hasTime) {
-        options.hour = '2-digit';
-        options.minute = '2-digit';
-      }
-      return d.toLocaleString('uk-UA', options);
-    };
-
-    const dateFormatted = task.scheduledDate ? getFormattedDate(task.scheduledDate) : null;
-
     return (
       <div 
         key={task.id} 
         draggable 
         onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
         onClick={() => setSelectedTaskId(task.id)}
-        className={`group flex items-center gap-2 py-1.5 px-4 hover:bg-black/5 cursor-grab active:cursor-grabbing border-b border-[var(--border-color)]/30 ${
+        className={`group flex items-center gap-3 py-2 px-4 hover:bg-black/5 cursor-grab active:cursor-grabbing border-b border-[var(--border-color)]/30 transition-colors ${
           selectedTaskId === task.id ? 'bg-[var(--sidebar-item-active)] border-l-2 border-l-[var(--primary)]' : 'border-l-2 border-l-transparent'
-        }`}
+        } ${isDoing ? 'opacity-50 grayscale' : ''}`}
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button 
             onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} 
-            className={`w-[14px] h-[14px] rounded-sm border flex items-center justify-center shrink-0 ${
-              task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-card)] text-transparent hover:border-[var(--primary)]'
+            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+              task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white text-transparent hover:border-orange-400'
             }`}
           >
-            <i className="fa-solid fa-check text-[7px]"></i>
+            {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[8px]"></i>}
           </button>
           
           <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
@@ -155,58 +163,29 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                     setEditingTaskId(null);
                   }}
                   onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                  className="w-full bg-transparent border-none p-0 text-[11px] font-bold text-[var(--text-main)] focus:ring-0 h-4 flex items-center outline-none"
+                  className="w-full bg-transparent border-none p-0 text-[13px] font-bold text-[var(--text-main)] focus:ring-0 h-5 outline-none"
                   onClick={e => e.stopPropagation()}
                 />
               ) : (
                 <div 
                   onDoubleClick={(e) => { e.stopPropagation(); setEditingTaskId(task.id); setEditingValue(task.title); }}
-                  className={`text-[11px] font-bold truncate block leading-tight ${
+                  className={`text-[13px] font-bold truncate block leading-tight ${
                     task.status === TaskStatus.DONE ? 'opacity-30 line-through' : 'text-[var(--text-main)]'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    {task.isEvent && <i className="fa-solid fa-calendar text-[8px] text-pink-400"></i>}
-                    {task.title}
-                  </span>
-                  {dateFormatted && <span className="ml-2 px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--primary)] text-[7px] rounded-md font-black uppercase tracking-tighter border border-[var(--border-color)]"><i className="fa-solid fa-calendar-check mr-1 opacity-50"></i>{dateFormatted}</span>}
+                  {task.title}
                 </div>
               )}
-              <div className="flex items-center gap-3 mt-0.5">
-                {project && <span className="text-[7px] font-black uppercase text-[var(--text-muted)] flex items-center gap-0.5 shrink-0"><i className="fa-solid fa-folder text-[6px]"></i> {project.name}</span>}
-                {person && (
-                  <span className="text-[7px] font-black uppercase text-orange-500 flex items-center gap-1 shrink-0">
-                    <img 
-                      src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} 
-                      className="w-2.5 h-2.5 rounded-full object-cover border border-orange-100" 
-                      alt="" 
-                    /> 
-                    {person.name}
-                  </span>
-                )}
+              <div className="flex items-center gap-2 mt-1">
+                {project && <span className="text-[7px] font-black uppercase text-orange-400 opacity-70 px-1 bg-orange-50 rounded"># {project.name}</span>}
               </div>
             </div>
-
-            <div className="flex gap-1 shrink-0 overflow-hidden">
-               {task.tags.slice(0, 3).map(tagName => {
-                 const tagObj = tags.find(t => t.name === tagName);
-                 return (
-                  <button 
-                    key={tagName} 
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('hashtags'); }}
-                    className="text-[11px] font-bold lowercase px-2.5 py-0.5 rounded-full border-none whitespace-nowrap hover:brightness-95 transition-all"
-                    style={tagObj ? { backgroundColor: `${tagObj.color}40`, color: tagObj.color } : { backgroundColor: 'var(--border-color)', color: 'var(--text-muted)' }}
-                  >
-                    #{tagName}
-                  </button>
-                 );
-               })}
+            <div className="flex gap-1 shrink-0">
+               {task.tags.slice(0, 2).map(tagName => (
+                  <span key={tagName} className="text-[9px] font-bold text-[var(--text-muted)] opacity-50">#{tagName}</span>
+               ))}
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0">
-          <button onClick={(e) => { e.stopPropagation(); toggleTaskPin(task.id); }} className={`w-4 h-4 rounded flex items-center justify-center ${task.isPinned ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] hover:text-[var(--primary)]'}`}><i className="fa-solid fa-thumbtack text-[8px]"></i></button>
         </div>
       </div>
     );
@@ -215,93 +194,95 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   return (
     <div className="h-screen flex overflow-hidden relative bg-[var(--bg-main)]">
         <div className="flex-1 flex flex-col min-w-0 h-full">
-          <header className="px-5 py-3 border-b border-[var(--border-color)] flex flex-col gap-3 sticky top-0 bg-[var(--bg-card)] z-20">
+          <header className="px-5 py-4 border-b border-[var(--border-color)] flex flex-col gap-4 sticky top-0 bg-[var(--bg-card)] z-20 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Typography variant="h1" className="text-sm text-[var(--text-main)] tracking-tight font-black uppercase flex items-center gap-2">
-                  <i className={`fa-solid ${showNextActions ? 'fa-bolt' : showCompleted ? 'fa-archive' : 'fa-inbox'} text-[var(--primary)]`}></i>
-                  {showNextActions ? 'Наступні дії' : showCompleted ? 'Архів' : 'Вхідні'}
+                  <i className={`fa-solid ${showNextActions ? 'fa-bolt-lightning' : showCompleted ? 'fa-archive' : 'fa-inbox'} text-[var(--primary)]`}></i>
+                  {showNextActions ? 'Двигун Виконання' : showCompleted ? 'Архів' : 'Вхідні'}
                 </Typography>
-                <Badge variant="orange" className="px-1.5 py-0.5 rounded text-[8px] bg-[var(--primary)]/10 text-[var(--primary)]">{displayedTasks.length}</Badge>
+                <Badge variant="orange" className="px-2 py-0.5 rounded text-[9px] bg-[var(--primary)]/10 text-[var(--primary)]">{displayedTasks.length}</Badge>
                 
-                {!showCompleted && !showNextActions && (
-                  <div className="flex items-center gap-1 ml-3 border-l border-[var(--border-color)] pl-3 h-4">
-                    {isAddingSection ? (
-                      <form onSubmit={handleAddSection} className="flex gap-1 items-center">
-                        <input 
-                          autoFocus
-                          value={newSectionTitle}
-                          onChange={e => setNewSectionTitle(e.target.value)}
-                          onBlur={() => !newSectionTitle && setIsAddingSection(false)}
-                          placeholder="Секція..."
-                          className="bg-[var(--bg-main)] border border-[var(--border-color)] rounded px-2 py-0 text-[8px] font-bold outline-none w-24 h-5 focus:ring-1 focus:ring-[var(--primary)]"
-                        />
-                      </form>
-                    ) : (
-                      <button 
-                        onClick={() => setIsAddingSection(true)}
-                        className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] flex items-center gap-1"
-                        title="Додати секцію"
-                      >
-                        <i className="fa-solid fa-plus-circle text-[10px]"></i>
-                        <span>Секція</span>
-                      </button>
-                    )}
-                  </div>
+                {!showCompleted && (
+                  <button 
+                    onClick={() => setIsAddingSection(true)}
+                    className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] flex items-center gap-1 border-l border-[var(--border-color)] pl-3 h-3"
+                  >
+                    <i className="fa-solid fa-plus-circle"></i>
+                    <span>Секція</span>
+                  </button>
                 )}
               </div>
               
-              <div className="flex items-center gap-2">
-                 <div className="relative group">
-                   <i className="fa-solid fa-magnifying-glass absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-[8px]"></i>
-                   <input 
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Пошук..." 
-                    className="bg-[var(--bg-main)] border-none rounded-lg py-1 pl-6 pr-2 text-[8px] font-bold focus:ring-1 focus:ring-[var(--primary)] outline-none w-32 h-6 flex items-center" 
-                   />
-                 </div>
+              <div className="relative group">
+                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-[10px]"></i>
+                <input 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Фільтр..." 
+                  className="bg-[var(--bg-main)] border-none rounded-xl py-1.5 pl-9 pr-3 text-[10px] font-bold focus:ring-1 focus:ring-[var(--primary)] outline-none w-40 h-8 flex items-center" 
+                />
               </div>
             </div>
 
-            {!showCompleted && !showNextActions && (
-              <div className="w-full">
-                <form onSubmit={handleQuickAdd} className="relative group/input flex items-center">
-                  <div className="absolute left-3 text-[var(--text-muted)] group-focus-within/input:text-[var(--primary)] z-10 flex items-center h-full">
-                    <i className="fa-solid fa-circle-plus text-xs"></i>
-                  </div>
-                  <HashtagAutocomplete
-                    value={quickTaskTitle}
-                    onChange={setQuickTaskTitle}
-                    onSelectTag={() => {}}
-                    onEnter={handleQuickAdd}
-                    placeholder="Додати квест... (#теги)"
-                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg py-2 pl-9 pr-10 text-[11px] font-bold text-[var(--text-main)] focus:bg-[var(--bg-card)] focus:ring-2 focus:ring-[var(--primary)]/10 outline-none shadow-sm h-8 flex items-center leading-none transition-none"
-                  />
-                  <div className="absolute right-1 flex items-center gap-2 h-full">
-                    <button type="submit" disabled={!quickTaskTitle.trim()} className="w-6 h-6 bg-[var(--primary)] text-white rounded flex items-center justify-center disabled:opacity-0 transition-none shadow-sm">
-                      <i className="fa-solid fa-arrow-up text-[9px]"></i>
-                    </button>
-                  </div>
-                </form>
-              </div>
+            {isAddingSection && (
+               <form onSubmit={handleAddSection} className="flex gap-2 animate-in slide-in-from-top-2">
+                  <input autoFocus value={newSectionTitle} onChange={e => setNewSectionTitle(e.target.value)} placeholder="Назва нової секції..." className="flex-1 bg-[var(--bg-main)] border border-[var(--primary)]/30 rounded-lg px-3 py-1.5 text-[10px] font-bold outline-none" />
+                  <Button size="sm" type="submit">Створити</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsAddingSection(false)}>Скасувати</Button>
+               </form>
+            )}
+
+            {!showCompleted && (
+              <form onSubmit={handleQuickAdd} className="relative group/input flex items-center">
+                <div className="absolute left-4 text-[var(--text-muted)] group-focus-within/input:text-[var(--primary)] z-10 flex items-center h-full">
+                  <i className="fa-solid fa-circle-plus text-xs"></i>
+                </div>
+                <HashtagAutocomplete
+                  value={quickTaskTitle}
+                  onChange={setQuickTaskTitle}
+                  onSelectTag={() => {}}
+                  onEnter={handleQuickAdd}
+                  placeholder={showNextActions ? "Додати наступну дію в Несортовані..." : "Додати квест... (#теги)"}
+                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 pl-10 pr-12 text-[13px] font-bold text-[var(--text-main)] focus:bg-[var(--bg-card)] outline-none h-10 flex items-center leading-none shadow-inner"
+                />
+                <button type="submit" disabled={!quickTaskTitle.trim()} className="absolute right-1.5 w-7 h-7 bg-[var(--primary)] text-white rounded-lg flex items-center justify-center disabled:opacity-0 shadow-md transition-all active:scale-90">
+                  <i className="fa-solid fa-arrow-up text-xs"></i>
+                </button>
+              </form>
             )}
           </header>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pb-20">
-            {inboxCategories.map(section => {
-                const sectionTasks = displayedTasks.filter(t => 
-                  (section.isPinned && t.isPinned) || 
-                  (!section.isPinned && t.category === section.id && !t.isPinned)
-                );
+          <div className="flex-1 overflow-y-auto custom-scrollbar pb-32 bg-slate-50/30">
+            {displayCategories.map(section => {
+                let sectionTasks: Task[] = [];
+                const isProject = (section as any).isProject;
+                
+                if (showNextActions && isProject) {
+                   const goalId = section.id;
+                   const goalSubProjects = projects.filter(p => p.parentFolderId === goalId && p.status === 'active');
+                   
+                   const directTasks = displayedTasks.filter(t => t.projectId === goalId && t.status !== TaskStatus.DONE);
+                   const subProjectNextActions = goalSubProjects.map(sp => {
+                      const spTasks = displayedTasks.filter(t => t.projectId === sp.id && t.status !== TaskStatus.DONE).sort((a,b) => a.createdAt - b.createdAt);
+                      return spTasks.length > 0 ? [spTasks[0]] : [];
+                   }).flat();
+                   
+                   sectionTasks = [...directTasks, ...subProjectNextActions];
+                } else {
+                   // Звичайні категорії або вхідні у режимі наступних дій
+                   sectionTasks = displayedTasks.filter(t => {
+                     const inCat = (section.isPinned && t.isPinned) || (!section.isPinned && t.category === section.id && !t.isPinned);
+                     // Якщо режим наступних дій, то категорія має містити тільки те, що без проекту (щоб не дублювати)
+                     if (showNextActions) return inCat && !t.projectId;
+                     return inCat;
+                   });
+                }
                 
                 const isCollapsed = collapsedSections[section.id];
-                const isEditing = editingSectionId === section.id;
                 const isAddingTask = addingTaskToSectionId === section.id;
-                const isMenuOpen = openMenuId === section.id;
 
-                const isSystem = ['pinned', 'unsorted', 'tasks', 'notes'].includes(section.id);
-                if (isSystem && sectionTasks.length === 0 && !isAddingTask) return null;
+                if (sectionTasks.length === 0 && !isAddingTask && !isProject) return null;
 
                 return (
                   <div key={section.id} 
@@ -310,93 +291,69 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                       e.preventDefault(); 
                       setDragOverSection(null); 
                       const tid = e.dataTransfer.getData('taskId'); 
-                      if(tid) moveTaskToCategory(tid, section.id, section.isPinned); 
+                      if(tid) {
+                          const taskToMove = tasks.find(x => x.id === tid);
+                          if (taskToMove) {
+                              if (showNextActions) {
+                                  if (isProject) {
+                                      updateTask({...taskToMove, projectId: section.id, status: TaskStatus.NEXT_ACTION, category: 'tasks'});
+                                  } else {
+                                      updateTask({...taskToMove, projectId: undefined, category: section.id, status: TaskStatus.NEXT_ACTION});
+                                  }
+                              } else {
+                                  moveTaskToCategory(tid, section.id, section.isPinned);
+                                  if (taskToMove.projectId) updateTask({...taskToMove, projectId: undefined, status: TaskStatus.INBOX, category: section.id});
+                              }
+                          }
+                      }
                     }} 
-                    className={`flex flex-col border-b border-[var(--border-color)]/20 ${getSectionBg(section.color)} ${dragOverSection === section.id ? 'bg-[var(--primary)]/5' : ''}`}
+                    className={`flex flex-col border-b border-[var(--border-color)]/20 ${dragOverSection === section.id ? 'bg-[var(--primary)]/5' : ''}`}
                   >
-                    <div className="group flex items-center gap-2 py-1 px-4 hover:bg-black/5 cursor-pointer select-none">
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0" onClick={() => setCollapsedSections(p => ({...p, [section.id]: !isCollapsed}))}>
-                        <i className={`fa-solid fa-chevron-right text-[6px] text-[var(--text-muted)] ${!isCollapsed ? 'rotate-90' : ''}`}></i>
-                        <i className={`fa-solid ${section.icon} text-[9px] text-[var(--text-muted)] shrink-0`}></i>
-                        
-                        {isEditing ? (
-                          <input 
-                            autoFocus
-                            value={editingSectionValue}
-                            onChange={e => setEditingSectionValue(e.target.value)}
-                            onBlur={() => {
-                              if (editingSectionValue.trim()) updateInboxCategory(section.id, { title: editingSectionValue.trim() });
-                              setEditingSectionId(null);
-                            }}
-                            onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
-                            onClick={e => e.stopPropagation()}
-                            className="bg-transparent border-none p-0 text-[8px] font-black uppercase tracking-widest text-[var(--primary)] focus:ring-0 w-full h-4 flex items-center"
-                          />
+                    <div className="group flex items-center gap-3 py-2 px-4 hover:bg-black/5 cursor-pointer select-none">
+                      <div className="flex items-center gap-2 flex-1 min-w-0" onClick={() => setCollapsedSections(p => ({...p, [section.id]: !isCollapsed}))}>
+                        <i className={`fa-solid fa-chevron-right text-[7px] text-[var(--text-muted)] transition-transform ${!isCollapsed ? 'rotate-90' : ''}`}></i>
+                        {isProject && (section as any).projectColor ? (
+                            <div className="w-1.5 h-4 rounded-full" style={{ backgroundColor: (section as any).projectColor }}></div>
                         ) : (
-                          <div className="flex items-center gap-2 flex-1">
-                             <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest text-[7px] truncate">{section.title}</Typography>
-                             
-                             {!showCompleted && !showNextActions && (
-                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                                 <button 
-                                   onClick={(e) => { e.stopPropagation(); setAddingTaskToSectionId(section.id); }}
-                                   className="w-4 h-4 rounded-sm bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center hover:scale-110"
-                                   title="Додати сюди"
-                                 >
-                                   <i className="fa-solid fa-plus text-[7px]"></i>
-                                 </button>
-                                 <button 
-                                   onClick={(e) => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : section.id); }}
-                                   className={`w-4 h-4 rounded flex items-center justify-center ${isMenuOpen ? 'bg-[var(--text-main)] text-[var(--bg-card)]' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
-                                 >
-                                   <i className="fa-solid fa-ellipsis text-[8px]"></i>
-                                 </button>
-
-                                 {isMenuOpen && (
-                                   <div className="absolute top-6 left-0 w-32 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-1 z-[100] tiktok-blur">
-                                     <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setEditingSectionId(section.id); setEditingSectionValue(section.title); }} className="w-full text-left px-2 py-1 hover:bg-black/5 rounded text-[7px] font-black uppercase text-[var(--text-main)] flex items-center gap-2">
-                                       <i className="fa-solid fa-pen text-[7px]"></i> Редагувати
-                                     </button>
-                                     <div className="p-1 border-t border-[var(--border-color)]">
-                                       <div className="text-[6px] font-black text-[var(--text-muted)] uppercase mb-1">Фон</div>
-                                       <div className="grid grid-cols-4 gap-1">
-                                          {(['slate', 'orange', 'emerald', 'indigo', 'rose', 'amber', 'violet'] as const).map(c => (
-                                            <button key={c} onClick={(e) => { e.stopPropagation(); updateInboxCategory(section.id, { color: c }); setOpenMenuId(null); }} className={`w-3 h-3 rounded-sm bg-${c}-400 hover:scale-110 ${section.color === c ? 'ring-1 ring-black' : ''}`} />
-                                          ))}
-                                          <button onClick={(e) => { e.stopPropagation(); updateInboxCategory(section.id, { color: undefined }); setOpenMenuId(null); }} className="w-3 h-3 rounded-sm bg-[var(--bg-card)] border border-[var(--border-color)] hover:scale-110" />
-                                       </div>
-                                     </div>
-                                     {!isSystem && (
-                                       <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити секцію?')) deleteInboxCategory(section.id); setOpenMenuId(null); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/10 rounded text-[7px] font-black uppercase text-rose-500 flex items-center gap-2 border-t border-[var(--border-color)]">
-                                         <i className="fa-solid fa-trash text-[7px]"></i> Видалити
-                                       </button>
-                                     )}
-                                   </div>
-                                 )}
-                               </div>
+                            <i className={`fa-solid ${section.icon} text-[10px] text-[var(--text-muted)] shrink-0`}></i>
+                        )}
+                        
+                        <Typography variant="tiny" className={`${isProject ? 'text-[var(--text-main)] font-black' : 'text-[var(--text-muted)] font-black'} uppercase tracking-widest text-[8px] truncate flex-1`}>
+                            {section.title}
+                        </Typography>
+                        
+                        {!showCompleted && (
+                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); setAddingTaskToSectionId(section.id); }}
+                               className="w-5 h-5 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center hover:scale-110 shadow-sm"
+                             >
+                               <i className="fa-solid fa-plus text-[8px]"></i>
+                             </button>
+                             {!isProject && !['pinned', 'unsorted', 'tasks', 'notes'].includes(section.id) && (
+                               <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити?')) deleteInboxCategory(section.id); }} className="w-5 h-5 rounded-md hover:bg-rose-50 text-rose-500 flex items-center justify-center">
+                                 <i className="fa-solid fa-trash text-[8px]"></i>
+                               </button>
                              )}
-                          </div>
+                           </div>
                         )}
                       </div>
-
-                      <div className="shrink-0 flex items-center gap-2">
-                        <span className="text-[7px] font-black text-[var(--text-muted)] min-w-[12px] text-center opacity-40">{sectionTasks.length}</span>
-                      </div>
+                      <span className="text-[8px] font-black text-[var(--text-muted)] opacity-30">{sectionTasks.length}</span>
                     </div>
 
                     {isAddingTask && (
-                      <div className="px-8 py-1.5 bg-black/5">
+                      <div className="px-10 py-2 bg-black/5">
                         <input 
                           autoFocus
                           value={sectionTaskTitle}
                           onChange={e => setSectionTaskTitle(e.target.value)}
                           onBlur={() => { if(!sectionTaskTitle.trim()) setAddingTaskToSectionId(null); }}
                           onKeyDown={e => {
-                            if (e.key === 'Enter') handleAddToSection(section.id);
+                            if (e.key === 'Enter') handleAddToSection(section.id, !!isProject);
                             if (e.key === 'Escape') setAddingTaskToSectionId(null);
                           }}
-                          placeholder="Додати сюди..."
-                          className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded px-2 py-0 text-[10px] font-bold focus:ring-1 focus:ring-[var(--primary)] outline-none h-6 flex items-center leading-none"
+                          placeholder="Швидка дія..."
+                          className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 text-[11px] font-bold focus:ring-1 focus:ring-[var(--primary)] outline-none h-8 flex items-center shadow-inner"
                         />
                       </div>
                     )}
@@ -404,11 +361,6 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                     {!isCollapsed && (
                       <div className="flex flex-col">
                         {sectionTasks.map(renderTask)}
-                        {sectionTasks.length === 0 && !isAddingTask && (
-                          <div className="py-2 text-center opacity-5">
-                             <span className="text-[6px] font-black uppercase tracking-widest italic">Порожньо</span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -424,9 +376,8 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
               <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
             ) : (
               <div className="h-full flex flex-col items-center justify-center p-8 text-center opacity-5 grayscale pointer-events-none">
-                <i className="fa-solid fa-compass-drafting text-4xl mb-4"></i>
-                <Typography variant="tiny" className="text-[9px] font-black uppercase tracking-[0.2em]">Деталі Квесту</Typography>
-                <Typography variant="tiny" className="mt-2 text-[8px] font-black uppercase">Оберіть запис</Typography>
+                <i className="fa-solid fa-bolt-lightning text-6xl mb-6"></i>
+                <Typography variant="tiny" className="text-[10px] font-black uppercase tracking-[0.2em]">Фокус на дії</Typography>
               </div>
             )}
           </div>
