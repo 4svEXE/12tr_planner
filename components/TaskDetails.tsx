@@ -17,12 +17,11 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const { 
     updateTask, scheduleTask, tags, addTag, projects, 
     addChecklistItem, toggleChecklistItem, removeChecklistItem,
-    toggleTaskStatus, setActiveTab
+    toggleTaskStatus 
   } = useApp();
   
-  const [activeTab, setActiveTabLocal] = useState<'notes' | 'checklist'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'checklist'>('notes');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [dateType, setDateType] = useState<'start' | 'end'>('start');
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -31,29 +30,24 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [tempEndDate, setTempEndDate] = useState<number | undefined>(task.endDate);
   const [isEvent, setIsEvent] = useState<boolean>(task.isEvent || false);
 
-  const datePickerRef = useRef<HTMLDivElement>(null);
-  const projectPickerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Time states
+  const hasInitialTime = useMemo(() => {
+    if (!task.scheduledDate) return false;
+    const d = new Date(task.scheduledDate);
+    return d.getHours() !== 0 || d.getMinutes() !== 0;
+  }, [task.scheduledDate]);
+
+  const [includeTime, setIncludeTime] = useState<boolean>(hasInitialTime);
+  const [selectedHour, setSelectedHour] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getHours() : 9);
+  const [selectedMinute, setSelectedMinute] = useState<number>(tempSelectedDate ? new Date(tempSelectedDate).getMinutes() : 0);
 
   const [localTitle, setLocalTitle] = useState(task.title);
   const [localContent, setLocalContent] = useState(task.content || "");
   const [isPreview, setIsPreview] = useState(true);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const linkedProject = projects.find(p => p.id === task.projectId);
-  const activeProjects = projects.filter(p => p.status === 'active');
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-        setShowDatePicker(false);
-      }
-      if (projectPickerRef.current && !projectPickerRef.current.contains(event.target as Node)) {
-        setShowProjectPicker(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     setLocalTitle(task.title);
@@ -61,6 +55,15 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     setTempSelectedDate(task.scheduledDate);
     setTempEndDate(task.endDate);
     setIsEvent(task.isEvent || false);
+    
+    const d = task.scheduledDate ? new Date(task.scheduledDate) : null;
+    const hasTime = d ? (d.getHours() !== 0 || d.getMinutes() !== 0) : false;
+    setIncludeTime(hasTime);
+    
+    if (d) {
+      setSelectedHour(d.getHours());
+      setSelectedMinute(d.getMinutes());
+    }
   }, [task.id, task.scheduledDate, task.endDate, task.isEvent, task.title, task.content]);
 
   useEffect(() => {
@@ -80,22 +83,22 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   }, [isPreview]);
 
   const handleApplyDate = () => {
+    let finalDate = tempSelectedDate;
+    if (finalDate) {
+      const d = new Date(finalDate);
+      if (includeTime) {
+        d.setHours(selectedHour, selectedMinute, 0, 0);
+      } else {
+        d.setHours(0, 0, 0, 0);
+      }
+      finalDate = d.getTime();
+    }
     updateTask({ 
       ...task, 
-      scheduledDate: tempSelectedDate,
+      scheduledDate: finalDate,
       endDate: tempEndDate
     });
     setShowDatePicker(false);
-  };
-
-  const selectProject = (projectId: string | undefined) => {
-    updateTask({ ...task, projectId });
-    setShowProjectPicker(false);
-  };
-
-  const navigateToProjects = () => {
-    setActiveTab('projects');
-    onClose();
   };
 
   const renderCalendar = () => {
@@ -168,6 +171,15 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     return { __html: rawHtml };
   };
 
+  const getFormattedDateTime = () => {
+    if (!tempSelectedDate) return 'Обрати дату';
+    const d = new Date(tempSelectedDate);
+    const datePart = d.toLocaleString('uk-UA', { day: 'numeric', month: 'short' });
+    if (!includeTime) return datePart;
+    const timePart = d.toLocaleString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart}, ${timePart}`;
+  };
+
   const isDone = task.status === TaskStatus.DONE;
 
   return (
@@ -179,13 +191,44 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               className={`h-7 px-3 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${tempSelectedDate ? 'bg-[var(--primary)] text-white' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`}
             >
               <i className="fa-solid fa-calendar-day"></i>
-              {tempSelectedDate ? new Date(tempSelectedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) : 'Обрати дату'}
+              {getFormattedDateTime()}
             </button>
 
           {showDatePicker && (
             <div ref={datePickerRef} className="absolute top-9 left-0 w-64 bg-[var(--bg-card)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[100] p-4 tiktok-blur">
               <Typography variant="tiny" className="mb-3 text-[var(--primary)] font-black text-[8px]">Планування</Typography>
               {renderCalendar()}
+              
+              <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                     <input 
+                       type="checkbox" 
+                       id="includeTime" 
+                       checked={includeTime} 
+                       onChange={e => setIncludeTime(e.target.checked)}
+                       className="w-3 h-3 rounded border-slate-300 text-[var(--primary)] focus:ring-[var(--primary)]"
+                     />
+                     <label htmlFor="includeTime" className="text-[8px] font-black uppercase text-[var(--text-muted)] cursor-pointer">Вказати час</label>
+                  </div>
+                  {includeTime && (
+                    <div className="flex items-center gap-1">
+                      <input 
+                        type="number" min="0" max="23" value={selectedHour} 
+                        onChange={e => setSelectedHour(parseInt(e.target.value) || 0)}
+                        className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                      />
+                      <span className="text-[10px] font-bold">:</span>
+                      <input 
+                        type="number" min="0" max="59" value={selectedMinute} 
+                        onChange={e => setSelectedMinute(parseInt(e.target.value) || 0)}
+                        className="w-8 bg-[var(--bg-main)] border-none rounded text-center text-[10px] font-bold p-1 focus:ring-1 focus:ring-[var(--primary)]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="mt-4 flex gap-2">
                  <button onClick={() => { setTempSelectedDate(undefined); setTempEndDate(undefined); setShowDatePicker(false); updateTask({...task, scheduledDate: undefined}); }} className="flex-1 py-2 text-[8px] font-black text-rose-500 uppercase hover:bg-rose-50 rounded-lg">Очистити</button>
                  <button onClick={handleApplyDate} className="flex-1 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg py-2 text-[8px] font-black uppercase tracking-widest">Готoво</button>
@@ -194,6 +237,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Позначення події (isEvent) з іконкою календаря */}
           <button 
             onClick={() => setIsEvent(!isEvent)} 
             className={`h-8 px-3 rounded-lg flex items-center gap-2 transition-all ${isEvent ? 'bg-pink-500 text-white shadow-lg' : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)]'}`} 
@@ -225,71 +269,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
                 placeholder="Назва квесту..."
                 className={`w-full bg-transparent text-[16px] font-black border-none focus:ring-0 p-0 placeholder:opacity-20 leading-tight mb-2 outline-none ${isDone ? 'line-through text-slate-400' : 'text-[var(--text-main)]'}`}
               />
-              <div className="flex flex-wrap gap-2 items-center mt-1 relative">
-                <div className="relative">
-                  {linkedProject ? (
-                    <button 
-                      onClick={() => setShowProjectPicker(!showProjectPicker)}
-                      className="transition-transform active:scale-95"
-                    >
-                      <Badge variant="orange" className="px-2 py-0.5 rounded-lg text-[11px] cursor-pointer hover:brightness-110">
-                        <i className="fa-solid fa-folder-open mr-1 opacity-60"></i>
-                        {linkedProject.name}
-                      </Badge>
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => setShowProjectPicker(!showProjectPicker)}
-                      className="text-[11px] font-black text-[var(--text-muted)] uppercase hover:text-[var(--primary)] tracking-widest transition-colors flex items-center gap-1.5"
-                    >
-                      <i className="fa-solid fa-folder-plus text-[10px]"></i>
-                      + Проєкт
-                    </button>
-                  )}
-
-                  {showProjectPicker && (
-                    <div ref={projectPickerRef} className="absolute top-full left-0 mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl z-[100] overflow-hidden tiktok-blur py-2 animate-in fade-in zoom-in-95 duration-150">
-                       <div className="px-4 py-1.5 mb-1 border-b border-[var(--border-color)]">
-                          <Typography variant="tiny" className="text-slate-400 text-[8px] font-black uppercase tracking-[0.1em]">Прив'язати до цілі</Typography>
-                       </div>
-                       <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                          {activeProjects.length > 0 ? (
-                            <>
-                              <button 
-                                onClick={() => selectProject(undefined)}
-                                className="w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 group"
-                              >
-                                <div className="w-2 h-2 rounded-full bg-slate-200 group-hover:bg-slate-300"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Без проєкту</span>
-                              </button>
-                              {activeProjects.map(p => (
-                                <button 
-                                  key={p.id} 
-                                  onClick={() => selectProject(p.id)}
-                                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 group ${task.projectId === p.id ? 'bg-orange-50/50' : ''}`}
-                                >
-                                  <div className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: p.color }}></div>
-                                  <span className={`text-[10px] font-bold uppercase tracking-tight truncate ${task.projectId === p.id ? 'text-orange-600' : 'text-slate-700'}`}>{p.name}</span>
-                                  {task.projectId === p.id && <i className="fa-solid fa-check text-[8px] ml-auto text-orange-500"></i>}
-                                </button>
-                              ))}
-                            </>
-                          ) : (
-                            <div className="px-4 py-4 text-center">
-                               <div className="text-[9px] font-bold text-slate-400 mb-3 leading-relaxed">У вас ще немає активних проєктів</div>
-                               <button 
-                                 onClick={navigateToProjects}
-                                 className="text-[9px] font-black text-orange-600 uppercase tracking-widest hover:underline"
-                               >
-                                 + Створити перший
-                               </button>
-                            </div>
-                          )}
-                       </div>
-                    </div>
-                  )}
-                </div>
-
+              <div className="flex flex-wrap gap-2 items-center mt-1">
+                {linkedProject ? (
+                  <Badge variant="orange" className="px-2 py-0.5 rounded-lg text-[11px]">{linkedProject.name}</Badge>
+                ) : (
+                  <button className="text-[11px] font-black text-[var(--text-muted)] uppercase hover:text-[var(--primary)] tracking-widest">+ Проєкт</button>
+                )}
                 {task.tags.map(tagName => {
                   const tagObj = tags.find(t => t.name === tagName);
                   return (
@@ -307,8 +292,8 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           </div>
 
           <div className="flex gap-4 border-b border-[var(--border-color)]">
-            <button onClick={() => setActiveTabLocal('notes')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'notes' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Нотатки</button>
-            <button onClick={() => setActiveTabLocal('checklist')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'checklist' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Чек-лист ({(task.checklist || []).length})</button>
+            <button onClick={() => setActiveTab('notes')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'notes' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Нотатки</button>
+            <button onClick={() => setActiveTab('checklist')} className={`pb-2 text-[11px] font-black uppercase tracking-widest border-b-2 ${activeTab === 'checklist' ? 'border-[var(--primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}`}>Чек-лист ({(task.checklist || []).length})</button>
           </div>
 
           <div className="min-h-[200px]">
