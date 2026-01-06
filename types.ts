@@ -27,6 +27,12 @@ export interface Tag {
   color: string;
 }
 
+export interface Hobby {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Attachment {
   id: string;
   name: string;
@@ -100,6 +106,64 @@ export interface AiSuggestion {
   reason: string; // Why AI suggested this
 }
 
+// --- PEOPLE / NETWORKING TYPES ---
+
+export type PersonStatus = string; // Дозволяємо будь-який рядок для кастомних статусів
+
+export interface Memory {
+  id: string;
+  event: string;
+  emotion: 'joy' | 'neutral' | 'sad' | 'insight' | 'support';
+  date: string;
+}
+
+export interface ImportantDate {
+  id: string;
+  label: string;
+  date: string;
+}
+
+export interface PersonNote {
+  id: string;
+  text: string;
+  date: string;
+}
+
+export interface Person {
+  id: string;
+  name: string;
+  avatar?: string;
+  status: PersonStatus;
+  rating: number; // 1-10
+  birthDate?: string;
+  location?: string;
+  description?: string;
+  tags: string[];
+  hobbies: string[];
+  socials: {
+    telegram?: string;
+    instagram?: string;
+    linkedin?: string;
+    threads?: string;
+    tiktok?: string;
+    website?: string;
+  };
+  notes: PersonNote[];
+  memories: Memory[];
+  importantDates: ImportantDate[];
+  aiPortrait?: {
+    summary: string;
+    interests: string[];
+    tone: string;
+    topics: string[];
+    updatedAt: number;
+  };
+  lastInteractionAt?: number;
+  createdAt: number;
+}
+
+// --- END OF PEOPLE TYPES ---
+
 export interface Task {
   id: string;
   title: string;
@@ -111,6 +175,7 @@ export interface Task {
   xp: number;
   tags: string[];
   projectId?: string;
+  personId?: string; // Зв'язок із союзником
   projectSection?: ProjectSection;
   goalId?: string;
   createdAt: number;
@@ -211,8 +276,11 @@ export interface Character {
 export interface StoreState {
   tasks: Task[];
   projects: Project[];
+  people?: Person[];
+  relationshipTypes?: string[];
   character: Character;
   tags: Tag[];
+  hobbies?: Hobby[];
   cycle: TwelveWeekYear;
   diary?: DiaryEntry[];
   inboxCategories?: InboxCategory[];

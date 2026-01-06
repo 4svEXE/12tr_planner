@@ -34,9 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'map', icon: 'fa-map-location-dot', label: 'Карта світу' },
     { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
+    { id: 'people', icon: 'fa-users-between-lines', label: 'Люди' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Глибокий фокус' },
     { id: 'finances', icon: 'fa-coins', label: 'Фінанси' },
-    { id: 'contacts', icon: 'fa-users-between-lines', label: 'Нетворкінг' },
     { id: 'character', icon: 'fa-user-shield', label: 'Профіль героя' },
   ];
 
@@ -92,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       <nav className="flex-1 px-2 space-y-0.5 py-2 overflow-y-auto custom-scrollbar">
         {primaryItems.map(renderMenuItem)}
         <div className="my-4 mx-2 border-t border-slate-100"></div>
-        {!isSidebarCollapsed && <div className="px-3 mb-2"><span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Віджети</span></div>}
+        {!isSidebarCollapsed && <div className="px-3 mb-2"><span className="text-[8px] uppercase font-black tracking-widest text-slate-300">Інструменти</span></div>}
         {widgetItems.map(renderMenuItem)}
       </nav>
       <div className="px-2 py-4 border-t border-slate-100 space-y-0.5">

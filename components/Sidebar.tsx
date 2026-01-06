@@ -37,11 +37,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Глибокий фокус' },
     { id: 'character', icon: 'fa-user-shield', label: 'Профіль героя' },
+    { id: 'people', icon: 'fa-users-between-lines', label: 'Люди' },
   ];
 
   const bottomItems = [
     { id: 'completed', icon: 'fa-check-double', label: 'Завершено', acceptDrop: true },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
+    { id: 'hobbies', icon: 'fa-icons', label: 'Хобі' },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
 

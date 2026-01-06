@@ -14,7 +14,7 @@ interface MonthViewProps {
 }
 
 const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop, onDragOver, onDragLeave, onSelectTask, onAddQuickEvent }) => {
-  const { tasks } = useApp();
+  const { tasks, people } = useApp();
   
   const days = React.useMemo(() => {
     return Array.from({length: 42}, (_, i) => { 
@@ -33,12 +33,33 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
         const ts = new Date(date).setHours(0,0,0,0);
         const isTodayCell = ts === new Date().setHours(0,0,0,0);
         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+        
+        const m = date.getMonth();
+        const d = date.getDate();
+
         const dayTasksList = tasks.filter(t => {
           if (t.isDeleted) return false;
           const startTs = t.scheduledDate ? new Date(t.scheduledDate).setHours(0,0,0,0) : null;
           const endTs = t.endDate ? new Date(t.endDate).setHours(0,0,0,0) : startTs;
           if (!startTs) return false;
           return ts >= startTs && ts <= (endTs || startTs);
+        });
+
+        // Знаходимо події людей
+        const personEvents = [];
+        people.forEach(p => {
+          if (p.birthDate) {
+            const bd = new Date(p.birthDate);
+            if (bd.getMonth() === m && bd.getDate() === d) {
+              personEvents.push({ id: `bd-${p.id}`, title: `ДН: ${p.name}`, type: 'birthday' });
+            }
+          }
+          p.importantDates?.forEach(idate => {
+            const id = new Date(idate.date);
+            if (id.getMonth() === m && id.getDate() === d) {
+              personEvents.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+            }
+          });
         });
         
         return (
@@ -49,6 +70,14 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
               <button onClick={(e) => { e.stopPropagation(); onAddQuickEvent(ts); }} className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-xl bg-slate-900 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"><i className="fa-solid fa-plus text-[10px]"></i></button>
             </div>
             <div className="flex-1 space-y-1 mt-1 overflow-hidden">
+              {/* Події людей */}
+              {personEvents.map(pe => (
+                <div key={pe.id} className={`text-[9px] font-black truncate px-2 py-1 rounded-lg border flex items-center gap-1.5 ${pe.type === 'birthday' ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+                   <i className={`fa-solid ${pe.type === 'birthday' ? 'fa-cake-candles' : 'fa-bell'} text-[7px]`}></i>
+                   <span className="truncate">{pe.title}</span>
+                </div>
+              ))}
+              
               {dayTasksList.slice(0, 5).map(t => (
                 <div 
                   key={t.id} 
@@ -63,7 +92,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
                   </div>
                 </div>
               ))}
-              {dayTasksList.length > 5 && <div className="text-[8px] font-black text-orange-500 uppercase px-2 py-1 bg-orange-50 rounded-lg inline-block">+ {dayTasksList.length - 5} ще</div>}
+              {(dayTasksList.length + personEvents.length) > 5 && <div className="text-[8px] font-black text-orange-500 uppercase px-2 py-1 bg-orange-50 rounded-lg inline-block">+ {dayTasksList.length + personEvents.length - 5} ще</div>}
             </div>
           </div>
         );

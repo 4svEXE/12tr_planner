@@ -13,7 +13,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const { 
     tasks, toggleTaskStatus, toggleTaskPin, addTask, moveTaskToCategory, 
     inboxCategories, updateTask, projects, addInboxCategory, 
-    updateInboxCategory, deleteInboxCategory, tags, setActiveTab 
+    updateInboxCategory, deleteInboxCategory, tags, setActiveTab, people
   } = useApp();
   
   const { isResizing, startResizing, detailsWidth } = useResizer();
@@ -107,6 +107,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const renderTask = (task: Task) => {
     const isEditing = editingTaskId === task.id;
     const project = projects.find(p => p.id === task.projectId);
+    const person = people.find(p => p.id === task.personId);
     
     // Форматування дати: приховуємо час, якщо він 00:00
     const getFormattedDate = (ts: number) => {
@@ -171,7 +172,19 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                   {dateFormatted && <span className="ml-2 px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--primary)] text-[7px] rounded-md font-black uppercase tracking-tighter border border-[var(--border-color)]"><i className="fa-solid fa-calendar-check mr-1 opacity-50"></i>{dateFormatted}</span>}
                 </div>
               )}
-              {project && <span className="text-[7px] font-black uppercase text-[var(--text-muted)] flex items-center gap-0.5 shrink-0 mt-0.5"><i className="fa-solid fa-folder text-[6px]"></i> {project.name}</span>}
+              <div className="flex items-center gap-3 mt-0.5">
+                {project && <span className="text-[7px] font-black uppercase text-[var(--text-muted)] flex items-center gap-0.5 shrink-0"><i className="fa-solid fa-folder text-[6px]"></i> {project.name}</span>}
+                {person && (
+                  <span className="text-[7px] font-black uppercase text-orange-500 flex items-center gap-1 shrink-0">
+                    <img 
+                      src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} 
+                      className="w-2.5 h-2.5 rounded-full object-cover border border-orange-100" 
+                      alt="" 
+                    /> 
+                    {person.name}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-1 shrink-0 overflow-hidden">

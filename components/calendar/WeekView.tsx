@@ -16,7 +16,7 @@ interface WeekViewProps {
 const HOUR_HEIGHT = 60;
 
 const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, onDragOver, onDragLeave, onSelectTask, onAddQuickEvent }) => {
-  const { tasks } = useApp();
+  const { tasks, people } = useApp();
   
   const weekDays = React.useMemo(() => {
     const startOfWeek = new Date(currentDate);
@@ -52,14 +52,33 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                   <div key={i} className="h-[60px] text-[8px] font-black text-slate-300 text-right pr-2 pt-2 border-b border-slate-50">{i}:00</div>
                 ))}
              </div>
-             {weekDays.map((d, dayIdx) => {
-               const dayTs = d.getTime();
+             {weekDays.map((date, dayIdx) => {
+               const dayTs = date.getTime();
+               const m = date.getMonth();
+               const d = date.getDate();
+
                const dayTasks = tasks.filter(t => {
                  if (t.isDeleted) return false;
                  const start = t.scheduledDate ? new Date(t.scheduledDate).setHours(0,0,0,0) : null;
                  const end = t.endDate ? new Date(t.endDate).setHours(0,0,0,0) : start;
                  if (!start) return false;
                  return dayTs >= start && dayTs <= (end || start);
+               });
+
+               const personEvents = [];
+               people.forEach(p => {
+                 if (p.birthDate) {
+                   const bd = new Date(p.birthDate);
+                   if (bd.getMonth() === m && bd.getDate() === d) {
+                     personEvents.push({ id: `bd-${p.id}`, title: `🎂 ДН: ${p.name}`, type: 'birthday' });
+                   }
+                 }
+                 p.importantDates?.forEach(idate => {
+                   const id = new Date(idate.date);
+                   if (id.getMonth() === m && id.getDate() === d) {
+                     personEvents.push({ id: `id-${idate.id}`, title: `🔔 ${idate.label}: ${p.name}`, type: 'important' });
+                   }
+                 });
                });
 
                return (
@@ -72,14 +91,15 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                    className={`flex-1 border-r border-slate-100 last:border-r-0 relative group cursor-pointer transition-colors ${dragOverDay === dayTs ? 'bg-orange-50/30 ring-inset ring-2 ring-orange-200' : 'hover:bg-slate-50/50'}`}
                  >
                     {Array.from({ length: 24 }, (_, i) => <div key={i} className="h-[60px] border-b border-slate-50/50"></div>)}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex flex-col pointer-events-none">
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <div key={i} className="h-[60px] flex items-center justify-center">
-                             <i className="fa-solid fa-plus text-[10px] text-orange-200"></i>
-                          </div>
-                        ))}
-                    </div>
+                    
                     <div className="absolute inset-0 p-1.5 space-y-1.5">
+                       {/* Дати союзників зверху */}
+                       {personEvents.map(pe => (
+                          <div key={pe.id} className={`p-1.5 rounded-lg border text-[9px] font-black shadow-sm ${pe.type === 'birthday' ? 'bg-amber-100 border-amber-200 text-amber-800' : 'bg-indigo-100 border-indigo-200 text-indigo-800'}`}>
+                             <div className="truncate">{pe.title}</div>
+                          </div>
+                       ))}
+
                        {dayTasks.map(t => (
                          <div 
                            key={t.id} 

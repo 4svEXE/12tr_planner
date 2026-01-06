@@ -7,6 +7,7 @@ import StrategyMap from './views/StrategyMap';
 import Inbox from './views/Inbox';
 import Calendar from './views/Calendar';
 import Hashtags from './views/Hashtags';
+import HobbiesView from './views/HobbiesView';
 import DeepFocus from './views/DeepFocus';
 import ProjectsView from './views/ProjectsView';
 import HabitsView from './views/HabitsView';
@@ -14,6 +15,7 @@ import TodayView from './views/TodayView';
 import NotesView from './views/NotesView';
 import DiaryView from './views/DiaryView';
 import TrashView from './views/TrashView';
+import PeopleView from './views/PeopleView';
 import CharacterProfile from './views/CharacterProfile';
 import { TaskStatus, Task } from './types';
 
@@ -84,6 +86,8 @@ const MainLayout: React.FC = () => {
       case 'diary': return <DiaryView />;
       case 'notes': return <NotesView />;
       case 'habits': return <HabitsView />;
+      case 'people': return <PeopleView />;
+      case 'hobbies': return <HobbiesView />;
       case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;

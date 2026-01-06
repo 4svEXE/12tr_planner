@@ -82,7 +82,7 @@ const TimeBlockModal: React.FC<{
 const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuickEvent }) => {
   const { 
     tasks, toggleTaskStatus, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, 
-    saveRoutineAsPreset, applyRoutinePreset, routinePresets 
+    saveRoutineAsPreset, applyRoutinePreset, routinePresets, people 
   } = useApp();
   const scheduleScrollRef = useRef<HTMLDivElement>(null);
   const [showBlockModal, setShowBlockModal] = useState<Partial<TimeBlock> | null>(null);
@@ -116,6 +116,27 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
     return curTs >= startTs && curTs <= (endTs || startTs);
   });
 
+  const m = currentDate.getMonth();
+  const d = currentDate.getDate();
+  const personEvents = useMemo(() => {
+    const events: any[] = [];
+    people.forEach(p => {
+      if (p.birthDate) {
+        const bd = new Date(p.birthDate);
+        if (bd.getMonth() === m && bd.getDate() === d) {
+          events.push({ id: `bd-${p.id}`, title: `ДН: ${p.name}`, type: 'birthday' });
+        }
+      }
+      p.importantDates?.forEach(idate => {
+        const id = new Date(idate.date);
+        if (id.getMonth() === m && id.getDate() === d) {
+          events.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+        }
+      });
+    });
+    return events;
+  }, [people, m, d]);
+
   const dayOfWeek = currentDate.getDay();
   const relevantBlocks = useMemo(() => timeBlocks.filter(b => b.dayOfWeek === dayOfWeek), [timeBlocks, dayOfWeek]);
 
@@ -133,6 +154,27 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
               </div>
               <Badge variant="orange" className="px-4 py-1.5 rounded-xl">{dayTasks.length} АКТИВНИХ КВЕСТІВ</Badge>
             </div>
+
+            {/* Дати союзників */}
+            {personEvents.length > 0 && (
+              <div className="mb-8 space-y-3">
+                 <Typography variant="tiny" className="text-slate-400 mb-2 uppercase tracking-widest font-black">Події союзників</Typography>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {personEvents.map(pe => (
+                      <div key={pe.id} className={`p-5 rounded-[2rem] border-2 flex items-center gap-4 ${pe.type === 'birthday' ? 'bg-amber-50 border-amber-100' : 'bg-indigo-50 border-indigo-100'}`}>
+                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg ${pe.type === 'birthday' ? 'bg-amber-500' : 'bg-indigo-500'}`}>
+                            <i className={`fa-solid ${pe.type === 'birthday' ? 'fa-cake-candles' : 'fa-bell'}`}></i>
+                         </div>
+                         <div className="flex-1">
+                            <div className={`text-[11px] font-black uppercase tracking-tight ${pe.type === 'birthday' ? 'text-amber-900' : 'text-indigo-900'}`}>{pe.title}</div>
+                            <div className="text-[9px] font-bold opacity-60">Сьогодні важливий день!</div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            )}
+
             <div className="space-y-3">
                {dayTasks.map(t => (
                  <div key={t.id} onClick={() => onSelectTask(t.id)} className={`flex items-center gap-4 p-5 rounded-[2rem] transition-all cursor-pointer group border ${t.isEvent ? 'bg-pink-50/50 border-pink-100 hover:bg-pink-50' : 'bg-slate-50/50 border-slate-50 hover:bg-orange-50 hover:border-orange-100'}`}>
@@ -149,7 +191,7 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
                    <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:translate-x-1 transition-transform"></i>
                  </div>
                ))}
-               {dayTasks.length === 0 && (
+               {dayTasks.length === 0 && personEvents.length === 0 && (
                  <div className="py-20 text-center opacity-20">
                     <i className="fa-solid fa-feather-pointed text-6xl mb-4"></i>
                     <Typography variant="h3">Сьогодні вільний день</Typography>
