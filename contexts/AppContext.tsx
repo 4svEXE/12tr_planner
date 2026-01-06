@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { Task, Project, Character, Tag, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem } from '../types';
+import { Task, Project, Character, Tag, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion } from '../types';
 import { saveState, loadState } from '../store';
 
 export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
@@ -24,6 +24,7 @@ interface AppContextType {
   aiEnabled: boolean;
   calendarDate: number;
   calendarViewMode: CalendarViewMode;
+  reportTemplate: ReportQuestion[];
   setCalendarDate: (date: number) => void;
   setCalendarViewMode: (mode: CalendarViewMode) => void;
   setDetailsWidth: (width: number) => void;
@@ -66,9 +67,27 @@ interface AppContextType {
   addChecklistItem: (taskId: string, title: string) => void;
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
+  updateReportTemplate: (newTemplate: ReportQuestion[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
+  { id: 'q1', text: 'Як твій день? (продуктивність, настрій)', page: 1 },
+  { id: 'q2', text: 'Чи були ситуації, від яких я почувався не так, як зазвичай? (тривога, злість, несподіванка)', page: 1 },
+  { id: 'q3', text: 'Які звички не виконав? чому? (мінімум 1)', page: 2 },
+  { id: 'q4', text: 'За що і кому я вдячний?', page: 3 },
+  { id: 'q5', text: 'За що вдячний собі?', page: 3 },
+  { id: 'q6', text: 'Що було позитивного сьогодні?', page: 4 },
+  { id: 'q7', text: 'Що не хочу терпіти / що змінив би?', page: 4 },
+  { id: 'q8', text: 'Які можливості і ресурси у мене зараз є?', page: 5 },
+  { id: 'q9', text: 'Як я можу вижати максимум з моєї ситуації?', page: 5 },
+  { id: 'q10', text: 'Висновок дня:', page: 5 },
+  { id: 'q11', text: 'Що лишнє в житті і побуті?', page: 6 },
+  { id: 'q12', text: 'Як я спав? Що вплинуло на якість сну?', page: 6 },
+  { id: 'q13', text: 'Чи ок калораж? чому?', page: 6 },
+  { id: 'q14', text: 'Чи підготував їжу на завтра?', page: 6 },
+];
 
 const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
   { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true },
@@ -89,21 +108,12 @@ const today00 = new Date().setHours(0,0,0,0);
 const now = Date.now();
 
 const SEED_TASKS: Task[] = [
-  // Next Actions
   { id: 't1', title: 'Налаштувати Streaming API для Gemini', status: TaskStatus.NEXT_ACTION, priority: Priority.UI, difficulty: 3, xp: 150, tags: ['coding', 'ai'], createdAt: now, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', habitHistory: {}, checklist: [] },
   { id: 't4', title: 'Скласти список ETF для портфеля', status: TaskStatus.NEXT_ACTION, priority: Priority.UNI, difficulty: 2, xp: 80, tags: ['finance'], createdAt: now, category: 'tasks', projectId: 'p3', projectSection: 'actions', habitHistory: {}, checklist: [] },
-  
-  // Scheduled with Time (will trigger toasts)
   { id: 't_sched_1', title: 'Зустріч по архітектурі ШІ', status: TaskStatus.INBOX, priority: Priority.UI, difficulty: 2, xp: 100, tags: ['meeting'], createdAt: now, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', scheduledDate: now + 300000, habitHistory: {}, checklist: [] },
-  
-  // Events
   { id: 'e1', title: 'Вебінар: Майбутнє LLM', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 40, tags: ['education'], createdAt: now, isEvent: true, scheduledDate: today00 + (18 * 3600000), habitHistory: {}, checklist: [] },
-  
-  // Inbox
   { id: 't_inbox_1', title: 'Замінити масло в авто', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 2, xp: 50, tags: ['life'], createdAt: now, category: 'unsorted', habitHistory: {}, checklist: [] },
   { id: 't_inbox_2', title: 'Ідея: Гейміфікація щоденника', status: TaskStatus.INBOX, priority: Priority.NUNI, difficulty: 1, xp: 20, tags: ['ideas'], createdAt: now, category: 'unsorted', habitHistory: {}, checklist: [] },
-  
-  // Habits
   { id: 'h1', title: 'Ранкова йога 15хв', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 100, tags: ['habit', 'health'], createdAt: now, category: 'tasks', projectId: 'p2', projectSection: 'habits', habitHistory: { 
     [new Date(now - 86400000).toISOString().split('T')[0]]: { status: 'completed' },
     [new Date(now - 172800000).toISOString().split('T')[0]]: { status: 'completed' }
@@ -111,8 +121,6 @@ const SEED_TASKS: Task[] = [
   { id: 'h2', title: 'Читати 20 сторінок', status: TaskStatus.INBOX, priority: Priority.UNI, difficulty: 1, xp: 120, tags: ['habit', 'study'], createdAt: now, category: 'tasks', projectId: 'p4', projectSection: 'habits', habitHistory: {
     [new Date(now - 86400000).toISOString().split('T')[0]]: { status: 'completed' }
   }, checklist: [] },
-
-  // Done
   { id: 't2', title: 'Прочитати SDK Docs', status: TaskStatus.DONE, priority: Priority.UNI, difficulty: 1, xp: 50, tags: ['docs'], createdAt: now - 86400000, category: 'tasks', projectId: 'p1_sub1', projectSection: 'actions', habitHistory: {}, checklist: [] },
 ];
 
@@ -159,6 +167,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks?.length ? savedState.timeBlocks : SEED_TIME_BLOCKS);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
+  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate || DEFAULT_REPORT_TEMPLATE);
   const [character, setCharacter] = useState<Character>(savedState?.character || {
     name: 'Talent', race: 'Elf', archetype: 'Strategist', level: 5, xp: 450, gold: 120, bio: 'Верховний стратег цифрових світів.', vision: 'Побудувати досконалий двигун життя через код та дисципліну.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Talent', energy: 85, maxEnergy: 100, focus: 90, goals: ['Master Frontend', 'Run 10km', 'Write a book'], views: ['Growth Mindset', 'Radical Transparency'], skills: [{ name: 'React', level: 8, xp: 85, icon: 'fa-brands fa-react' }, { name: 'Strategy', level: 6, xp: 60, icon: 'fa-chess' }], achievements: [{ id: 'a1', title: 'Перша ціль', description: 'Завершено стратегічний проект', icon: 'fa-trophy', unlockedAt: Date.now() }], stats: { health: 70, career: 85, finance: 60, education: 90, relationships: 75, rest: 50 }
   });
@@ -168,8 +177,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [theme]);
 
   useEffect(() => {
-    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme });
-  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme]);
+    saveState({ tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate });
+  }, [tasks, projects, character, tags, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate]);
+
+  const updateReportTemplate = useCallback((newTemplate: ReportQuestion[]) => {
+    setReportTemplate(newTemplate);
+  }, []);
 
   const addTimeBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => {
     const newBlock: TimeBlock = { ...blockData, id: Math.random().toString(36).substr(2, 9) };
@@ -303,12 +316,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter,
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
+    reportTemplate, updateReportTemplate,
     addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction: () => {},
     saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
     addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
     addChecklistItem, toggleChecklistItem, removeChecklistItem,
     pendingUndo: false, addTag, renameTag, deleteTag
-  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode]);
+  }), [tasks, projects, cycle, character, tags, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

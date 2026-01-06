@@ -86,6 +86,20 @@ export interface ChecklistItem {
   completed: boolean;
 }
 
+export interface ReportQuestion {
+  id: string;
+  text: string;
+  page: number;
+}
+
+export interface AiSuggestion {
+  id: string;
+  type: 'task' | 'project' | 'habit' | 'achievement' | 'note' | 'event';
+  title: string;
+  description?: string;
+  reason: string; // Why AI suggested this
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -210,4 +224,5 @@ export interface StoreState {
   routinePresets?: RoutinePreset[];
   activeTab?: string;
   theme?: ThemeType;
+  reportTemplate?: ReportQuestion[];
 }

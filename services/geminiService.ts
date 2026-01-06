@@ -42,6 +42,50 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
   return JSON.parse(response.text);
 };
 
+export const analyzeDailyReport = async (reportContent: string, character: Character) => {
+  const prompt = `
+    Проаналізуй цей щоденний звіт користувача та витягни з нього корисні ідеї для системи GTD та ігрового двигуна життя.
+    Біо героя: ${character.bio}
+    Візія: ${character.vision}
+
+    Звіт користувача:
+    ${reportContent}
+
+    Твоє завдання — згенерувати пропозиції у наступних категоріях:
+    1. 'task' (Наступні дії/квести)
+    2. 'project' (Нові цілі або підпроєкти)
+    3. 'habit' (Звички, які потрібно впровадити або відновити)
+    4. 'achievement' (Досягнення за сьогодні, які варто зафіксувати)
+    5. 'note' (Цінні ідеї або мрії для бази знань)
+    6. 'event' (Заплановані події або дедлайни)
+
+    Відповідай УКРАЇНСЬКОЮ у форматі JSON (масив об'єктів).
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            type: { type: Type.STRING, description: "One of: task, project, habit, achievement, note, event" },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            reason: { type: Type.STRING, description: "Чому ти це пропонуєш на основі тексту звіту?" }
+          },
+          required: ["type", "title", "reason"]
+        }
+      }
+    }
+  });
+
+  return JSON.parse(response.text);
+};
+
 export const planProjectStrategically = async (
   projectTitle: string,
   projectDescription: string,

@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import DiaryEditor from '../components/DiaryEditor';
+import DailyReportWizard from '../components/DailyReportWizard';
 import { marked } from 'https://esm.sh/marked@12.0.0';
 
 const DiaryView: React.FC = () => {
@@ -14,6 +15,7 @@ const DiaryView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryDate, setEditingEntryDate] = useState<string | null>(null);
+  const [showReportWizard, setShowReportWizard] = useState(false);
 
   const sortedDiary = useMemo(() => {
     return [...diary].sort((a, b) => b.date.localeCompare(a.date));
@@ -30,7 +32,6 @@ const DiaryView: React.FC = () => {
   }, [sortedDiary]);
 
   const renderMarkdownPreview = (text: string) => {
-    // Strip markdown tags for a cleaner list preview or just render partial
     const rawHtml = marked.parse(text || "");
     return { __html: rawHtml };
   };
@@ -98,7 +99,7 @@ const DiaryView: React.FC = () => {
           <Typography variant="h1" className="text-slate-900">Щоденник</Typography>
         </div>
         <div className="flex gap-4">
-          <Button icon="fa-rotate" variant="ghost" className="rounded-xl" onClick={() => window.location.reload()}>Оновити</Button>
+          <Button icon="fa-list-check" variant="secondary" className="rounded-2xl px-6 border-[var(--primary)]/20 text-[var(--primary)]" onClick={() => setShowReportWizard(true)}>ЗВІТ ДНЯ</Button>
           <Button icon="fa-plus" variant="primary" className="rounded-2xl px-10 shadow-orange-200" onClick={() => setEditingEntryDate(selectedDate)}>ЗАПИСАТИ</Button>
         </div>
       </header>
@@ -184,6 +185,10 @@ const DiaryView: React.FC = () => {
           date={editingEntryDate} 
           onClose={() => setEditingEntryDate(null)} 
         />
+      )}
+
+      {showReportWizard && (
+        <DailyReportWizard onClose={() => setShowReportWizard(false)} />
       )}
       
       <style>{`
