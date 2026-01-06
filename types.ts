@@ -106,26 +106,25 @@ export interface AiSuggestion {
   reason: string; // Why AI suggested this
 }
 
-// --- PEOPLE / NETWORKING TYPES ---
-
-export type PersonStatus = string; 
+// Added Person related types for social connections
+export type PersonStatus = 'friend' | 'colleague' | 'family' | 'mentor' | 'acquaintance' | string;
 
 export interface Memory {
   id: string;
   event: string;
-  emotion: 'joy' | 'neutral' | 'sad' | 'insight' | 'support';
-  date: string;
-}
-
-export interface ImportantDate {
-  id: string;
-  label: string;
+  emotion: 'joy' | 'insight' | 'support' | 'neutral' | 'sad';
   date: string;
 }
 
 export interface PersonNote {
   id: string;
   text: string;
+  date: string;
+}
+
+export interface ImportantDate {
+  id: string;
+  label: string;
   date: string;
 }
 
@@ -151,13 +150,7 @@ export interface Person {
   notes: PersonNote[];
   memories: Memory[];
   importantDates: ImportantDate[];
-  aiPortrait?: {
-    summary: string;
-    interests: string[];
-    tone: string;
-    topics: string[];
-    updatedAt: number;
-  };
+  aiPortrait?: any;
   lastInteractionAt?: number;
   createdAt: number;
 }
@@ -194,7 +187,7 @@ export interface Task {
   recurrence?: RecurrenceType;
   recurrenceDays?: number[]; 
   habitHistory?: Record<string, HabitDayData>;
-  completedAt?: number; // Коли саме задача була завершена
+  completedAt?: number;
 }
 
 export type ProjectType = 'goal' | 'subproject' | 'folder';
@@ -214,6 +207,7 @@ export interface Project {
   kpiCurrent?: number;
   kpiUnit?: string;
   executionScore?: number;
+  sphere?: 'health' | 'career' | 'finance' | 'education' | 'relationships' | 'rest';
 }
 
 export interface TwelveWeekYear {
@@ -222,8 +216,8 @@ export interface TwelveWeekYear {
   endDate: number;
   currentWeek: number;
   globalExecutionScore: number;
-  manualDailyStatus?: Record<string, boolean>; // Ручні відмітки днів (YYYY-MM-DD)
-  weeklyScores?: Record<number, number>; // Оцінки тижнів (1-12)
+  manualDailyStatus?: Record<string, boolean>;
+  weeklyScores?: Record<number, number>;
 }
 
 export interface Skill {
