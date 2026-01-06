@@ -126,7 +126,8 @@ const DiaryView: React.FC = () => {
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">{month}</span>
                 </div>
                 
-                {entries.map(entry => {
+                {/* Fixed: entries is unknown type here, cast to DiaryEntry[] */}
+                {(entries as DiaryEntry[]).map(entry => {
                   const d = new Date(entry.date);
                   const dayNum = d.getDate();
                   const weekday = d.toLocaleString('uk-UA', { weekday: 'short' }).toUpperCase();

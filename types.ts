@@ -108,7 +108,7 @@ export interface AiSuggestion {
 
 // --- PEOPLE / NETWORKING TYPES ---
 
-export type PersonStatus = string; // Дозволяємо будь-який рядок для кастомних статусів
+export type PersonStatus = string; 
 
 export interface Memory {
   id: string;
@@ -162,8 +162,6 @@ export interface Person {
   createdAt: number;
 }
 
-// --- END OF PEOPLE TYPES ---
-
 export interface Task {
   id: string;
   title: string;
@@ -175,14 +173,14 @@ export interface Task {
   xp: number;
   tags: string[];
   projectId?: string;
-  personId?: string; // Зв'язок із союзником
+  personId?: string; 
   projectSection?: ProjectSection;
   goalId?: string;
   createdAt: number;
   dueDate?: number;
   scheduledDate?: number; 
-  endDate?: number; // For multi-day events
-  isEvent?: boolean; // Distinguish between task and event
+  endDate?: number; 
+  isEvent?: boolean; 
   isPinned?: boolean;
   isTactic?: boolean; 
   category?: string;
@@ -190,16 +188,13 @@ export interface Task {
   comments?: Comment[];
   checklist?: ChecklistItem[];
   isDeleted?: boolean;
-  color?: string; // Color for habits
-  
-  // Reminder & Recurrence fields
-  reminderTime?: string; // e.g. "10:00"
+  color?: string; 
+  reminderTime?: string; 
   reminderEnabled?: boolean;
   recurrence?: RecurrenceType;
-  recurrenceDays?: number[]; // 0-6 (Sun-Sat) or 1-7 (Mon-Sun) based on JS convention
-
-  // Habit specific: history[dateString] = status/note data
+  recurrenceDays?: number[]; 
   habitHistory?: Record<string, HabitDayData>;
+  completedAt?: number; // Коли саме задача була завершена
 }
 
 export type ProjectType = 'goal' | 'subproject' | 'folder';
@@ -213,8 +208,6 @@ export interface Project {
   status: 'active' | 'archived';
   progress: number;
   type?: ProjectType;
-  
-  // 12 Week Year Fields
   isStrategic: boolean;
   kpiTitle?: string;
   kpiTarget?: number;
@@ -229,6 +222,8 @@ export interface TwelveWeekYear {
   endDate: number;
   currentWeek: number;
   globalExecutionScore: number;
+  manualDailyStatus?: Record<string, boolean>; // Ручні відмітки днів (YYYY-MM-DD)
+  weeklyScores?: Record<number, number>; // Оцінки тижнів (1-12)
 }
 
 export interface Skill {

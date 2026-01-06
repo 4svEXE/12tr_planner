@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 
 export const useResizer = (minWidth = 300, maxWidth = 800) => {

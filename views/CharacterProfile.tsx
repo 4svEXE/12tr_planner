@@ -14,7 +14,8 @@ const CharacterProfile: React.FC = () => {
 
   // Calculate dynamic level based on spheres
   const totalLevel = useMemo(() => {
-    const sum = Object.values(character.stats).reduce((a, b) => a + b, 0);
+    // Fixed: Cast stats values to number
+    const sum = Object.values(character.stats).reduce((a, b) => (a as number) + (b as number), 0) as number;
     return Math.floor(sum / 10);
   }, [character.stats]);
 

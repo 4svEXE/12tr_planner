@@ -74,7 +74,6 @@ interface AppContextType {
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
   updateReportTemplate: (newTemplate: ReportQuestion[]) => void;
-  // --- People Methods ---
   addPerson: (name: string) => string;
   updatePerson: (person: Person) => void;
   deletePerson: (id: string) => void;
@@ -82,6 +81,10 @@ interface AppContextType {
   addPersonNote: (personId: string, text: string) => void;
   addRelationshipType: (type: string) => void;
   deleteRelationshipType: (type: string) => void;
+  // --- 12TR Methods ---
+  updateCycle: (updates: Partial<TwelveWeekYear>) => void;
+  toggleCycleDay: (dateStr: string) => void;
+  setWeeklyScore: (weekNum: number, score: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -141,7 +144,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
 
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || {
-    id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 65
+    id: 'c1', 
+    startDate: Date.now(), 
+    endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), 
+    currentWeek: 1, 
+    globalExecutionScore: 0,
+    manualDailyStatus: {},
+    weeklyScores: {}
   });
 
   const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
@@ -174,7 +183,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const addTimeBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => {
-    const newBlock: TimeBlock = { ...blockData, id: Math.random().toString(36).substr(2, 9) };
+    const id = Math.random().toString(36).substr(2, 9);
+    const newBlock: TimeBlock = { ...blockData, id };
     setTimeBlocks(prev => [...prev, newBlock].sort((a, b) => a.startHour - b.startHour));
   }, []);
 
@@ -260,7 +270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const toggleTaskStatus = useCallback((task: Task) => {
     const isNowDone = task.status !== TaskStatus.DONE;
-    updateTask({ ...task, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX });
+    updateTask({ ...task, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined });
   }, [updateTask]);
 
   const toggleHabitStatus = useCallback((id: string, d: string, s?: any, n?: string) => {
@@ -309,7 +319,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, checklist: (t.checklist || []).filter(i => i.id !== itemId) } : t));
   }, []);
 
-  // --- People Methods ---
   const addPerson = useCallback((name: string) => {
     const id = `person-${Math.random().toString(36).substr(2, 9)}`;
     const newPerson: Person = {
@@ -353,6 +362,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRelationshipTypes(prev => prev.filter(t => t !== type));
   }, []);
 
+  // --- 12TR Methods ---
+  const updateCycle = useCallback((updates: Partial<TwelveWeekYear>) => {
+    setCycle(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const toggleCycleDay = useCallback((dateStr: string) => {
+    setCycle(prev => {
+      const current = { ...(prev.manualDailyStatus || {}) };
+      current[dateStr] = !current[dateStr];
+      return { ...prev, manualDailyStatus: current };
+    });
+  }, []);
+
+  const setWeeklyScore = useCallback((weekNum: number, score: number) => {
+    setCycle(prev => {
+      const scores = { ...(prev.weeklyScores || {}) };
+      scores[weekNum] = score;
+      return { ...prev, weeklyScores: scores };
+    });
+  }, []);
+
   const value = useMemo(() => ({
     tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
@@ -363,8 +393,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
     addChecklistItem, toggleChecklistItem, removeChecklistItem,
     addPerson, updatePerson, deletePerson, addPersonMemory, addPersonNote, addRelationshipType, deleteRelationshipType,
-    pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate]);
+    pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby,
+    updateCycle, toggleCycleDay, setWeeklyScore
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
