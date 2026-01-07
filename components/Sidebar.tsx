@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus, ThemeType } from '../types';
@@ -41,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   ];
 
   const bottomItems = [
-    { id: 'completed', icon: 'fa-check-double', label: 'Завершено', acceptDrop: true },
+    { id: 'completed', icon: 'fa-clipboard-check', label: 'Завершено', acceptDrop: true },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
     { id: 'hobbies', icon: 'fa-icons', label: 'Хобі' },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },

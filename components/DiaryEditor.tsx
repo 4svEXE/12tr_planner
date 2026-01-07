@@ -5,7 +5,6 @@ import Typography from './ui/Typography';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
-import { marked } from 'https://esm.sh/marked@12.0.0';
 import { analyzeDailyReport } from '../services/geminiService';
 import { AiSuggestion, TaskStatus, Priority } from '../types';
 
@@ -92,7 +91,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
           updateCharacter({ achievements: [...character.achievements, newAch] });
           break;
         case 'note':
-          addTask(s.title, 'notes', undefined, 'actions'); // In Notes View, they look for 'note' category but use same Task type
+          addTask(s.title, 'notes', undefined, 'actions');
           break;
       }
     });
@@ -127,7 +126,8 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
   };
 
   const renderMarkdown = (text: string) => {
-    const rawHtml = marked.parse(text || "_Порожній запис..._");
+    // @ts-ignore
+    const rawHtml = window.marked ? window.marked.parse(text || "_Порожній запис..._") : text;
     return { __html: rawHtml };
   };
 

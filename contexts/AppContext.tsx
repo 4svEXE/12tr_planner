@@ -64,7 +64,6 @@ interface AppContextType {
   addInboxCategory: (title: string, color?: InboxCategory['color']) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
   deleteInboxCategory: (id: string) => void;
-  reorderInboxCategories: (newCategories: InboxCategory[]) => void;
   addTimeBlock: (block: Omit<TimeBlock, 'id'>) => void;
   updateTimeBlock: (block: TimeBlock) => void;
   deleteTimeBlock: (blockId: string) => void;
@@ -326,10 +325,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateInboxCategory = (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c));
   const deleteInboxCategory = (id: string) => setInboxCategories(p => p.filter(c => c.id !== id));
-  const reorderInboxCategories = useCallback((newCategories: InboxCategory[]) => {
-    setInboxCategories(newCategories);
-  }, []);
-
   const toggleTaskPin = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t));
 
   const addChecklistItem = useCallback((taskId: string, title: string) => {
@@ -418,13 +413,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     aiEnabled, setAiEnabled, updateCharacter, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     reportTemplate, updateReportTemplate,
     addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction: () => {},
-    saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory, reorderInboxCategories,
+    saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
     addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
     addChecklistItem, toggleChecklistItem, removeChecklistItem,
     addPerson, updatePerson, deletePerson, addPersonMemory, addPersonNote, addRelationshipType, deleteRelationshipType,
     pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby,
     updateCycle, toggleCycleDay, setWeeklyScore
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory, reorderInboxCategories]);
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Task, Priority, TaskStatus, Tag, Attachment, Comment, Project, RecurrenceType, ChecklistItem } from '../types';
 import { useApp } from '../contexts/AppContext';
 import HashtagAutocomplete from './HashtagAutocomplete';
-import { marked } from 'https://esm.sh/marked@12.0.0';
 import Typography from './ui/Typography';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
@@ -183,7 +182,8 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   };
 
   const renderMarkdown = (content: string) => {
-    const rawHtml = marked.parse(content || "_Тут ще немає записів. Натисніть, щоб додати..._");
+    // @ts-ignore
+    const rawHtml = window.marked ? window.marked.parse(content || "_Тут ще немає записів. Натисніть, щоб додати..._") : content;
     return { __html: rawHtml };
   };
 

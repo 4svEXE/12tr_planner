@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DiaryEntry } from '../types';
@@ -8,7 +7,6 @@ import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import DiaryEditor from '../components/DiaryEditor';
 import DailyReportWizard from '../components/DailyReportWizard';
-import { marked } from 'https://esm.sh/marked@12.0.0';
 
 const DiaryView: React.FC = () => {
   const { diary, deleteDiaryEntry } = useApp();
@@ -32,7 +30,8 @@ const DiaryView: React.FC = () => {
   }, [sortedDiary]);
 
   const renderMarkdownPreview = (text: string) => {
-    const rawHtml = marked.parse(text || "");
+    // @ts-ignore
+    const rawHtml = window.marked ? window.marked.parse(text || "") : text;
     return { __html: rawHtml };
   };
 
@@ -105,7 +104,6 @@ const DiaryView: React.FC = () => {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Navigator */}
         <aside className="w-80 p-8 space-y-8 hidden xl:block overflow-y-auto custom-scrollbar">
           {renderCalendar()}
           
@@ -117,7 +115,6 @@ const DiaryView: React.FC = () => {
           </Card>
         </aside>
 
-        {/* Right: Feed */}
         <main className="flex-1 overflow-y-auto custom-scrollbar p-8">
           <div className="max-w-3xl mx-auto space-y-12 pb-32">
             {Object.keys(groupedByMonth).length > 0 ? Object.entries(groupedByMonth).map(([month, entries]) => (
@@ -126,7 +123,6 @@ const DiaryView: React.FC = () => {
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">{month}</span>
                 </div>
                 
-                {/* Fixed: entries is unknown type here, cast to DiaryEntry[] */}
                 {(entries as DiaryEntry[]).map(entry => {
                   const d = new Date(entry.date);
                   const dayNum = d.getDate();
