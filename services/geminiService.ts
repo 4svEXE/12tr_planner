@@ -1,8 +1,6 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Character, Task, Project, TaskStatus, Person } from "../types";
 
-// Always use named parameter for apiKey and direct process.env.API_KEY
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getCharacterDailyBriefing = async (character: Character, tasks: Task[], projects: Project[]) => {
@@ -181,7 +179,7 @@ export const planProjectStrategically = async (
 
     Твоє завдання — розробити план за методологією GTD та 12-тижневого року:
     1. "Наступні дії" (Next Actions) — 3-5 конкретних фізичних кроків для негайного старту.
-    2. "Підпроєкти" (Bosses) — 2-3 великі етапи, кожен з яких містить 3 власні завдання.
+    2. "Підпроєкти" (Bosses) — 2-3 великі етапи, кожен з яких місит 3 власні завдання.
     3. "Звички" (Habits) — 1-2 щоденні або щотижневі дії для підтримки імпульсу.
 
     Відповідай УКРАЇНСЬКОЮ МОВОЮ у форматі JSON.
@@ -239,14 +237,25 @@ export const suggestNextAction = async (project: Project, currentTasks: Task[]) 
   return response.text;
 };
 
-export const autoSortInbox = async (inboxTasks: string[], characterContext: Character) => {
+export const processInboxWithAi = async (tasks: {id: string, title: string, content?: string}[], characterContext: Character, existingPeople: string[]) => {
   const prompt = `
-    Розподіли ці вхідні завдання за матрицею Ейзенхауера (UI, NUI, UNI, NUNI) на основі профілю:
-    Біо: ${characterContext.bio}
-    Цілі: ${characterContext.goals.join(", ")}
-    
-    Завдання: ${inboxTasks.join(", ")}
-    Відповідай УКРАЇНСЬКОЮ у форматі JSON.
+    Ти — верховний стратег GTD та ігрового двигуна життя.
+    Проаналізуй ці вхідні (заголовки + опис) і розклади все по поличках.
+    Герой: ${characterContext.name}, Візія: ${characterContext.vision}.
+    Відомі люди: ${existingPeople.join(", ")}.
+
+    Завдання для розбору:
+    ${tasks.map(t => `- [ID:${t.id}] Заголовок: "${t.title}". Опис: "${t.content || 'немає'}"`).join('\n')}
+
+    ДЛЯ КОЖНОГО ЗАВДАННЯ ПРИЙМИ РІШЕННЯ:
+    1. Категорія: 'tasks' (дія), 'notes' (інфо), 'project' (якщо це велика ціль/проєкт).
+    2. Декомпозиція: якщо в описі багато кроків, витягни їх у масив 'subtasks'.
+    3. Люди: якщо згадуються нові люди, створи об'єкт для них. Якщо існуючі — запропонуй нотатку для них.
+    4. Звички: якщо згадується регулярна дія, витягни її.
+    5. Календар: якщо згадуються дати/часи, витягни їх у форматі 'events'.
+    6. Профіль: чи впливає це на Bio/Vision/Goals героя?
+
+    Відповідай УКРАЇНСЬКОЮ у форматі JSON (масив об'єктів).
   `;
 
   const response = await ai.models.generateContent({
@@ -259,10 +268,49 @@ export const autoSortInbox = async (inboxTasks: string[], characterContext: Char
         items: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING },
-            priority: { type: Type.STRING, description: "One of: UI, NUI, UNI, NUNI" },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+            id: { type: Type.STRING },
+            category: { type: Type.STRING },
+            priority: { type: Type.STRING, description: "UI, NUI, UNI, NUNI" },
+            status: { type: Type.STRING, description: "NEXT_ACTION, INBOX" },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            reason: { type: Type.STRING },
+            decomposition: {
+                type: Type.OBJECT,
+                properties: {
+                    subtasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    habits: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    events: { 
+                        type: Type.ARRAY, 
+                        items: { 
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                date: { type: Type.STRING, description: "YYYY-MM-DD" }
+                            }
+                        }
+                    },
+                    people: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                status: { type: Type.STRING },
+                                note: { type: Type.STRING }
+                            }
+                        }
+                    }
+                }
+            },
+            profileImpact: {
+                type: Type.OBJECT,
+                properties: {
+                    bioUpdate: { type: Type.STRING },
+                    newGoal: { type: Type.STRING }
+                }
+            }
+          },
+          required: ["id", "category", "priority", "status", "tags", "reason"]
         }
       }
     }

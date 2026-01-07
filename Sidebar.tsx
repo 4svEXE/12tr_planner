@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   ];
 
   const bottomItems = [
-    { id: 'completed', icon: 'fa-check-double', label: 'Завершено', acceptDrop: true },
+    { id: 'completed', icon: 'fa-circle-check', label: 'Завершено', acceptDrop: true },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
