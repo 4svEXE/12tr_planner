@@ -1,4 +1,3 @@
-
 export enum TaskStatus {
   INBOX = 'INBOX',
   NEXT_ACTION = 'NEXT_ACTION',
@@ -83,6 +82,7 @@ export interface InboxCategory {
   title: string;
   icon: string;
   isPinned: boolean;
+  scope?: 'inbox' | 'actions';
   color?: 'slate' | 'orange' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'violet';
 }
 

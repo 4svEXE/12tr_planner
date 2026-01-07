@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate } from '../types';
 import { saveState, loadState } from '../store';
@@ -61,7 +60,7 @@ interface AppContextType {
   deleteHobby: (hobbyName: string) => void;
   saveDiaryEntry: (date: string, content: string) => void;
   deleteDiaryEntry: (id: string) => void;
-  addInboxCategory: (title: string, color?: InboxCategory['color']) => void;
+  addInboxCategory: (title: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
   deleteInboxCategory: (id: string) => void;
   addTimeBlock: (block: Omit<TimeBlock, 'id'>) => void;
@@ -124,10 +123,10 @@ const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
 ];
 
 const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
-  { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true },
-  { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false },
-  { id: 'tasks', title: 'Завдання', icon: 'fa-check-to-slot', isPinned: false },
-  { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false },
+  { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
+  { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
+  { id: 'tasks', title: 'Завдання', icon: 'fa-bolt', isPinned: false, scope: 'actions' },
+  { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -319,8 +318,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const saveDiaryEntry = useCallback((d: string, c: string) => setDiary(p => { const ex = p.find(e => e.date === d); return ex ? p.map(e => e.date === d ? { ...e, content: c, updatedAt: Date.now() } : e) : [{ id: Math.random().toString(36).substr(2, 9), date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p] }), []);
   const deleteDiaryEntry = (id: string) => setDiary(p => p.filter(e => e.id !== id));
   
-  const addInboxCategory = useCallback((t: string, color?: InboxCategory['color']) => {
-    setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false, color }]);
+  const addInboxCategory = useCallback((t: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => {
+    setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]);
   }, []);
 
   const updateInboxCategory = (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c));
