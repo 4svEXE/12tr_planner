@@ -37,7 +37,7 @@ interface AppContextType {
   setAiEnabled: (enabled: boolean) => void;
   updateSidebarSetting: (key: string, visible: boolean) => void;
   updateCharacter: (updates: Partial<Character>) => void;
-  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection, isEvent?: boolean, scheduledDate?: number, personId?: string) => string;
+  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
   addProject: (project: Omit<Project, 'id' | 'progress' | 'status'>) => string;
   updateTask: (task: Task) => void;
   updateProject: (project: Project) => void;
@@ -61,7 +61,7 @@ interface AppContextType {
   deleteHobby: (hobbyName: string) => void;
   saveDiaryEntry: (date: string, content: string) => void;
   deleteDiaryEntry: (id: string) => void;
-  addInboxCategory: (title: string) => void;
+  addInboxCategory: (title: string, color?: InboxCategory['color']) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
   deleteInboxCategory: (id: string) => void;
   addTimeBlock: (block: Omit<TimeBlock, 'id'>) => void;
@@ -228,17 +228,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateCharacter = useCallback((updates: Partial<Character>) => setCharacter(prev => ({ ...prev, ...updates })), []);
   const updateSidebarSetting = (key: string, visible: boolean) => setSidebarSettings(prev => ({ ...prev, [key]: visible }));
   
-  const addTask = useCallback((title: string, categoryId: string = 'unsorted', projectId?: string, projectSection: ProjectSection = 'actions', isEvent: boolean = false, scheduledDate?: number, personId?: string) => {
+  const addTask = useCallback((title: string, categoryId: string = 'unsorted', projectId?: string, projectSection: ProjectSection = 'actions', isEvent: boolean = false, scheduledDate?: number, personId?: string, status?: TaskStatus) => {
     const id = Math.random().toString(36).substr(2, 9);
     const isHabit = projectSection === 'habits';
+    
+    const tagMatches = title.match(/#\w+/g);
+    const foundTags = tagMatches ? tagMatches.map(t => t.slice(1).toLowerCase()) : [];
+    const cleanTitle = title.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim();
+
     const newTask: Task = { 
       id, 
-      title, 
-      status: TaskStatus.INBOX, 
+      title: cleanTitle, 
+      status: status || TaskStatus.INBOX, 
       priority: Priority.NUI, 
       difficulty: 1, 
       xp: isHabit ? 150 : 50, 
-      tags: isHabit ? ['habit'] : [], 
+      tags: isHabit ? ['habit', ...foundTags] : foundTags, 
       createdAt: Date.now(), 
       category: categoryId, 
       projectId, 
@@ -250,9 +255,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       checklist: [],
       isDeleted: false 
     };
+    
+    foundTags.forEach(tagName => {
+      if (!tags.some(t => t.name === tagName)) {
+        addTag(tagName);
+      }
+    });
+
     setTasks(prev => [newTask, ...prev]);
     return id;
-  }, []);
+  }, [tags]);
 
   const addProject = useCallback((projectData: Omit<Project, 'id' | 'progress' | 'status'>) => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -287,7 +299,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const moveTaskToCategory = (id: string, cat: string, isPinned?: boolean) => setTasks(prev => prev.map(t => t.id === id ? { ...t, category: cat, isPinned: isPinned ?? t.isPinned } : t));
   const moveTaskToProjectSection = (id: string, sec: ProjectSection) => setTasks(prev => prev.map(t => t.id === id ? { ...t, projectSection: sec } : t));
   const setProjectParent = (id: string, pId: string | undefined) => setProjects(prev => prev.map(p => p.id === id ? { ...p, parentFolderId: pId } : p));
-  const addTag = useCallback((n: string) => { const nt = { id: Math.random().toString(36).substr(2, 9), name: n.toLowerCase(), color: `hsl(${Math.random() * 360}, 70%, 90%)` }; setTags(p => [...p, nt]); return nt; }, []);
+  const addTag = useCallback((n: string) => { 
+    const tagName = n.toLowerCase().trim();
+    if (!tagName) return { id: '', name: '', color: '' };
+    const nt = { id: Math.random().toString(36).substr(2, 9), name: tagName, color: `hsl(${Math.random() * 360}, 70%, 50%)` }; 
+    setTags(p => {
+        if (p.some(t => t.name === tagName)) return p;
+        return [...p, nt];
+    }); 
+    return nt; 
+  }, []);
   const renameTag = (o: string, n: string) => setTags(p => p.map(t => t.name === o ? { ...t, name: n } : t));
   const deleteTag = (n: string) => { setTags(p => p.filter(t => t.name !== n)); setTasks(p => p.map(t => ({...t, tags: t.tags.filter(tag => tag !== n)}))); };
 
@@ -297,7 +318,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const saveDiaryEntry = useCallback((d: string, c: string) => setDiary(p => { const ex = p.find(e => e.date === d); return ex ? p.map(e => e.date === d ? { ...e, content: c, updatedAt: Date.now() } : e) : [{ id: Math.random().toString(36).substr(2, 9), date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p] }), []);
   const deleteDiaryEntry = (id: string) => setDiary(p => p.filter(e => e.id !== id));
-  const addInboxCategory = (t: string) => setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false }]);
+  
+  const addInboxCategory = useCallback((t: string, color?: InboxCategory['color']) => {
+    setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false, color }]);
+  }, []);
+
   const updateInboxCategory = (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c));
   const deleteInboxCategory = (id: string) => setInboxCategories(p => p.filter(c => c.id !== id));
   const toggleTaskPin = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t));
@@ -362,7 +387,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRelationshipTypes(prev => prev.filter(t => t !== type));
   }, []);
 
-  // --- 12TR Methods ---
   const updateCycle = useCallback((updates: Partial<TwelveWeekYear>) => {
     setCycle(prev => ({ ...prev, ...updates }));
   }, []);
@@ -395,7 +419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addPerson, updatePerson, deletePerson, addPersonMemory, addPersonNote, addRelationshipType, deleteRelationshipType,
     pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby,
     updateCycle, toggleCycleDay, setWeeklyScore
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore]);
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
