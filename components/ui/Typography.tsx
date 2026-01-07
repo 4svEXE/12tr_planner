@@ -6,9 +6,10 @@ interface TypographyProps {
   children: React.ReactNode;
   className?: string;
   italic?: boolean;
+  onDoubleClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
-const Typography: React.FC<TypographyProps> = ({ variant, children, className = '', italic = false }) => {
+const Typography: React.FC<TypographyProps> = ({ variant, children, className = '', italic = false, onDoubleClick }) => {
   const baseClasses = italic ? 'italic' : '';
   
   const variants = {
@@ -21,7 +22,10 @@ const Typography: React.FC<TypographyProps> = ({ variant, children, className = 
   };
 
   return (
-    <div className={`${variants[variant]} ${baseClasses} ${className}`}>
+    <div 
+      className={`${variants[variant]} ${baseClasses} ${className}`}
+      onDoubleClick={onDoubleClick}
+    >
       {children}
     </div>
   );
