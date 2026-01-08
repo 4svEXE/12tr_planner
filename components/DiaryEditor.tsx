@@ -16,7 +16,6 @@ interface DiaryEditorProps {
   onClose: () => void;
 }
 
-// Ізольований компонент блоку для запобігання стрибків курсору
 const EditableBlock: React.FC<{
   block: Block;
   index: number;
@@ -29,7 +28,6 @@ const EditableBlock: React.FC<{
 }> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onContextMenu, allBlocks }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Синхронізація DOM тільки при зміні ID блоку (завантаження нового запису)
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerHTML !== block.content) {
       contentRef.current.innerHTML = block.content;
@@ -43,7 +41,6 @@ const EditableBlock: React.FC<{
   }, [isFocused]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    // Оновлюємо стан БЕЗ перерендерингу цього конкретного вузла
     onUpdate({ content: e.currentTarget.innerHTML });
   };
 
@@ -88,7 +85,6 @@ const EditableBlock: React.FC<{
           onInput={handleInput}
           onKeyDown={(e) => onKeyDown(e, contentRef.current?.innerHTML || '')}
           onFocus={onFocus}
-          // Fixed: Changed handleContextMenu to onContextMenu which is available from props
           onContextMenu={onContextMenu}
           className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(placeholder)] empty:before:text-slate-200 block-input transition-all ${typeClass}`}
         />
@@ -130,13 +126,16 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
     }
   }, [currentId]);
 
-  const handleManualSave = () => {
+  const handleManualSave = (isAutoSave = false) => {
     const contentStr = JSON.stringify(blocks);
     const hasContent = blocks.some(b => b.content.trim() !== '' && b.content !== '<br>');
+    
+    // ВАЖЛИВО: Якщо це автозбереження і контенту немає, просто нічого не робимо
+    // Раніше тут був виклик onClose(), який закривав порожній новий запис через 3 секунди
     if (!hasContent && !currentId) {
-        onClose();
         return;
     }
+    
     const savedId = saveDiaryEntry(localDate, contentStr, currentId);
     if (!currentId) setCurrentId(savedId);
     setIsSaving(false);
@@ -152,7 +151,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
     if (blocks.length === 0) return;
     setIsSaving(true);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = window.setTimeout(handleManualSave, 3000);
+    saveTimeoutRef.current = window.setTimeout(() => handleManualSave(true), 3000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [blocks, localDate]);
 
@@ -213,7 +212,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
         <div className="flex items-center gap-2 md:gap-3">
           <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)} className="bg-transparent border-none text-orange-600 font-black uppercase text-[10px] tracking-widest focus:ring-0 p-0 cursor-pointer" />
           <div className="h-3 w-px bg-slate-100 hidden sm:block"></div>
-          <Typography variant="tiny" className="text-slate-300 font-black uppercase text-[8px] tracking-widest hidden sm:block">Diary Editor</Typography>
+          <Typography variant="tiny" className="text-slate-300 font-black uppercase text-[8px] tracking-widest hidden sm:block">Щоденник</Typography>
         </div>
         <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center transition-all hover:text-slate-900 active:scale-95"><i className="fa-solid fa-xmark"></i></button>
       </header>
@@ -256,10 +255,10 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
           </div>
         )}
 
-        <footer className="p-3 md:p-4 border-t border-slate-50 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0">
+        <footer className="p-3 md:p-4 border-t border-slate-50 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0 mb-safe">
           <div className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-orange-400 animate-pulse' : 'bg-emerald-400'}`}></div>
-            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{isSaving ? 'ЗБЕРЕЖЕННЯ' : 'СИНХРОНІЗОВАНО'}</span>
+            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{isSaving ? 'Збереження' : 'Збережено'}</span>
           </div>
           <div className="flex gap-2">
             <Button variant="primary" size="sm" className="text-[9px] rounded-xl px-4 md:px-6 shadow-orange-100" onClick={handleSaveAndClose}>ЗБЕРЕГТИ ТА ЗАКРИТИ</Button>

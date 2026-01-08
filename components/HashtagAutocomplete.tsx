@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Tag } from '../types';
 import { useApp } from '../contexts/AppContext';
@@ -12,11 +11,10 @@ interface HashtagAutocompleteProps {
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
-  showSuggestionsOnFocus?: boolean;
 }
 
 const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({ 
-  value, onChange, onSelectTag, onEnter, onBlur, placeholder, className, autoFocus = false, showSuggestionsOnFocus = false 
+  value, onChange, onSelectTag, onEnter, onBlur, placeholder, className, autoFocus = false
 }) => {
   const { tags, addTag } = useApp();
   const [showPopover, setShowPopover] = useState(false);
@@ -37,10 +35,11 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
     const words = textBeforeCursor.split(/\s/);
     const lastWord = words[words.length - 1];
 
+    // Дозволяємо пошук навіть без решітки
     if (lastWord.startsWith('#')) {
       setFilter(lastWord.slice(1));
       setShowPopover(true);
-    } else if (showSuggestionsOnFocus && (lastWord === '' || !lastWord.startsWith('#'))) {
+    } else if (lastWord.length > 0) {
       setFilter(lastWord);
       setShowPopover(true);
     } else {
@@ -51,9 +50,8 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     const pos = e.target.selectionStart || 0;
     setCursorPos(pos);
-    if (showSuggestionsOnFocus) {
-        updateSuggestions(value, pos);
-    }
+    setShowPopover(true); // Показуємо всі теги при фокусі
+    setFilter('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -79,17 +77,8 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
     const words = textBefore.split(/\s/);
     
     const lastWord = words[words.length - 1];
-    if (lastWord.startsWith('#')) {
-        words[words.length - 1] = `#${tagName} `;
-    } else {
-        // Якщо ми в режимі вибору без решітки (showSuggestionsOnFocus), 
-        // просто ставимо тег з решіткою замість останнього слова або в кінець
-        if (showSuggestionsOnFocus) {
-             words[words.length - 1] = `#${tagName} `;
-        } else {
-            words.push(`#${tagName} `);
-        }
-    }
+    // Замінюємо останнє слово на тег з решіткою
+    words[words.length - 1] = `#${tagName} `;
     
     const newVal = words.join(' ').replace(/\s\s+/g, ' ') + textAfter;
     
