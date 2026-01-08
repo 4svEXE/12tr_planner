@@ -21,7 +21,11 @@ interface AiDecision {
   };
   profileImpact?: {
     bioUpdate?: string;
+    roleUpdate?: string;
     newGoal?: string;
+    newBelief?: string;
+    workStyleUpdate?: string;
+    newFocusBlocker?: string;
   };
 }
 
@@ -71,12 +75,7 @@ const InboxAiWizard: React.FC<InboxAiWizardProps> = ({ decisions, onClose, onCon
              const task = tasks.find(t => t.id === d.id);
              if (!task) return null;
              const isSelected = selectedIds.has(d.id);
-             const hasImpacts = d.decomposition && (
-                (d.decomposition.subtasks?.length || 0) > 0 || 
-                (d.decomposition.people?.length || 0) > 0 || 
-                (d.decomposition.events?.length || 0) > 0 ||
-                (d.decomposition.habits?.length || 0) > 0
-             );
+             const hasImpacts = d.decomposition || d.profileImpact;
 
              return (
                <div 
@@ -102,43 +101,29 @@ const InboxAiWizard: React.FC<InboxAiWizardProps> = ({ decisions, onClose, onCon
                     </div>
 
                     {isSelected && hasImpacts && (
-                        <div className="space-y-3 mt-4 border-t border-slate-100 pt-4 animate-in slide-in-from-top-2">
-                           <Typography variant="tiny" className="text-slate-400 mb-2 uppercase font-black text-[7px]">Вплив на екосистему:</Typography>
-                           
-                           {d.decomposition?.subtasks && d.decomposition.subtasks.length > 0 && (
-                             <div className="flex flex-col gap-1.5">
-                               {d.decomposition.subtasks.map((st, i) => (
-                                 <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                                   <i className="fa-solid fa-arrow-turn-up rotate-90 text-[8px] text-slate-300"></i>
-                                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
-                                   {st}
-                                 </div>
-                               ))}
+                        <div className="space-y-4 mt-4 border-t border-slate-100 pt-4 animate-in slide-in-from-top-2">
+                           {d.decomposition && (
+                             <div className="space-y-3">
+                                <Typography variant="tiny" className="text-slate-400 mb-2 uppercase font-black text-[7px]">Вплив на екосистему:</Typography>
+                                <div className="flex flex-wrap gap-2">
+                                   {d.decomposition.subtasks?.map((st, i) => <div key={i} className="bg-slate-100 px-2 py-1 rounded text-[9px] font-bold">+ Підквест</div>)}
+                                   {d.decomposition.people?.map((p, i) => <div key={i} className="bg-sky-50 text-sky-700 px-2 py-1 rounded text-[9px] font-bold"><i className="fa-solid fa-user-plus mr-1"></i> {p.name}</div>)}
+                                   {d.decomposition.events?.map((ev, i) => <div key={i} className="bg-pink-50 text-pink-700 px-2 py-1 rounded text-[9px] font-bold"><i className="fa-solid fa-calendar mr-1"></i> Подія</div>)}
+                                </div>
                              </div>
                            )}
 
-                           <div className="flex flex-wrap gap-3 mt-2">
-                              {d.decomposition?.people?.map((p, i) => (
-                                <div key={i} className="flex items-center gap-1.5 bg-sky-50 text-sky-700 px-2 py-1 rounded-lg border border-sky-100 text-[9px] font-black uppercase">
-                                   <i className="fa-solid fa-user-plus"></i> {p.name}
+                           {d.profileImpact && (
+                             <div className="space-y-3">
+                                <Typography variant="tiny" className="text-orange-500 mb-2 uppercase font-black text-[7px]">Зміни Героя:</Typography>
+                                <div className="flex flex-wrap gap-2">
+                                   {d.profileImpact.bioUpdate && <Badge variant="orange" className="text-[7px]">Оновлення Bio</Badge>}
+                                   {d.profileImpact.roleUpdate && <Badge variant="orange" className="text-[7px]">Нова роль</Badge>}
+                                   {d.profileImpact.newBelief && <Badge variant="indigo" className="text-[7px]">Нове переконання</Badge>}
+                                   {d.profileImpact.newFocusBlocker && <Badge variant="rose" className="text-[7px]">Focus-blocker</Badge>}
                                 </div>
-                              ))}
-                              {d.decomposition?.events?.map((ev, i) => (
-                                <div key={i} className="flex items-center gap-1.5 bg-pink-50 text-pink-700 px-2 py-1 rounded-lg border border-pink-100 text-[9px] font-black uppercase">
-                                   <i className="fa-solid fa-calendar-day"></i> {ev.title} ({ev.date})
-                                </div>
-                              ))}
-                              {d.decomposition?.habits?.map((h, i) => (
-                                <div key={i} className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg border border-emerald-100 text-[9px] font-black uppercase">
-                                   <i className="fa-solid fa-repeat"></i> {h}
-                                </div>
-                              ))}
-                              {d.profileImpact?.newGoal && (
-                                <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg border border-orange-100 text-[9px] font-black uppercase">
-                                   <i className="fa-solid fa-mountain"></i> Нова ціль
-                                </div>
-                              )}
-                           </div>
+                             </div>
+                           )}
                         </div>
                     )}
                  </div>
@@ -147,11 +132,11 @@ const InboxAiWizard: React.FC<InboxAiWizardProps> = ({ decisions, onClose, onCon
            })}
         </div>
 
-        <footer className="p-8 border-t border-slate-50 bg-slate-50/50 flex gap-4 sticky bottom-0 z-10">
-           <Button variant="ghost" className="flex-1 py-4 rounded-2xl font-black text-[10px]" onClick={onClose}>СКАСУВАТИ</Button>
+        <footer className="p-8 border-t border-slate-50 bg-slate-50/30 flex gap-4 sticky bottom-0 z-10">
+           <Button variant="ghost" className="flex-1 py-4" onClick={onClose}>СКАСУВАТИ</Button>
            <Button 
             variant="primary" 
-            className="flex-[2] py-4 rounded-2xl shadow-2xl shadow-orange-200 font-black tracking-widest text-[10px]"
+            className="flex-[2] py-4 shadow-xl shadow-orange-200"
             disabled={selectedIds.size === 0}
             onClick={() => onConfirm(selectedIds)}
            >

@@ -32,22 +32,6 @@ export interface Hobby {
   color: string;
 }
 
-export interface Attachment {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  createdAt: number;
-}
-
-export interface Comment {
-  id: string;
-  text: string;
-  author: string;
-  createdAt: number;
-}
-
 export interface HabitDayData {
   status: 'completed' | 'skipped' | 'none';
   note?: string;
@@ -60,7 +44,7 @@ export interface TimeBlock {
   endHour: number;
   color?: string;
   type: 'work' | 'rest' | 'routine' | 'study';
-  dayOfWeek?: number; // 0-6, if set, repeats weekly
+  dayOfWeek?: number;
 }
 
 export interface RoutinePreset {
@@ -71,7 +55,7 @@ export interface RoutinePreset {
 
 export interface DiaryEntry {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   content: string;
   createdAt: number;
   updatedAt: number;
@@ -103,10 +87,9 @@ export interface AiSuggestion {
   type: 'task' | 'project' | 'habit' | 'achievement' | 'note' | 'event';
   title: string;
   description?: string;
-  reason: string; // Why AI suggested this
+  reason: string;
 }
 
-// Added Person related types for social connections
 export type PersonStatus = 'friend' | 'colleague' | 'family' | 'mentor' | 'acquaintance' | string;
 
 export interface Memory {
@@ -133,7 +116,7 @@ export interface Person {
   name: string;
   avatar?: string;
   status: PersonStatus;
-  rating: number; // 1-10
+  rating: number;
   birthDate?: string;
   location?: string;
   description?: string;
@@ -177,20 +160,13 @@ export interface Task {
   isPinned?: boolean;
   isTactic?: boolean; 
   category?: string;
-  attachments?: Attachment[];
-  comments?: Comment[];
   checklist?: ChecklistItem[];
   isDeleted?: boolean;
   color?: string; 
-  reminderTime?: string; 
-  reminderEnabled?: boolean;
   recurrence?: RecurrenceType;
-  recurrenceDays?: number[]; 
   habitHistory?: Record<string, HabitDayData>;
   completedAt?: number;
 }
-
-export type ProjectType = 'goal' | 'subproject' | 'folder';
 
 export interface Project {
   id: string;
@@ -200,13 +176,8 @@ export interface Project {
   parentFolderId?: string; 
   status: 'active' | 'archived';
   progress: number;
-  type?: ProjectType;
+  type?: 'goal' | 'subproject' | 'folder';
   isStrategic: boolean;
-  kpiTitle?: string;
-  kpiTarget?: number;
-  kpiCurrent?: number;
-  kpiUnit?: string;
-  executionScore?: number;
   sphere?: 'health' | 'career' | 'finance' | 'education' | 'relationships' | 'rest';
 }
 
@@ -239,6 +210,7 @@ export interface Character {
   name: string;
   race: 'Gnome' | 'Elf' | 'Human' | 'Dwarf';
   archetype: 'Strategist' | 'Builder' | 'Monk' | 'Explorer';
+  role: string;
   level: number;
   xp: number;
   gold: number;
@@ -250,6 +222,12 @@ export interface Character {
   focus: number;
   goals: string[];
   views: string[];
+  beliefs: string[];
+  preferences: {
+    workStyle?: string;
+    planningStyle?: string;
+    focusBlockers: string[];
+  };
   skills: Skill[];
   achievements: Achievement[];
   stats: {

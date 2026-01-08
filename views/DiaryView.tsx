@@ -22,9 +22,16 @@ const DiaryView: React.FC = () => {
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, DiaryEntry[]> = {};
     sortedDiary.forEach(entry => {
-      const monthStr = new Date(entry.date).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
-      if (!groups[monthStr]) groups[monthStr] = [];
-      groups[monthStr].push(entry);
+      try {
+        const dateObj = new Date(entry.date);
+        if (isNaN(dateObj.getTime())) return; // Пропуск некоректних дат
+        
+        const monthStr = dateObj.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
+        if (!groups[monthStr]) groups[monthStr] = [];
+        groups[monthStr].push(entry);
+      } catch (e) {
+        console.error("Error grouping diary entry:", e);
+      }
     });
     return groups;
   }, [sortedDiary]);
@@ -151,12 +158,20 @@ const DiaryView: React.FC = () => {
                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                                Оновлено {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
                              </span>
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); deleteDiaryEntry(entry.id); }}
-                               className="opacity-0 group-hover/card:opacity-100 w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-all"
-                             >
-                               <i className="fa-solid fa-trash-can text-[10px]"></i>
-                             </button>
+                             <div className="flex gap-2 opacity-0 group-hover/card:opacity-100 transition-all">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setEditingEntryDate(entry.date); }}
+                                  className="w-8 h-8 rounded-lg text-slate-300 hover:text-orange-500 hover:bg-orange-50 flex items-center justify-center transition-all"
+                                >
+                                  <i className="fa-solid fa-pencil text-[10px]"></i>
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); deleteDiaryEntry(entry.id); }}
+                                  className="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-all"
+                                >
+                                  <i className="fa-solid fa-trash-can text-[10px]"></i>
+                                </button>
+                             </div>
                            </div>
                            <div className="diary-preview-content prose prose-slate prose-sm line-clamp-4 overflow-hidden pointer-events-none" dangerouslySetInnerHTML={renderMarkdownPreview(entry.content)}>
                            </div>

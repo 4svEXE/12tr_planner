@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Task, Priority, TaskStatus, Tag, Attachment, Comment, Project, RecurrenceType, ChecklistItem } from '../types';
+// Removed Attachment and Comment from the import list below as they are not exported members of '../types'.
+import { Task, Priority, TaskStatus, Tag, Project, RecurrenceType, ChecklistItem } from '../types';
 import { useApp } from '../contexts/AppContext';
 import HashtagAutocomplete from './HashtagAutocomplete';
 import Typography from './ui/Typography';

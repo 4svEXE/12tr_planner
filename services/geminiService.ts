@@ -6,8 +6,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const getCharacterDailyBriefing = async (character: Character, tasks: Task[], projects: Project[]) => {
   const prompt = `
     Зіграй роль ${character.name}, мудрого наставника раси ${character.race} у фентезійному світі стратегії.
+    Роль героя: ${character.role}
     Погляди користувача на життя: ${character.views.join(", ")}
     Цілі користувача: ${character.goals.join(", ")}
+    Вподобання: ${character.preferences.workStyle}, ${character.preferences.planningStyle}
     
     Завдання на сьогодні: ${tasks.map(t => t.title).join(", ")}
     Активні проєкти: ${projects.map(p => p.name).join(", ")}
@@ -46,7 +48,7 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
 
   const prompt = `
     Проаналізуй контакт у соціальній мережі користувача.
-    Користувач (Герой): ${userCharacter.name}, архетип: ${userCharacter.archetype}.
+    Користувач (Герой): ${userCharacter.name}, роль: ${userCharacter.role}, архетип: ${userCharacter.archetype}.
     Контакт: ${person.name}, статус: ${person.status}, інтереси: ${person.hobbies.join(', ')}.
     
     Історія спогадів:
@@ -221,39 +223,22 @@ export const planProjectStrategically = async (
   return JSON.parse(response.text);
 };
 
-export const suggestNextAction = async (project: Project, currentTasks: Task[]) => {
-  const completedTasks = currentTasks.filter(t => t.status === TaskStatus.DONE).map(t => t.title).join(", ");
-  const prompt = `
-    На основі проєкту "${project.name}" та цих завершених завдань: ${completedTasks},
-    яка наступна мінімальна фізична дія потрібна, щоб просунути проєкт вперед? 
-    Думай як експерт з GTD. Відповідай УКРАЇНСЬКОЮ.
-  `;
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompt,
-  });
-
-  return response.text;
-};
-
 export const processInboxWithAi = async (tasks: {id: string, title: string, content?: string}[], characterContext: Character, existingPeople: string[]) => {
   const prompt = `
     Ти — верховний стратег GTD та ігрового двигуна життя.
     Проаналізуй ці вхідні (заголовки + опис) і розклади все по поличках.
-    Герой: ${characterContext.name}, Візія: ${characterContext.vision}.
+    Герой: ${characterContext.name}, Візія: ${characterContext.vision}, Роль: ${characterContext.role}.
+    Вподобання героя: ${characterContext.preferences.workStyle}, ${characterContext.preferences.planningStyle}.
     Відомі люди: ${existingPeople.join(", ")}.
 
     Завдання для розбору:
     ${tasks.map(t => `- [ID:${t.id}] Заголовок: "${t.title}". Опис: "${t.content || 'немає'}"`).join('\n')}
 
     ДЛЯ КОЖНОГО ЗАВДАННЯ ПРИЙМИ РІШЕННЯ:
-    1. Категорія: 'tasks' (дія), 'notes' (інфо), 'project' (якщо це велика ціль/проєкт).
-    2. Декомпозиція: якщо в описі багато кроків, витягни їх у масив 'subtasks'.
-    3. Люди: якщо згадуються нові люди, створи об'єкт для них. Якщо існуючі — запропонуй нотатку для них.
-    4. Звички: якщо згадується регулярна дія, витягни її.
-    5. Календар: якщо згадуються дати/часи, витягни їх у форматі 'events'.
-    6. Профіль: чи впливає це на Bio/Vision/Goals героя?
+    1. Категорія: 'tasks', 'notes', 'project'.
+    2. Декомпозиція: витягни 'subtasks', 'habits', 'events', 'people'.
+    3. Профіль Героя: чи містить текст важливу інфу про зміну поглядів, нову роль, зміну вподобань або нові обмеження фокусу (focusBlockers)?
+       Якщо так, додай це в 'profileImpact'.
 
     Відповідай УКРАЇНСЬКОЮ у форматі JSON (масив об'єктів).
   `;
@@ -270,8 +255,8 @@ export const processInboxWithAi = async (tasks: {id: string, title: string, cont
           properties: {
             id: { type: Type.STRING },
             category: { type: Type.STRING },
-            priority: { type: Type.STRING, description: "UI, NUI, UNI, NUNI" },
-            status: { type: Type.STRING, description: "NEXT_ACTION, INBOX" },
+            priority: { type: Type.STRING },
+            status: { type: Type.STRING },
             tags: { type: Type.ARRAY, items: { type: Type.STRING } },
             reason: { type: Type.STRING },
             decomposition: {
@@ -279,34 +264,19 @@ export const processInboxWithAi = async (tasks: {id: string, title: string, cont
                 properties: {
                     subtasks: { type: Type.ARRAY, items: { type: Type.STRING } },
                     habits: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    events: { 
-                        type: Type.ARRAY, 
-                        items: { 
-                            type: Type.OBJECT,
-                            properties: {
-                                title: { type: Type.STRING },
-                                date: { type: Type.STRING, description: "YYYY-MM-DD" }
-                            }
-                        }
-                    },
-                    people: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                name: { type: Type.STRING },
-                                status: { type: Type.STRING },
-                                note: { type: Type.STRING }
-                            }
-                        }
-                    }
+                    events: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, date: { type: Type.STRING } } } },
+                    people: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, status: { type: Type.STRING }, note: { type: Type.STRING } } } }
                 }
             },
             profileImpact: {
                 type: Type.OBJECT,
                 properties: {
                     bioUpdate: { type: Type.STRING },
-                    newGoal: { type: Type.STRING }
+                    roleUpdate: { type: Type.STRING },
+                    newGoal: { type: Type.STRING },
+                    newBelief: { type: Type.STRING },
+                    workStyleUpdate: { type: Type.STRING },
+                    newFocusBlocker: { type: Type.STRING }
                 }
             }
           },
