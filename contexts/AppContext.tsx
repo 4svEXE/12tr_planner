@@ -87,40 +87,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const SEED_TAGS: Tag[] = [
-  { id: 'tg1', name: 'робота', color: '#3b82f6' },
-  { id: 'tg2', name: 'терміново', color: '#ef4444' },
-  { id: 'tg3', name: 'здоровя', color: '#10b981' },
-  { id: 'tg4', name: 'фінанси', color: '#f59e0b' },
-  { id: 'tg5', name: 'саморозвиток', color: '#6366f1' },
-  { id: 'tg6', name: 'побут', color: '#94a3b8' },
-];
-
-const SEED_HOBBIES: Hobby[] = [
-  { id: 'hb1', name: 'Шахи', color: '#64748b' },
-  { id: 'hb2', name: 'Спортзал', color: '#10b981' },
-  { id: 'hb3', name: 'Гітара', color: '#ec4899' },
-  { id: 'hb4', name: 'Читання', color: '#f97316' },
-  { id: 'hb5', name: 'Фотографія', color: '#06b6d4' },
-];
-
-const SEED_DIARY: DiaryEntry[] = [
-  { 
-    id: 'd1', 
-    date: new Date().toISOString().split('T')[0], 
-    content: '# Сьогодні був продуктивний день\n\nВдалося завершити архітектуру проекту та провести успішну зустріч з командою. \n\n- [x] Кодування\n- [x] Мітинг\n- [ ] Спортзал (перенесено)\n\nПочуваюся на 8/10.', 
-    createdAt: Date.now(), 
-    updatedAt: Date.now() 
-  },
-  { 
-    id: 'd2', 
-    date: new Date(Date.now() - 86400000).toISOString().split('T')[0], 
-    content: '# Аналіз вчорашнього дня\n\nБагато часу пішло на рутину. Треба краще делегувати дрібні завдання. \n\n> "Дисципліна — це вибір між тим, чого ви хочете зараз, і тим, чого ви хочете найбільше."', 
-    createdAt: Date.now() - 86400000, 
-    updatedAt: Date.now() - 86400000 
-  }
-];
-
 const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
   { id: 'q1', text: 'Як твій день?', page: 1 },
   { id: 'q2', text: 'Чи були ситуації від яких я почувався не так як зазвичай?', page: 1 },
@@ -138,28 +104,15 @@ const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
   { id: 'q14', text: 'Чи підготував їжу на завтра?', page: 5 },
 ];
 
-const SEED_RELATIONSHIP_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquaintance', 'partner'];
-
-const SEED_PROJECTS: Project[] = [
-  { id: 'p1', name: 'Запуск стартапу "Lumina"', color: '#6366f1', status: 'active', progress: 15, isStrategic: true, type: 'goal', sphere: 'career' },
-  { id: 'p2', name: 'Вивчення англійської до C1', color: '#f59e0b', status: 'active', progress: 45, isStrategic: true, type: 'goal', sphere: 'education' },
-];
-
-const SEED_PEOPLE: Person[] = [
-  { id: 'per1', name: 'Олег Прокопенко', status: 'colleague', rating: 8, tags: ['startup', 'tech'], hobbies: ['Шахи'], createdAt: Date.now(), lastInteractionAt: Date.now() - 86400000, socials: { telegram: '@oleg_pro', linkedin: 'olegp' }, notes: [{ id: 'n1', text: 'Має досвід у React Native, можна порадитись щодо архітектури', date: '2024-03-01' }], memories: [{ id: 'm1', event: 'Обговорення проєкту Lumina в кафе', emotion: 'insight', date: '2024-03-10' }], importantDates: [{ id: 'd1', label: 'День народження', date: '1992-05-20' }] },
-  { id: 'per2', name: 'Анна Кравченко', status: 'family', rating: 10, tags: ['family'], hobbies: ['Читання', 'Кулінарія'], createdAt: Date.now(), lastInteractionAt: Date.now(), socials: { instagram: '@ann_krav' }, notes: [], memories: [], importantDates: [{ id: 'd2', label: 'Річниця', date: '2020-09-15' }] },
-];
-
-const SEED_TASKS: Task[] = [
-  { id: 't1', title: 'Купити нову лампу для столу', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: ['побут'], createdAt: Date.now(), category: 'unsorted', habitHistory: {} },
-  { id: 't2', title: 'Почитати про GPT-5 архітектуру', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 2, xp: 100, tags: ['саморозвиток'], createdAt: Date.now(), category: 'unsorted', habitHistory: {} },
-];
-
-const DEFAULT_INBOX_CATEGORIES: InboxCategory[] = [
-  { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
-  { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
-  { id: 'tasks', title: 'Завдання', icon: 'fa-bolt', isPinned: false, scope: 'actions' },
-  { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
+const SEED_TAGS: Tag[] = [{ id: 'tg1', name: 'робота', color: '#3b82f6' }, { id: 'tg2', name: 'терміново', color: '#ef4444' }];
+const SEED_DIARY: DiaryEntry[] = [
+  { 
+    id: 'd-initial', 
+    date: new Date().toISOString().split('T')[0], 
+    content: "# Звіт дня\n\n**Як твій день?**\n- Продуктивний, багато кодував.\n\n**Чи були ситуації від яких я почувався не так як зазвичай?**\n- Олег написав підготувати звіт, сказав що партнери не задоволені. Тривожусь.\n\n**Що було позитивного сьогодні?**\n- Треня, дорога додому, відчуття сили.\n\n**Що не хочу терпіти?**\n- Живу біля туалету, це фу. Хочу жити сам.", 
+    createdAt: Date.now(), 
+    updatedAt: Date.now() 
+  }
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -170,82 +123,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
+  // aiEnabled is false by default now
   const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled ?? false);
   
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
 
-  const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 2, globalExecutionScore: 42, weeklyScores: { 1: 85 } });
+  const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0 });
 
-  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || SEED_TASKS);
+  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
   const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary && savedState.diary.length > 0 ? savedState.diary : SEED_DIARY);
-  const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || DEFAULT_INBOX_CATEGORIES);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || SEED_PROJECTS);
-  const [people, setPeople] = useState<Person[]>(savedState?.people || SEED_PEOPLE);
-  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || SEED_RELATIONSHIP_TYPES);
+  const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || [
+    { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
+    { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
+    { id: 'tasks', title: 'Завдання', icon: 'fa-bolt', isPinned: false, scope: 'actions' },
+    { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
+  ]);
+  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
+  const [people, setPeople] = useState<Person[]>(savedState?.people || []);
+  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family']);
   const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : SEED_TAGS);
-  const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies?.length ? savedState.hobbies : SEED_HOBBIES);
+  const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
   const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : DEFAULT_REPORT_TEMPLATE);
   
   const [character, setCharacter] = useState<Character>(savedState?.character || {
-    name: 'Артур', race: 'Human', archetype: 'Strategist', role: 'Цифровий Архітектор', level: 4, xp: 1250, gold: 340, 
-    bio: 'Герой, що прагне систематизувати хаос та побудувати цифрову імперію знань.', 
-    vision: 'Через 12 тижнів я маю стабільний стартап, вільну англійську та залізне здоров’я.', 
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Arthur', 
-    energy: 85, maxEnergy: 100, focus: 92, 
-    goals: ['Запуск Lumina', 'C1 English', 'Marathon'], 
-    views: ['Дисципліна > Мотивація', 'Знання — це зброя'], 
-    beliefs: ['Хаос можна приборкати кодом', 'Свобода через систему'],
-    preferences: { workStyle: 'Глибокий фокус зранку', planningStyle: 'GTD + 12TR', focusBlockers: ['Instagram', 'Раптові дзвінки'] },
-    skills: [{ name: 'Стратегія', level: 5, xp: 450, icon: 'fa-chess' }, { name: 'Кодування', level: 3, xp: 210, icon: 'fa-code' }], 
-    achievements: [{ id: 'a1', title: 'Перший Крок', description: 'Завершено 10 квестів', icon: 'fa-shoe-prints', unlockedAt: Date.now() - 1000000 }], 
-    stats: { health: 65, career: 70, finance: 55, education: 80, relationships: 75, rest: 40 }
+    name: 'Гравець', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+    bio: 'Герой на початку шляху.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hero', 
+    energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+    preferences: { focusBlockers: [] },
+    skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  useEffect(() => {
     saveState({ tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate });
   }, [tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate]);
 
-  const updateReportTemplate = useCallback((newTemplate: ReportQuestion[]) => setReportTemplate(newTemplate), []);
-  const addTimeBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => { const id = Math.random().toString(36).substr(2, 9); setTimeBlocks(prev => [...prev, { ...blockData, id }].sort((a, b) => a.startHour - b.startHour)); }, []);
-  const updateTimeBlock = useCallback((updated: TimeBlock) => setTimeBlocks(prev => prev.map(b => b.id === updated.id ? updated : b)), []);
-  const deleteTimeBlock = useCallback((blockId: string) => setTimeBlocks(prev => prev.filter(b => b.id !== blockId)), []);
-  const setBlockStatus = useCallback((dateStr: string, blockId: string, status: 'pending' | 'completed' | 'missed') => setBlockHistory(prev => ({ ...prev, [dateStr]: { ...(prev[dateStr] || {}), [blockId]: status } })), []);
-  const saveRoutineAsPreset = useCallback((name: string, dayOfWeek: number) => { const blocks = timeBlocks.filter(b => b.dayOfWeek === dayOfWeek); if (blocks.length === 0) return; setRoutinePresets(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), name, blocks: blocks.map(({ id, ...rest }) => rest) }]); }, [timeBlocks]);
-  const applyRoutinePreset = useCallback((presetId: string, dayOfWeek: number) => { const preset = routinePresets.find(p => p.id === presetId); if (!preset) return; const newBlocks: TimeBlock[] = preset.blocks.map(b => ({ ...b, id: Math.random().toString(36).substr(2, 9), dayOfWeek })); setTimeBlocks(prev => [...prev.filter(b => b.dayOfWeek !== dayOfWeek), ...newBlocks]); }, [routinePresets]);
-  const updateCharacter = useCallback((updates: Partial<Character>) => setCharacter(prev => ({ ...prev, ...updates })), []);
-  const updateSidebarSetting = (key: string, visible: boolean) => setSidebarSettings(prev => ({ ...prev, [key]: visible }));
-  const addTask = useCallback((title: string, categoryId: string = 'unsorted', projectId?: string, projectSection: ProjectSection = 'actions', isEvent: boolean = false, scheduledDate?: number, personId?: string, status?: TaskStatus) => { const id = Math.random().toString(36).substr(2, 9); const tagMatches = title.match(/#\w+/g); const foundTags = tagMatches ? tagMatches.map(t => t.slice(1).toLowerCase()) : []; const cleanTitle = title.replace(/#\w+/g, '').replace(/\s\s+/g, ' ').trim(); const newTask: Task = { id, title: cleanTitle, status: status || TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: projectSection === 'habits' ? 150 : 50, tags: projectSection === 'habits' ? ['habit', ...foundTags] : foundTags, createdAt: Date.now(), category: categoryId, projectId, projectSection, isEvent, scheduledDate, personId, habitHistory: {}, checklist: [], isDeleted: false }; foundTags.forEach(tagName => { if (!tags.some(t => t.name === tagName)) addTag(tagName); }); setTasks(prev => [newTask, ...prev]); return id; }, [tags]);
-  const addProject = useCallback((projectData: Omit<Project, 'id' | 'progress' | 'status'>) => { const id = Math.random().toString(36).substr(2, 9); const newProject: Project = { ...projectData, id, progress: 0, status: 'active' }; setProjects(prev => [newProject, ...prev]); return id; }, []);
-  const updateTask = useCallback((t: Task) => setTasks(prev => prev.map(old => old.id === t.id ? t : old)), []);
-  const updateProject = useCallback((p: Project) => setProjects(prev => prev.map(old => old.id === p.id ? p : old)), []);
-  const deleteTask = useCallback((id: string, perm = false) => setTasks(prev => perm ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, isDeleted: true } : t)), []);
-  const restoreTask = useCallback((id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, isDeleted: false } : t)), []);
-  const deleteProject = useCallback((id: string) => setProjects(prev => prev.filter(p => p.id !== id)), []);
-  const scheduleTask = useCallback((id: string, date: number | undefined) => setTasks(prev => prev.map(t => t.id === id ? { ...t, scheduledDate: date } : t)), []);
-  const toggleTaskStatus = useCallback((task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; updateTask({ ...task, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined }); }, [updateTask]);
-  const toggleHabitStatus = useCallback((id: string, d: string, s?: any, n?: string) => { setTasks(prev => prev.map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history }; } return t; })); }, []);
-  const moveTaskToCategory = (id: string, cat: string, isPinned?: boolean) => setTasks(prev => prev.map(t => t.id === id ? { ...t, category: cat, isPinned: isPinned ?? t.isPinned } : t));
-  const moveTaskToProjectSection = (id: string, sec: ProjectSection) => setTasks(prev => prev.map(t => t.id === id ? { ...t, projectSection: sec } : t));
-  const setProjectParent = (id: string, pId: string | undefined) => setProjects(prev => prev.map(p => p.id === id ? { ...p, parentFolderId: pId } : p));
-  const addTag = useCallback((n: string) => { const tagName = n.toLowerCase().trim(); if (!tagName) return { id: '', name: '', color: '' }; const nt = { id: Math.random().toString(36).substr(2, 9), name: tagName, color: `hsl(${Math.random() * 360}, 70%, 50%)` }; setTags(p => p.some(t => t.name === tagName) ? p : [...p, nt]); return nt; }, []);
-  const renameTag = (o: string, n: string) => setTags(p => p.map(t => t.name === o ? { ...t, name: n } : t));
-  const deleteTag = (n: string) => { setTags(p => p.filter(t => t.name !== n)); setTasks(p => p.map(t => ({...t, tags: t.tags.filter(tag => tag !== n)}))); };
-  const addHobby = useCallback((n: string) => { const nh = { id: Math.random().toString(36).substr(2, 9), name: n, color: `hsl(${Math.random() * 360}, 60%, 80%)` }; setHobbies(p => [...p, nh]); return nh; }, []);
-  const renameHobby = (o: string, n: string) => { setHobbies(p => p.map(h => h.name === o ? { ...h, name: n } : h)); setPeople(p => p.map(per => ({...per, hobbies: per.hobbies.map(h => h === o ? n : h)}))); };
-  const deleteHobby = (n: string) => { setHobbies(p => p.filter(h => h.name !== n)); setPeople(p => p.map(per => ({...per, hobbies: per.hobbies.filter(h => h !== n)}))); };
+  const updateSidebarSetting = useCallback((key: string, visible: boolean) => {
+    setSidebarSettings(prev => ({ ...prev, [key]: visible }));
+  }, []);
+
+  const updateCharacter = useCallback((updates: Partial<Character>) => {
+    setCharacter(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const updateReportTemplate = useCallback((newTemplate: ReportQuestion[]) => {
+    setReportTemplate(newTemplate);
+  }, []);
+
   const saveDiaryEntry = useCallback((d: string, c: string, id?: string) => {
     let finalId = id;
     setDiary(p => {
       if (id) {
-        return p.map(e => e.id === id ? { ...e, content: c, updatedAt: Date.now() } : e);
+        return p.map(e => e.id === id ? { ...e, date: d, content: c, updatedAt: Date.now() } : e);
       } else {
         finalId = Math.random().toString(36).substr(2, 9);
         return [{ id: finalId, date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p];
@@ -253,38 +186,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     return finalId || '';
   }, []);
-  const deleteDiaryEntry = (id: string) => setDiary(p => p.filter(e => e.id !== id));
-  const addInboxCategory = useCallback((t: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => { setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]); }, []);
-  const updateInboxCategory = (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c));
-  const deleteInboxCategory = (id: string) => setInboxCategories(p => p.filter(c => c.id !== id));
-  const toggleTaskPin = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t));
-  const addChecklistItem = useCallback((taskId: string, title: string) => { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2, 9), title, completed: false }] } : t)); }, []);
-  const toggleChecklistItem = useCallback((taskId: string, itemId: string) => { setTasks(prev => prev.map(t => { if (t.id === taskId) { return { ...t, checklist: (t.checklist || []).map(i => i.id === itemId ? { ...i, completed: !i.completed } : i) }; } return t; })); }, []);
-  const removeChecklistItem = useCallback((taskId: string, itemId: string) => { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, checklist: (t.checklist || []).filter(i => i.id !== itemId) } : t)); }, []);
-  const addPerson = useCallback((name: string) => { const id = `person-${Math.random().toString(36).substr(2, 9)}`; const newPerson: Person = { id, name, status: 'acquaintance', rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], importantDates: [], createdAt: Date.now(), lastInteractionAt: Date.now() }; setPeople(prev => [newPerson, ...prev]); return id; }, []);
-  const updatePerson = useCallback((person: Person) => setPeople(prev => prev.map(p => p.id === person.id ? person : p)), []);
-  const deletePerson = useCallback((id: string) => setPeople(prev => prev.filter(p => p.id !== id)), []);
-  const addPersonMemory = useCallback((personId: string, memory: Omit<Memory, 'id'>) => { setPeople(prev => prev.map(p => p.id === personId ? { ...p, memories: [{ ...memory, id: Math.random().toString(36).substr(2, 9) }, ...p.memories], lastInteractionAt: Date.now() } : p)); }, []);
-  const addPersonNote = useCallback((personId: string, text: string) => { setPeople(prev => prev.map(p => p.id === personId ? { ...p, notes: [{ id: Math.random().toString(36).substr(2, 9), text, date: new Date().toISOString().split('T')[0] }, ...p.notes] } : p)); }, []);
-  const addRelationshipType = useCallback((type: string) => setRelationshipTypes(prev => [...new Set([...prev, type.toLowerCase().trim()])]), []);
-  const deleteRelationshipType = useCallback((type: string) => setRelationshipTypes(prev => prev.filter(t => t !== type)), []);
-  const updateCycle = useCallback((updates: Partial<TwelveWeekYear>) => setCycle(prev => ({ ...prev, ...updates })), []);
-  const toggleCycleDay = useCallback((dateStr: string) => setCycle(prev => { const current = { ...(prev.manualDailyStatus || {}) }; current[dateStr] = !current[dateStr]; return { ...prev, manualDailyStatus: current }; }), []);
-  const setWeeklyScore = useCallback((weekNum: number, score: number) => setCycle(prev => { const scores = { ...(prev.weeklyScores || {}) }; scores[weekNum] = score; return { ...prev, weeklyScores: scores }; }), []);
 
   const value = useMemo(() => ({
     tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     reportTemplate, updateReportTemplate,
-    addTask, addProject, updateTask, updateProject, deleteProject, deleteTask, restoreTask, moveTaskToCategory, moveTaskToProjectSection, setProjectParent, scheduleTask, toggleTaskStatus, toggleHabitStatus, toggleTaskPin, undoLastAction: () => {},
-    saveDiaryEntry, deleteDiaryEntry, addInboxCategory, updateInboxCategory, deleteInboxCategory,
-    addTimeBlock, updateTimeBlock, deleteTimeBlock, setBlockStatus, saveRoutineAsPreset, applyRoutinePreset,
-    addChecklistItem, toggleChecklistItem, removeChecklistItem,
-    addPerson, updatePerson, deletePerson, addPersonMemory, addPersonNote, addRelationshipType, deleteRelationshipType,
-    pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby,
-    updateCycle, toggleCycleDay, setWeeklyScore
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory, saveDiaryEntry]);
+    addTask: (title: string, categoryId: string = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string) => {
+        const id = Math.random().toString(36).substr(2,9);
+        const newTask: Task = { id, title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+        setTasks(prev => [newTask, ...prev]);
+        return id;
+    },
+    addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); setProjects(prev => [...prev, { ...p, id, progress: 0, status: 'active' }]); return id; },
+    updateTask: (t: Task) => setTasks(prev => prev.map(old => old.id === t.id ? t : old)),
+    updateProject: (p: Project) => setProjects(prev => prev.map(old => old.id === p.id ? p : old)),
+    deleteProject: (id: string) => setProjects(prev => prev.filter(p => p.id !== id)),
+    deleteTask: (id: string, perm = false) => setTasks(prev => perm ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, isDeleted: true } : t)),
+    restoreTask: (id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, isDeleted: false } : t)),
+    moveTaskToCategory: (id: string, cat: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, category: cat } : t)),
+    moveTaskToProjectSection: (id: string, sec: ProjectSection) => setTasks(prev => prev.map(t => t.id === id ? { ...t, projectSection: sec } : t)),
+    setProjectParent: (id: string, pId: string | undefined) => setProjects(prev => prev.map(p => p.id === id ? { ...p, parentFolderId: pId } : p)),
+    scheduleTask: (id: string, date: number | undefined) => setTasks(prev => prev.map(t => t.id === id ? { ...t, scheduledDate: date } : t)),
+    toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined } : t)); },
+    toggleHabitStatus: (id: string, d: string, s?: any, n?: string) => setTasks(prev => prev.map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history }; } return t; })),
+    toggleTaskPin: (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t)),
+    undoLastAction: () => {}, pendingUndo: false,
+    addTag: (n: string) => { const nt = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; setTags(p => [...p, nt]); return nt; },
+    renameTag: (o: string, n: string) => setTags(p => p.map(t => t.name === o ? { ...t, name: n } : t)),
+    deleteTag: (n: string) => setTags(p => p.filter(t => t.name !== n)),
+    addHobby: (n: string) => { const nh = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; setHobbies(p => [...p, nh]); return nh; },
+    renameHobby: (o: string, n: string) => setHobbies(p => p.map(h => h.name === o ? { ...h, name: n } : h)),
+    deleteHobby: (n: string) => setHobbies(p => p.filter(h => h.name !== n)),
+    saveDiaryEntry, deleteDiaryEntry: (id: string) => setDiary(p => p.filter(e => e.id !== id)),
+    addInboxCategory: (t: string, scope: any, color: any) => setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2,9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]),
+    updateInboxCategory: (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)),
+    deleteInboxCategory: (id: string) => setInboxCategories(p => p.filter(c => c.id !== id)),
+    addTimeBlock: (b: any) => setTimeBlocks(p => [...p, { ...b, id: Math.random().toString(36).substr(2,9) }]),
+    updateTimeBlock: (b: TimeBlock) => setTimeBlocks(p => p.map(old => old.id === b.id ? b : old)),
+    deleteTimeBlock: (id: string) => setTimeBlocks(p => p.filter(b => b.id !== id)),
+    setBlockStatus: (d: string, bid: string, s: any) => setBlockHistory(prev => ({ ...prev, [d]: { ...(prev[d] || {}), [bid]: s } })),
+    saveRoutineAsPreset: (n: string, d: number) => { const bs = timeBlocks.filter(b => b.dayOfWeek === d); setRoutinePresets(p => [...p, { id: Math.random().toString(36).substr(2,9), name: n, blocks: bs }]); },
+    applyRoutinePreset: (id: string, d: number) => { const pr = routinePresets.find(x => x.id === id); if (pr) setTimeBlocks(prev => [...prev.filter(b => b.dayOfWeek !== d), ...pr.blocks.map(b => ({ ...b, id: Math.random().toString(36).substr(2,9), dayOfWeek: d }))]); },
+    addChecklistItem: (tid: string, title: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t)),
+    toggleChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t)),
+    removeChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.filter(i => i.id !== iid) } : t)),
+    addPerson: (n: string) => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status: 'friend', rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], importantDates: [], createdAt: Date.now() }]); return id; },
+    updatePerson: (p: Person) => setPeople(prev => prev.map(old => old.id === p.id ? p : old)),
+    deletePerson: (id: string) => setPeople(prev => prev.filter(p => p.id !== id)),
+    addPersonMemory: (pid: string, m: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...x.memories] } : x)),
+    addPersonNote: (pid: string, text: string) => setPeople(p => p.map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text, date: new Date().toISOString() }, ...x.notes] } : x)),
+    addRelationshipType: (t: string) => setRelationshipTypes(p => [...new Set([...p, t])]),
+    deleteRelationshipType: (t: string) => setRelationshipTypes(p => p.filter(x => x !== t)),
+    updateCycle: (u: any) => setCycle(p => ({ ...p, ...u })),
+    toggleCycleDay: (d: string) => {}, setWeeklyScore: (w: number, s: number) => {}
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, saveDiaryEntry, updateSidebarSetting, updateCharacter, updateReportTemplate, setAiEnabled]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

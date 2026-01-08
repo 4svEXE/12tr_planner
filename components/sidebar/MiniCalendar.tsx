@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -36,21 +35,25 @@ const MiniCalendar: React.FC = () => {
   };
 
   return (
-    <div className="px-1 py-0.5 mb-0.5 mx-0.5">
-      <div className="flex justify-between gap-0">
+    <div className="bg-white/50 p-3 rounded-2xl border border-slate-100 shadow-inner">
+      <div className="flex justify-between items-center gap-1">
         {weekDays.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString();
           const hasEvent = hasEventOnDay(d);
           return (
-            <button key={i} onClick={() => handleDateClick(d)} className="flex flex-col items-center gap-0 group shrink-0">
-              <span className="text-[5px] font-black text-slate-300 uppercase leading-none group-hover:text-[var(--primary)] transition-colors">
+            <button 
+              key={i} 
+              onClick={() => handleDateClick(d)} 
+              className="flex flex-col items-center gap-1 group shrink-0 transition-transform active:scale-90"
+            >
+              <span className={`text-[6px] font-black uppercase leading-none transition-colors ${isToday ? 'text-orange-600' : 'text-slate-300'}`}>
                 {d.toLocaleString('uk-UA', { weekday: 'short' }).slice(0, 2)}
               </span>
-              <div className={`w-[18px] h-[18px] rounded-md flex items-center justify-center text-[7px] font-black transition-all ${isToday ? 'bg-[var(--primary)] text-white shadow shadow-[var(--primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)]'}`}>
+              <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${isToday ? 'bg-orange-600 text-white shadow-lg shadow-orange-200 ring-2 ring-orange-50' : 'text-slate-700 hover:bg-white hover:shadow-sm hover:text-orange-600'}`}>
                 {d.getDate()}
               </div>
-              <div className="h-0.5 flex items-center justify-center">
-                {hasEvent && <div className="w-0.5 h-0.5 rounded-full bg-pink-400"></div>}
+              <div className="h-1 flex items-center justify-center">
+                {hasEvent && <div className="w-1 h-1 rounded-full bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.5)] animate-pulse"></div>}
               </div>
             </button>
           );

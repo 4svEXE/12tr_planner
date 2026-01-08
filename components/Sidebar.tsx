@@ -41,8 +41,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   const bottomItems = [
     { id: 'completed', icon: 'fa-clipboard-check', label: 'Завершено', acceptDrop: true },
-    { id: 'hashtags', icon: 'fa-hashtag', label: 'Хештеги' },
-    { id: 'hobbies', icon: 'fa-icons', label: 'Хобі' },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
 
@@ -74,50 +72,76 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       <div key={item.id} onDragOver={(e) => { e.preventDefault(); item.acceptDrop && setDropTargetId(item.id); }} onDragLeave={() => setDropTargetId(null)} onDrop={(e) => handleGlobalDrop(e, item.id)} className={`relative group mb-0.5 px-2 ${dropTargetId === item.id ? 'scale-105 z-20' : ''}`}>
         <button 
           onClick={() => setActiveTab(item.id)} 
-          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all ${isActive ? 'sidebar-item-active font-bold' : dropTargetId === item.id ? 'bg-orange-600 text-white shadow-lg' : 'hover:bg-[var(--sidebar-item-hover)] opacity-70 hover:opacity-100'}`}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-600 font-black shadow-sm ring-1 ring-orange-100' : dropTargetId === item.id ? 'bg-orange-600 text-white shadow-lg' : 'hover:bg-[var(--sidebar-item-hover)] opacity-70 hover:opacity-100'}`}
         >
-          <span className={`w-4 flex justify-center text-xs ${isActive ? '' : 'text-[var(--text-muted)]'}`}><i className={`fa-solid ${item.icon}`}></i></span>
-          {!isSidebarCollapsed && (
-            <><span className="flex-1 text-left font-medium text-[10px] tracking-tight truncate uppercase">{item.label}</span>
-              {counts[item.id] > 0 && <span className="h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 bg-[var(--border-color)] opacity-70">{counts[item.id]}</span>}</>
-          )}
+          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-orange-600' : 'text-[var(--text-muted)]'}`}><i className={`fa-solid ${item.icon}`}></i></span>
+          <span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
+          {counts[item.id] > 0 && <span className="h-4 min-w-[16px] flex items-center justify-center rounded-full text-[7px] font-black px-1 bg-[var(--border-color)] text-slate-500">{counts[item.id]}</span>}
         </button>
       </div>
     );
   };
 
   return (
-    <div 
-      style={{ backgroundColor: 'var(--bg-sidebar)' }}
-      className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} border-r border-[var(--border-color)] flex flex-col h-screen sticky top-0 z-40 transition-none shadow-sm`}
-    >
-      <div className="p-4 flex items-center justify-between shrink-0">
-        {!isSidebarCollapsed && <div className="text-lg font-black font-heading flex items-center gap-2 tracking-tighter text-[var(--text-main)]"><i className="fa-solid fa-bolt-lightning text-[var(--primary)] text-sm"></i><span>12TR</span></div>}
-        <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-6 h-6 rounded-lg hover:bg-[var(--sidebar-item-hover)] flex items-center justify-center text-[var(--text-muted)]"><i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'} text-[10px]`}></i></button>
-      </div>
-      
-      <nav className="flex-1 space-y-0 py-2 overflow-y-auto custom-scrollbar no-scrollbar">
-        {primaryItems.map(renderMenuItem)}
-        <div className="my-2 mx-4 border-t border-[var(--border-color)] opacity-50"></div>
-        {!isSidebarCollapsed && <div className="px-5 mb-1"><span className="text-[7px] uppercase font-black tracking-widest text-[var(--text-muted)] opacity-50">Інструменти</span></div>}
-        {widgetItems.map(renderMenuItem)}
-      </nav>
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <div 
+        style={{ backgroundColor: 'var(--bg-sidebar)' }}
+        className="hidden md:flex w-64 border-r border-[var(--border-color)] flex-col h-screen sticky top-0 z-40 transition-all shadow-sm shrink-0"
+      >
+        <div className="p-6 flex items-center justify-between shrink-0">
+          <div className="text-xl font-black font-heading flex items-center gap-3 tracking-tighter text-[var(--text-main)]">
+            <div className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center text-white text-sm shadow-lg shadow-orange-200">
+               <i className="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <span>12TR</span>
+          </div>
+        </div>
+        
+        <nav className="flex-1 space-y-0.5 py-2 overflow-y-auto custom-scrollbar no-scrollbar">
+          {primaryItems.map(renderMenuItem)}
+          <div className="my-4 mx-6 border-t border-[var(--border-color)] opacity-50"></div>
+          <div className="px-6 mb-2"><span className="text-[8px] uppercase font-black tracking-[0.2em] text-[var(--text-muted)] opacity-40">Інструменти</span></div>
+          {widgetItems.map(renderMenuItem)}
+        </nav>
 
-      <div className="py-2 border-t border-[var(--border-color)] opacity-80 shrink-0">
-        {!isSidebarCollapsed && <MiniCalendar />}
-        {bottomItems.map(renderMenuItem)}
-        <div className="px-2 mt-1">
-            <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-main)]">
-                <span className="w-4 flex justify-center text-[10px]"><i className="fa-solid fa-gear"></i></span>
-                {!isSidebarCollapsed && <span className="font-bold text-[9px] tracking-widest uppercase">Опції</span>}
-            </button>
+        <div className="py-4 border-t border-[var(--border-color)] opacity-80 shrink-0 bg-slate-50/30">
+          <div className="px-4 mb-4">
+             <MiniCalendar />
+          </div>
+          {bottomItems.map(renderMenuItem)}
+          <div className="px-2 mt-2">
+              <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[var(--text-muted)] hover:bg-white hover:text-[var(--text-main)] hover:shadow-sm transition-all">
+                  <span className="w-4 flex justify-center text-xs"><i className="fa-solid fa-gear"></i></span>
+                  <span className="font-black text-[9px] tracking-widest uppercase">Налаштування</span>
+              </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation (TickTick style) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-lg border-t border-slate-100 z-50 flex items-center justify-around px-2 pb-safe">
+         {[primaryItems[0], primaryItems[2], widgetItems[1], widgetItems[2]].map(item => (
+           <button 
+            key={item.id} 
+            onClick={() => setActiveTab(item.id)}
+            className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all ${activeTab === item.id ? 'text-orange-600 bg-orange-50 font-black' : 'text-slate-400'}`}
+           >
+             <i className={`fa-solid ${item.icon} text-lg mb-1`}></i>
+             <span className="text-[7px] font-black uppercase tracking-tight">{item.label}</span>
+           </button>
+         ))}
+         <button onClick={() => setShowSettings(true)} className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl text-slate-400">
+           <i className="fa-solid fa-ellipsis text-lg mb-1"></i>
+           <span className="text-[7px] font-black uppercase">Опції</span>
+         </button>
+      </div>
+
       {showSettings && <SettingsModal 
         onHide={() => setShowSettings(false)} 
         allSections={[...primaryItems, ...widgetItems, ...bottomItems]}
       />}
-    </div>
+    </>
   );
 };
 
@@ -136,56 +160,55 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
     ];
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={onHide}></div>
-          <div className="bg-[var(--bg-card)] w-full max-w-lg max-h-[85vh] rounded-[2rem] shadow-2xl border border-[var(--border-color)] overflow-hidden flex flex-col relative">
-            <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] sticky top-0 z-10">
-               <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white text-xs"><i className="fa-solid fa-palette"></i></div>
+          <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300">
+            <header className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-white sticky top-0 z-10">
+               <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-100"><i className="fa-solid fa-palette"></i></div>
                   <div>
-                    <Typography variant="h3" className="text-sm leading-none mb-1 text-[var(--text-main)]">Налаштування</Typography>
-                    <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px]">Конфігурація двигуна</Typography>
+                    <Typography variant="h2" className="text-xl leading-none mb-1 text-slate-900">Налаштування</Typography>
+                    <Typography variant="tiny" className="text-slate-400">Персоналізація двигуна 12TR</Typography>
                   </div>
                </div>
-               <button onClick={onHide} className="w-8 h-8 rounded-lg hover:bg-[var(--sidebar-item-hover)] flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark"></i></button>
+               <button onClick={onHide} className="w-10 h-10 rounded-2xl hover:bg-slate-100 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-all"><i className="fa-solid fa-xmark"></i></button>
             </header>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-10">
                <section>
-                  <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-3 flex items-center gap-2 uppercase text-[9px] tracking-widest">
+                  <Typography variant="tiny" className="text-slate-900 font-black mb-4 flex items-center gap-2 uppercase text-[9px] tracking-[0.2em]">
                      Теми інтерфейсу
                   </Typography>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                      {themes.map(t => (
                        <button 
                          key={t.id} 
                          onClick={() => setTheme(t.id)}
-                         className={`p-2 rounded-xl border-2 flex flex-col items-center gap-1.5 ${theme === t.id ? 'border-[var(--primary)] bg-[var(--sidebar-item-active)]' : 'border-[var(--border-color)] bg-[var(--bg-main)] opacity-70 hover:opacity-100'}`}
+                         className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${theme === t.id ? 'border-orange-500 bg-orange-50/50 shadow-md scale-105' : 'border-slate-50 bg-slate-50 opacity-70 hover:opacity-100'}`}
                        >
-                          <div className="w-5 h-5 rounded-full border border-black/10" style={{ backgroundColor: t.color }}></div>
-                          <span className="text-[8px] font-black uppercase tracking-tighter text-[var(--text-main)]">{t.label}</span>
-                          {t.isDark && <span className="text-[6px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Dark</span>}
+                          <div className="w-6 h-6 rounded-full shadow-inner" style={{ backgroundColor: t.color }}></div>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-700">{t.label}</span>
                        </button>
                      ))}
                   </div>
                </section>
 
                <section>
-                  <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-3 flex items-center gap-2 uppercase text-[9px] tracking-widest">
-                     Конструктор меню
+                  <Typography variant="tiny" className="text-slate-900 font-black mb-4 flex items-center gap-2 uppercase text-[9px] tracking-[0.2em]">
+                     Видимість меню
                   </Typography>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-[var(--bg-main)] p-3 rounded-xl border border-[var(--border-color)]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 bg-slate-50 p-5 rounded-[2rem] border border-slate-100">
                      {allSections.map(item => (
-                       <div key={item.id} className="flex items-center justify-between py-1 border-b border-[var(--border-color)] last:border-0">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                             <i className={`fa-solid ${item.icon} text-[var(--text-muted)] text-[8px] w-3`}></i>
-                             <span className="text-[9px] font-bold text-[var(--text-main)] truncate">{item.label}</span>
+                       <div key={item.id} className="flex items-center justify-between py-2 border-b border-white last:border-0">
+                          <div className="flex items-center gap-3">
+                             <i className={`fa-solid ${item.icon} text-slate-300 text-xs w-4 text-center`}></i>
+                             <span className="text-[10px] font-black text-slate-600 uppercase truncate">{item.label}</span>
                           </div>
                           <button 
                             onClick={() => updateSidebarSetting(item.id, sidebarSettings[item.id] === false)}
-                            className={`w-6 h-3 rounded-full relative ${sidebarSettings[item.id] !== false ? 'bg-[var(--primary)]' : 'bg-[var(--text-muted)]/30'}`}
+                            className={`w-10 h-5 rounded-full relative transition-all ${sidebarSettings[item.id] !== false ? 'bg-orange-600' : 'bg-slate-300'}`}
                           >
-                             <div className={`absolute top-0.5 w-2 h-2 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-0.5' : 'left-0.5'}`}></div>
+                             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-1' : 'left-1'}`}></div>
                           </button>
                        </div>
                      ))}
@@ -193,26 +216,28 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
                </section>
 
                <section>
-                  <div className="p-4 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <i className="fa-solid fa-sparkles text-[var(--primary)]"></i>
+                  <div className="p-5 bg-slate-900 rounded-[2.5rem] text-white flex items-center justify-between shadow-xl">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center text-xl shadow-lg shadow-orange-500/20">
+                           <i className="fa-solid fa-sparkles"></i>
+                        </div>
                         <div>
-                           <div className="text-[10px] font-black text-[var(--text-main)] uppercase tracking-tight">AI Асистент (Gemini)</div>
-                           <div className="text-[8px] text-[var(--text-muted)] font-medium leading-tight">Автоматична стратегія та аналіз</div>
+                           <div className="text-xs font-black uppercase tracking-wider">AI Стратег</div>
+                           <div className="text-[8px] text-slate-400 font-bold uppercase">Автоматичний аналіз GTD</div>
                         </div>
                      </div>
                      <button 
                         onClick={() => setAiEnabled(!aiEnabled)}
-                        className={`w-8 h-4 rounded-full relative ${aiEnabled ? 'bg-emerald-500' : 'bg-slate-400/20'}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${aiEnabled ? 'bg-emerald-500' : 'bg-white/10'}`}
                      >
-                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${aiEnabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
                      </button>
                   </div>
                </section>
             </div>
 
-            <footer className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-main)] flex gap-2">
-               <button onClick={onHide} className="flex-1 py-2 rounded-xl bg-[var(--primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-lg">ЗБЕРЕГТИ</button>
+            <footer className="p-6 border-t border-slate-100 bg-slate-50/50">
+               <button onClick={onHide} className="w-full py-4 rounded-2xl bg-orange-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-orange-100 hover:bg-orange-700 active:scale-95 transition-all">ЗБЕРЕГТИ ВСЕ</button>
             </footer>
           </div>
         </div>
