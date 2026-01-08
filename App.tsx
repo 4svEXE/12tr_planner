@@ -18,6 +18,7 @@ import TrashView from './views/TrashView';
 import PeopleView from './views/PeopleView';
 import CharacterProfile from './views/CharacterProfile';
 import SettingsView from './views/SettingsView';
+import ShoppingView from './views/ShoppingView';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
@@ -89,6 +90,7 @@ const MainLayout: React.FC = () => {
       case 'habits': return <HabitsView />;
       case 'people': return <PeopleView />;
       case 'hobbies': return <HobbiesView />;
+      case 'shopping': return <ShoppingView />;
       case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;

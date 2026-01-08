@@ -33,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'map', icon: 'fa-map-location-dot', label: 'Карта світу' },
     { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
+    { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Глибокий фокус' },
     { id: 'character', icon: 'fa-user-shield', label: 'Профіль героя' },
     { id: 'people', icon: 'fa-users-between-lines', label: 'Люди' },
@@ -122,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </div>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-lg border-t border-slate-100 z-50 flex items-center justify-around px-2 pb-safe">
-         {[primaryItems[0], primaryItems[2], widgetItems[1], widgetItems[2]].map(item => (
+         {[primaryItems[0], primaryItems[2], widgetItems[1], widgetItems[3]].map(item => (
            <button 
             key={item.id} 
             onClick={() => setActiveTab(item.id)}

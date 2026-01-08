@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate } from '../types';
+import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem } from '../types';
 import { saveState, loadState } from '../store';
 
 export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
@@ -27,6 +28,8 @@ interface AppContextType {
   calendarDate: number;
   calendarViewMode: CalendarViewMode;
   reportTemplate: ReportQuestion[];
+  shoppingStores: ShoppingStore[];
+  shoppingItems: ShoppingItem[];
   setCalendarDate: (date: number) => void;
   setCalendarViewMode: (mode: CalendarViewMode) => void;
   setDetailsWidth: (width: number) => void;
@@ -83,6 +86,13 @@ interface AppContextType {
   updateCycle: (updates: Partial<TwelveWeekYear>) => void;
   toggleCycleDay: (dateStr: string) => void;
   setWeeklyScore: (weekNum: number, score: number) => void;
+  addStore: (name: string, icon?: string, color?: string) => void;
+  updateStore: (store: ShoppingStore) => void;
+  deleteStore: (id: string) => void;
+  addShoppingItem: (name: string, storeId: string) => void;
+  updateShoppingItem: (item: ShoppingItem) => void;
+  toggleShoppingItem: (id: string) => void;
+  deleteShoppingItem: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -123,7 +133,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
   const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
-  // aiEnabled is false by default now
   const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled ?? false);
   
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
@@ -149,6 +158,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
   const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : DEFAULT_REPORT_TEMPLATE);
   
+  const [shoppingStores, setShoppingStores] = useState<ShoppingStore[]>(savedState?.shoppingStores || []);
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(savedState?.shoppingItems || []);
+
   const [character, setCharacter] = useState<Character>(savedState?.character || {
     name: 'Гравець', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
     bio: 'Герой на початку шляху.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hero', 
@@ -159,8 +171,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    saveState({ tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate });
-  }, [tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate]);
+    saveState({ tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate, shoppingStores, shoppingItems });
+  }, [tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate, shoppingStores, shoppingItems]);
 
   const updateSidebarSetting = useCallback((key: string, visible: boolean) => {
     setSidebarSettings(prev => ({ ...prev, [key]: visible }));
@@ -191,7 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
-    reportTemplate, updateReportTemplate,
+    reportTemplate, updateReportTemplate, shoppingStores, shoppingItems,
     addTask: (title: string, categoryId: string = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string) => {
         const id = Math.random().toString(36).substr(2,9);
         const newTask: Task = { id, title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
@@ -239,8 +251,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addRelationshipType: (t: string) => setRelationshipTypes(p => [...new Set([...p, t])]),
     deleteRelationshipType: (t: string) => setRelationshipTypes(p => p.filter(x => x !== t)),
     updateCycle: (u: any) => setCycle(p => ({ ...p, ...u })),
-    toggleCycleDay: (d: string) => {}, setWeeklyScore: (w: number, s: number) => {}
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, saveDiaryEntry, updateSidebarSetting, updateCharacter, updateReportTemplate, setAiEnabled]);
+    toggleCycleDay: (d: string) => {}, setWeeklyScore: (w: number, s: number) => {},
+    addStore: (name: string, icon = 'fa-shop', color = '#f97316') => setShoppingStores(prev => [...prev, { id: Math.random().toString(36).substr(2,9), name, icon, color }]),
+    updateStore: (s: ShoppingStore) => setShoppingStores(p => p.map(x => x.id === s.id ? s : x)),
+    deleteStore: (id: string) => { setShoppingStores(p => p.filter(x => x.id !== id)); setShoppingItems(p => p.filter(x => x.storeId !== id)); },
+    addShoppingItem: (name: string, storeId: string) => setShoppingItems(prev => [...prev, { id: Math.random().toString(36).substr(2,9), name, storeId, isBought: false }]),
+    updateShoppingItem: (item: ShoppingItem) => setShoppingItems(p => p.map(x => x.id === item.id ? item : x)),
+    toggleShoppingItem: (id: string) => setShoppingItems(p => p.map(x => x.id === id ? { ...x, isBought: !x.isBought } : x)),
+    deleteShoppingItem: (id: string) => setShoppingItems(p => p.filter(x => x.id !== id))
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, shoppingStores, shoppingItems, saveDiaryEntry, updateSidebarSetting, updateCharacter, updateReportTemplate, setAiEnabled]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

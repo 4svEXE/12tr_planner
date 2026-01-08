@@ -1,3 +1,4 @@
+
 export enum TaskStatus {
   INBOX = 'INBOX',
   NEXT_ACTION = 'NEXT_ACTION',
@@ -30,6 +31,29 @@ export interface Hobby {
   id: string;
   name: string;
   color: string;
+}
+
+export interface ShoppingStore {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface PriceEntry {
+  id: string;
+  price: number;
+  storeName: string;
+  date: number;
+}
+
+export interface ShoppingItem {
+  id: string;
+  storeId: string;
+  name: string;
+  isBought: boolean;
+  priceHistory?: PriceEntry[];
+  note?: string;
 }
 
 export interface HabitDayData {
@@ -261,4 +285,6 @@ export interface StoreState {
   activeTab?: string;
   theme?: ThemeType;
   reportTemplate?: ReportQuestion[];
+  shoppingStores?: ShoppingStore[];
+  shoppingItems?: ShoppingItem[];
 }
