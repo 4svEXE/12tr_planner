@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import Typography from './ui/Typography';
@@ -9,16 +8,20 @@ import { analyzeDailyReport } from '../services/geminiService';
 import { AiSuggestion, TaskStatus, Priority } from '../types';
 
 interface DiaryEditorProps {
+  id?: string;
   date: string;
   onClose: () => void;
 }
 
-const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
+const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
   const { 
     diary, saveDiaryEntry, character, addTask, addProject, 
     updateCharacter, updateTask 
   } = useApp();
-  const existingEntry = diary.find(e => e.date === date);
+  
+  // Якщо ID немає, ми створюємо новий запис
+  const [currentId, setCurrentId] = useState<string | undefined>(id);
+  const existingEntry = useMemo(() => diary.find(e => e.id === currentId), [diary, currentId]);
   
   const [content, setContent] = useState(existingEntry?.content || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -40,19 +43,21 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
   const isReport = content.includes('# Звіт дня') || content.includes('####');
 
   useEffect(() => {
+    // Зберігаємо автоматично при зміні контенту
     if (content !== (existingEntry?.content || '')) {
       setIsSaving(true);
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       
       saveTimeoutRef.current = window.setTimeout(() => {
-        saveDiaryEntry(date, content);
+        const savedId = saveDiaryEntry(date, content, currentId);
+        if (!currentId) setCurrentId(savedId); // Запам'ятовуємо ID для нових записів
         setIsSaving(false);
       }, 1000);
     }
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [content, date, saveDiaryEntry, existingEntry?.content]);
+  }, [content, date, saveDiaryEntry, existingEntry?.content, currentId]);
 
   const handleAnalyze = async () => {
     if (!content.trim()) return;
@@ -62,7 +67,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
       const result = await analyzeDailyReport(content, character);
       const suggestionsWithId = result.map((s: any) => ({ ...s, id: Math.random().toString(36).substr(2, 9) }));
       setSuggestions(suggestionsWithId);
-      // Auto-select all by default
       setSelectedSuggestions(new Set(suggestionsWithId.map((s: any) => s.id)));
     } catch (e) {
       console.error(e);
@@ -254,3 +258,4 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ date, onClose }) => {
 };
 
 export default DiaryEditor;
+import { useMemo } from 'react';

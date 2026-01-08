@@ -58,7 +58,7 @@ interface AppContextType {
   addHobby: (name: string) => Hobby;
   renameHobby: (oldName: string, newName: string) => void;
   deleteHobby: (hobbyName: string) => void;
-  saveDiaryEntry: (date: string, content: string) => void;
+  saveDiaryEntry: (date: string, content: string, id?: string) => string;
   deleteDiaryEntry: (id: string) => void;
   addInboxCategory: (title: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => void;
   updateInboxCategory: (id: string, updates: Partial<InboxCategory>) => void;
@@ -121,6 +121,23 @@ const SEED_DIARY: DiaryEntry[] = [
   }
 ];
 
+const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
+  { id: 'q1', text: 'Як твій день?', page: 1 },
+  { id: 'q2', text: 'Чи були ситуації від яких я почувався не так як зазвичай?', page: 1 },
+  { id: 'q3', text: 'Які звички не виконав? чому? (мінімум 1)', page: 1 },
+  { id: 'q4', text: 'За що і кому я [вдячний](https://ticktick.com/webapp/#p/inbox/tasks/68ce5e3eebbf5b0000000352)?', page: 2 },
+  { id: 'q5', text: 'За що вдячний собі', page: 2 },
+  { id: 'q6', text: 'Що було позитивного сьогодні?', page: 2 },
+  { id: 'q7', text: 'Що не хочу терпіти / що змінив би?', page: 3 },
+  { id: 'q8', text: 'Які можливості і ресурси у мене зараз є?', page: 4 },
+  { id: 'q9', text: 'Як я можу вижати максимум з моєї ситуації?', page: 4 },
+  { id: 'q10', text: 'Висновок дня:', page: 4 },
+  { id: 'q11', text: 'Що лишнє в житті і побуті?', page: 5 },
+  { id: 'q12', text: 'Як я спав? Що вплинуло на якість сну?', page: 5 },
+  { id: 'q13', text: 'Чи ок калораж? чому?', page: 5 },
+  { id: 'q14', text: 'Чи підготував їжу на завтра?', page: 5 },
+];
+
 const SEED_RELATIONSHIP_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquaintance', 'partner'];
 
 const SEED_PROJECTS: Project[] = [
@@ -171,7 +188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
-  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate || []);
+  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : DEFAULT_REPORT_TEMPLATE);
   
   const [character, setCharacter] = useState<Character>(savedState?.character || {
     name: 'Артур', race: 'Human', archetype: 'Strategist', role: 'Цифровий Архітектор', level: 4, xp: 1250, gold: 340, 
@@ -224,7 +241,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addHobby = useCallback((n: string) => { const nh = { id: Math.random().toString(36).substr(2, 9), name: n, color: `hsl(${Math.random() * 360}, 60%, 80%)` }; setHobbies(p => [...p, nh]); return nh; }, []);
   const renameHobby = (o: string, n: string) => { setHobbies(p => p.map(h => h.name === o ? { ...h, name: n } : h)); setPeople(p => p.map(per => ({...per, hobbies: per.hobbies.map(h => h === o ? n : h)}))); };
   const deleteHobby = (n: string) => { setHobbies(p => p.filter(h => h.name !== n)); setPeople(p => p.map(per => ({...per, hobbies: per.hobbies.filter(h => h !== n)}))); };
-  const saveDiaryEntry = useCallback((d: string, c: string) => setDiary(p => { const ex = p.find(e => e.date === d); return ex ? p.map(e => e.date === d ? { ...e, content: c, updatedAt: Date.now() } : e) : [{ id: Math.random().toString(36).substr(2, 9), date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p] }), []);
+  const saveDiaryEntry = useCallback((d: string, c: string, id?: string) => {
+    let finalId = id;
+    setDiary(p => {
+      if (id) {
+        return p.map(e => e.id === id ? { ...e, content: c, updatedAt: Date.now() } : e);
+      } else {
+        finalId = Math.random().toString(36).substr(2, 9);
+        return [{ id: finalId, date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p];
+      }
+    });
+    return finalId || '';
+  }, []);
   const deleteDiaryEntry = (id: string) => setDiary(p => p.filter(e => e.id !== id));
   const addInboxCategory = useCallback((t: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => { setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2, 9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]); }, []);
   const updateInboxCategory = (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c));
@@ -256,7 +284,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addPerson, updatePerson, deletePerson, addPersonMemory, addPersonNote, addRelationshipType, deleteRelationshipType,
     pendingUndo: false, addTag, renameTag, deleteTag, addHobby, renameHobby, deleteHobby,
     updateCycle, toggleCycleDay, setWeeklyScore
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory]);
+  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, updateReportTemplate, updateCycle, toggleCycleDay, setWeeklyScore, addTask, addInboxCategory, saveDiaryEntry]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

@@ -12,11 +12,16 @@ const DiaryView: React.FC = () => {
   const { diary, deleteDiaryEntry } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [editingEntryDate, setEditingEntryDate] = useState<string | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [newEntryDate, setNewEntryDate] = useState<string | null>(null);
   const [showReportWizard, setShowReportWizard] = useState(false);
 
   const sortedDiary = useMemo(() => {
-    return [...diary].sort((a, b) => b.date.localeCompare(a.date));
+    return [...diary].sort((a, b) => {
+      // Сортуємо спочатку за датою, потім за часом створення (найновіші зверху)
+      if (b.date !== a.date) return b.date.localeCompare(a.date);
+      return b.createdAt - a.createdAt;
+    });
   }, [diary]);
 
   const groupedByMonth = useMemo(() => {
@@ -24,7 +29,7 @@ const DiaryView: React.FC = () => {
     sortedDiary.forEach(entry => {
       try {
         const dateObj = new Date(entry.date);
-        if (isNaN(dateObj.getTime())) return; // Пропуск некоректних дат
+        if (isNaN(dateObj.getTime())) return; 
         
         const monthStr = dateObj.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
         if (!groups[monthStr]) groups[monthStr] = [];
@@ -106,7 +111,7 @@ const DiaryView: React.FC = () => {
         </div>
         <div className="flex gap-4">
           <Button icon="fa-list-check" variant="secondary" className="rounded-2xl px-6 border-[var(--primary)]/20 text-[var(--primary)]" onClick={() => setShowReportWizard(true)}>ЗВІТ ДНЯ</Button>
-          <Button icon="fa-plus" variant="primary" className="rounded-2xl px-10 shadow-orange-200" onClick={() => setEditingEntryDate(selectedDate)}>ЗАПИСАТИ</Button>
+          <Button icon="fa-plus" variant="primary" className="rounded-2xl px-10 shadow-orange-200" onClick={() => setNewEntryDate(selectedDate)}>ЗАПИСАТИ</Button>
         </div>
       </header>
 
@@ -149,18 +154,18 @@ const DiaryView: React.FC = () => {
                       <Card 
                         padding="lg" 
                         hover 
-                        onClick={() => setEditingEntryDate(entry.date)}
+                        onClick={() => setEditingEntryId(entry.id)}
                         className="flex-1 bg-white border-slate-100 hover:border-orange-200 cursor-pointer relative overflow-hidden group/card shadow-sm"
                       >
                          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 opacity-50 group-hover/card:bg-orange-50 transition-all"></div>
                          <div className="relative z-10">
                            <div className="flex justify-between items-start mb-4">
                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                               Оновлено {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                               Створено {new Date(entry.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
                              </span>
                              <div className="flex gap-2 opacity-0 group-hover/card:opacity-100 transition-all">
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); setEditingEntryDate(entry.date); }}
+                                  onClick={(e) => { e.stopPropagation(); setEditingEntryId(entry.id); }}
                                   className="w-8 h-8 rounded-lg text-slate-300 hover:text-orange-500 hover:bg-orange-50 flex items-center justify-center transition-all"
                                 >
                                   <i className="fa-solid fa-pencil text-[10px]"></i>
@@ -192,10 +197,11 @@ const DiaryView: React.FC = () => {
         </main>
       </div>
 
-      {editingEntryDate && (
+      {(editingEntryId || newEntryDate) && (
         <DiaryEditor 
-          date={editingEntryDate} 
-          onClose={() => setEditingEntryDate(null)} 
+          id={editingEntryId || undefined}
+          date={newEntryDate || (diary.find(e => e.id === editingEntryId)?.date) || selectedDate} 
+          onClose={() => { setEditingEntryId(null); setNewEntryDate(null); }} 
         />
       )}
 
