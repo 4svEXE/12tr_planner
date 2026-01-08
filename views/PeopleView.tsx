@@ -103,7 +103,7 @@ const PeopleView: React.FC = () => {
               <input 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Пошук..." 
+                placeholder="Пошук за ім'ям чи скілами..." 
                 className="w-full bg-slate-50 border-none rounded-2xl py-2.5 md:py-3 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-orange-100 transition-all outline-none" 
               />
            </div>
@@ -142,36 +142,46 @@ const PeopleView: React.FC = () => {
                   hover 
                   padding="none" 
                   onClick={() => setSelectedPersonId(person.id)}
-                  className={`bg-white border-slate-100 overflow-hidden group cursor-pointer transition-all ${health.urgent ? 'ring-2 ring-rose-500 ring-offset-2' : 'shadow-sm'} ${viewMode === 'list' ? 'flex items-center gap-3 px-3 py-2.5' : ''}`}
+                  className={`bg-white border-slate-100 overflow-hidden group cursor-pointer transition-all ${health.urgent ? 'ring-2 ring-rose-500 ring-offset-2' : 'shadow-sm'} ${viewMode === 'list' ? 'flex items-center gap-4 px-4 py-3' : ''}`}
                 >
-                  <div className={viewMode === 'grid' ? "p-4 md:p-5" : "flex items-center gap-3 flex-1 min-w-0"}>
-                    <div className={`${viewMode === 'grid' ? 'flex flex-col items-center text-center mb-4' : 'flex items-center gap-3 min-w-0 flex-1'}`}>
-                       <div className={`${viewMode === 'grid' ? 'w-16 h-16 md:w-20 md:h-20 rounded-[2.2rem] mb-3 md:mb-4' : 'w-10 h-10 rounded-xl'} bg-slate-50 p-1 ring-2 ring-slate-50 shadow-inner shrink-0 overflow-hidden relative`}>
+                  <div className={viewMode === 'grid' ? "p-5" : "flex items-center gap-4 flex-1 min-w-0"}>
+                    <div className={`${viewMode === 'grid' ? 'flex flex-col items-center text-center mb-4' : 'flex items-center gap-4 min-w-0 flex-1'}`}>
+                       <div className={`${viewMode === 'grid' ? 'w-20 h-20 rounded-[2.2rem] mb-4' : 'w-12 h-12 rounded-xl'} bg-slate-50 p-1 ring-2 ring-slate-50 shadow-inner shrink-0 overflow-hidden relative transition-transform group-hover:scale-105`}>
                           <img src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} className="w-full h-full object-cover rounded-[1.8rem]" />
                           {health.urgent && <div className="absolute top-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-rose-500 border-2 border-white rounded-full animate-pulse"></div>}
                        </div>
                        <div className="flex-1 min-w-0">
-                          <Typography variant="h3" className={`${viewMode === 'grid' ? 'text-sm md:text-base' : 'text-xs'} truncate mb-0.5 group-hover:text-orange-600 transition-colors uppercase tracking-tight`}>{person.name}</Typography>
+                          <Typography variant="h3" className={`${viewMode === 'grid' ? 'text-base' : 'text-sm'} truncate mb-0.5 group-hover:text-orange-600 transition-colors uppercase tracking-tight`}>{person.name}</Typography>
                           <div className={`flex items-center gap-1.5 ${viewMode === 'grid' ? 'justify-center' : ''}`}>
                              <Badge variant="slate" className="text-[7px] px-1 py-0">{getTranslatedStatus(person.status)}</Badge>
-                             <div className={`flex items-center gap-1 text-${health.color}-500 font-black text-[7px] md:text-[8px] uppercase`}>
+                             <div className={`flex items-center gap-1 text-${health.color}-500 font-black text-[7px] uppercase`}>
                                 <i className={`fa-solid ${health.icon}`}></i>
                                 <span className="hidden sm:inline">{health.label}</span>
                              </div>
                           </div>
+                          {viewMode === 'grid' && person.description && (
+                             <p className="mt-3 text-[10px] text-slate-400 line-clamp-2 leading-relaxed italic">{person.description}</p>
+                          )}
                        </div>
                     </div>
 
                     {viewMode === 'grid' && (
-                       <div className="pt-3 border-t border-slate-50 space-y-1.5">
-                          <div className="flex justify-between items-center text-[7px] font-black uppercase tracking-widest text-slate-300">
-                             <span>Контакт</span>
-                             <span className={daysSince !== null && daysSince > 30 ? 'text-rose-500' : 'text-slate-500'}>
-                                {daysSince === null ? '—' : daysSince === 0 ? 'Сьогодні' : `${daysSince} дн.`}
-                             </span>
+                       <div className="pt-4 border-t border-slate-50 space-y-3">
+                          <div className="flex flex-wrap gap-1 justify-center">
+                             {person.tags.slice(0, 3).map(tag => (
+                                <span key={tag} className="text-[7px] font-black text-slate-300 uppercase tracking-widest">#{tag}</span>
+                             ))}
                           </div>
-                          <div className="h-0.5 bg-slate-50 rounded-full overflow-hidden">
-                             <div className={`h-full bg-${health.color}-500 transition-all duration-1000`} style={{ width: person.lastInteractionAt ? `${Math.max(10, 100 - (daysSince || 0))}%` : '0%' }}></div>
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-center text-[7px] font-black uppercase tracking-widest text-slate-300">
+                               <span>Останній контакт</span>
+                               <span className={daysSince !== null && daysSince > 30 ? 'text-rose-500' : 'text-slate-500'}>
+                                  {daysSince === null ? '—' : daysSince === 0 ? 'Сьогодні' : `${daysSince} дн.`}
+                               </span>
+                            </div>
+                            <div className="h-1 bg-slate-50 rounded-full overflow-hidden">
+                               <div className={`h-full bg-${health.color}-500 transition-all duration-1000 shadow-sm`} style={{ width: person.lastInteractionAt ? `${Math.max(10, 100 - (daysSince || 0) * 2)}%` : '0%' }}></div>
+                            </div>
                           </div>
                        </div>
                     )}
@@ -190,8 +200,9 @@ const PeopleView: React.FC = () => {
       </div>
 
       {isAdding && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 tiktok-blur">
-           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setIsAdding(false)}></div>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+           {/* Reduced blur from backdrop-blur-md to backdrop-blur-sm */}
+           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAdding(false)}></div>
            <Card className="w-full max-w-sm relative z-10 shadow-2xl p-8 md:p-10 rounded-[2.5rem] bg-white animate-in zoom-in-95 duration-200 border-none">
               <Typography variant="h2" className="mb-6 md:mb-8 text-xl md:text-2xl">Новий союзник</Typography>
               <form onSubmit={handleQuickAdd} className="space-y-6">

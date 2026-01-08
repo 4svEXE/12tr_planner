@@ -59,7 +59,8 @@ const MainLayout: React.FC = () => {
   }, [tasks]);
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => setNotifications(prev.filter(n => n.id !== id)));
+    // Fixed: Correctly return the filtered array in the state setter
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const counts = React.useMemo(() => ({

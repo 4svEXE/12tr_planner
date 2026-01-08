@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import Typography from './ui/Typography';
@@ -81,12 +82,14 @@ const EditableBlock: React.FC<{
           ref={contentRef}
           contentEditable
           suppressContentEditableWarning
-          placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'}
+          // Fixed: Changed 'placeholder' to 'data-placeholder' as div elements don't support placeholder property.
+          // The CSS in the component takes care of displaying it using empty:before:content-[attr(data-placeholder)]
+          data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'}
           onInput={handleInput}
           onKeyDown={(e) => onKeyDown(e, contentRef.current?.innerHTML || '')}
           onFocus={onFocus}
           onContextMenu={onContextMenu}
-          className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(placeholder)] empty:before:text-slate-200 block-input transition-all ${typeClass}`}
+          className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 block-input transition-all ${typeClass}`}
         />
       </div>
     </div>
