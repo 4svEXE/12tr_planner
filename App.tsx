@@ -17,6 +17,7 @@ import DiaryView from './views/DiaryView';
 import TrashView from './views/TrashView';
 import PeopleView from './views/PeopleView';
 import CharacterProfile from './views/CharacterProfile';
+import SettingsView from './views/SettingsView';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
@@ -57,7 +58,7 @@ const MainLayout: React.FC = () => {
   }, [tasks]);
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => setNotifications(prev.filter(n => n.id !== id)));
   };
 
   const counts = React.useMemo(() => ({
@@ -94,6 +95,7 @@ const MainLayout: React.FC = () => {
       case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
       case 'trash': return <TrashView />;
       case 'character': return <CharacterProfile />;
+      case 'settings': return <SettingsView />;
       case 'focus': return (
         <div className="flex flex-col items-center justify-center h-full p-12 text-center">
           <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-4xl mb-6">
@@ -127,7 +129,6 @@ const MainLayout: React.FC = () => {
           />
         )}
 
-        {/* Notifications Stack */}
         <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
           {notifications.map(n => (
             <div key={n.id} className="pointer-events-auto bg-[var(--text-main)] text-[var(--bg-card)] p-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10 tiktok-blur w-72">
@@ -168,7 +169,7 @@ const MainLayout: React.FC = () => {
             onClick={() => setIsAiOpen(true)}
             className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-pink-500 text-white shadow-2xl shadow-orange-200 flex items-center justify-center group z-40"
           >
-            <i className="fa-solid fa-sparkles text-xl"></i>
+            <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
           </button>
         )}
       </main>
@@ -180,7 +181,7 @@ const MainLayout: React.FC = () => {
       >
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <h3 className="font-heading font-black text-lg flex items-center gap-3 text-slate-900 whitespace-nowrap">
-            <i className="fa-solid fa-sparkles text-orange-500"></i> Асистент
+            <i className="fa-solid fa-wand-magic-sparkles text-orange-500"></i> Асистент
           </h3>
           <button 
             onClick={() => setIsAiOpen(false)}
