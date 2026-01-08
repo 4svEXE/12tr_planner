@@ -116,6 +116,14 @@ export interface AiSuggestion {
 
 export type PersonStatus = 'friend' | 'colleague' | 'family' | 'mentor' | 'acquaintance' | string;
 
+export interface Interaction {
+  id: string;
+  type: 'call' | 'meeting' | 'chat' | 'event' | 'coffee' | 'walk' | 'other';
+  date: number;
+  summary: string;
+  emotion: 'joy' | 'insight' | 'support' | 'neutral' | 'tense';
+}
+
 export interface Memory {
   id: string;
   event: string;
@@ -134,6 +142,8 @@ export interface ImportantDate {
   label: string;
   date: string;
 }
+
+export type RelationshipLoop = 'week' | 'month' | 'quarter' | 'year' | 'none';
 
 export interface Person {
   id: string;
@@ -156,7 +166,9 @@ export interface Person {
   };
   notes: PersonNote[];
   memories: Memory[];
+  interactions: Interaction[];
   importantDates: ImportantDate[];
+  loop: RelationshipLoop;
   aiPortrait?: any;
   lastInteractionAt?: number;
   createdAt: number;

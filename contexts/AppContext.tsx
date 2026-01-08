@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem } from '../types';
+import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction } from '../types';
 import { saveState, loadState } from '../store';
 
 export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
@@ -81,6 +81,8 @@ interface AppContextType {
   deletePerson: (id: string) => void;
   addPersonMemory: (personId: string, memory: Omit<Memory, 'id'>) => void;
   addPersonNote: (personId: string, text: string) => void;
+  addInteraction: (personId: string, interaction: Omit<Interaction, 'id'>) => void;
+  deleteInteraction: (personId: string, id: string) => void;
   addRelationshipType: (type: string) => void;
   deleteRelationshipType: (type: string) => void;
   updateCycle: (updates: Partial<TwelveWeekYear>) => void;
@@ -150,7 +152,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
   const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
   const [people, setPeople] = useState<Person[]>(savedState?.people || []);
-  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family']);
+  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']);
   const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : SEED_TAGS);
   const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
@@ -204,9 +206,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
     aiEnabled, setAiEnabled, updateCharacter, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     reportTemplate, updateReportTemplate, shoppingStores, shoppingItems,
-    addTask: (title: string, categoryId: string = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string) => {
+    addTask: (title: string, categoryId: string = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
         const id = Math.random().toString(36).substr(2,9);
-        const newTask: Task = { id, title, status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+        const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
         setTasks(prev => [newTask, ...prev]);
         return id;
     },
@@ -243,11 +245,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addChecklistItem: (tid: string, title: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t)),
     toggleChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t)),
     removeChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.filter(i => i.id !== iid) } : t)),
-    addPerson: (n: string) => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status: 'friend', rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], importantDates: [], createdAt: Date.now() }]); return id; },
+    addPerson: (n: string) => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status: 'friend', rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }]); return id; },
     updatePerson: (p: Person) => setPeople(prev => prev.map(old => old.id === p.id ? p : old)),
     deletePerson: (id: string) => setPeople(prev => prev.filter(p => p.id !== id)),
     addPersonMemory: (pid: string, m: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...x.memories] } : x)),
     addPersonNote: (pid: string, text: string) => setPeople(p => p.map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text, date: new Date().toISOString() }, ...x.notes] } : x)),
+    addInteraction: (pid: string, i: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, lastInteractionAt: i.date, interactions: [{ ...i, id: Math.random().toString(36).substr(2,9) }, ...(x.interactions || [])] } : x)),
+    deleteInteraction: (pid: string, iid: string) => setPeople(p => p.map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid) } : x)),
     addRelationshipType: (t: string) => setRelationshipTypes(p => [...new Set([...p, t])]),
     deleteRelationshipType: (t: string) => setRelationshipTypes(p => p.filter(x => x !== t)),
     updateCycle: (u: any) => setCycle(p => ({ ...p, ...u })),
