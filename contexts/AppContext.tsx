@@ -76,7 +76,7 @@ interface AppContextType {
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
   updateReportTemplate: (newTemplate: ReportQuestion[]) => void;
-  addPerson: (name: string) => string;
+  addPerson: (name: string, status?: string) => string;
   updatePerson: (person: Person) => void;
   deletePerson: (id: string) => void;
   addPersonMemory: (personId: string, memory: Omit<Memory, 'id'>) => void;
@@ -99,33 +99,41 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const DEFAULT_REPORT_TEMPLATE: ReportQuestion[] = [
-  { id: 'q1', text: 'Як твій день?', page: 1 },
-  { id: 'q2', text: 'Чи були ситуації від яких я почувався не так як зазвичай?', page: 1 },
-  { id: 'q3', text: 'Які звички не виконав? чому? (мінімум 1)', page: 1 },
-  { id: 'q4', text: 'За що і кому я [вдячний](https://ticktick.com/webapp/#p/inbox/tasks/68ce5e3eebbf5b0000000352)?', page: 2 },
-  { id: 'q5', text: 'За що вдячний собі', page: 2 },
-  { id: 'q6', text: 'Що було позитивного сьогодні?', page: 2 },
-  { id: 'q7', text: 'Що не хочу терпіти / що змінив би?', page: 3 },
-  { id: 'q8', text: 'Які можливості і ресурси у мене зараз є?', page: 4 },
-  { id: 'q9', text: 'Як я можу вижати максимум з моєї ситуації?', page: 4 },
-  { id: 'q10', text: 'Висновок дня:', page: 4 },
-  { id: 'q11', text: 'Що лишнє в житті і побуті?', page: 5 },
-  { id: 'q12', text: 'Як я спав? Що вплинуло на якість сну?', page: 5 },
-  { id: 'q13', text: 'Чи ок калораж? чому?', page: 5 },
-  { id: 'q14', text: 'Чи підготував їжу на завтра?', page: 5 },
-];
+// SEED DATA GENERATOR FOR PEOPLE
+const generateSeedPeople = (): Person[] => {
+  const categories = ['friend', 'colleague', 'family', 'mentor', 'acquaintance'];
+  const names: Record<string, string[]> = {
+    friend: ['Макс Кава', 'Олена Спорт', 'Дмитро Гік', 'Іра Арт', 'Саша Тревел'],
+    colleague: ['Артем Проджект', 'Вікторія HR', 'Ігор Розробка', 'Наталя Маркетинг', 'Сергій Аналітик'],
+    family: ['Мама', 'Тато', 'Брат Олег', 'Сестра Анна', 'Дядько Петро'],
+    mentor: ['Богдан Стратег', 'Марина Коуч', 'Професор Коваль', 'Інвестор Марк', 'Майстер Йода'],
+    acquaintance: ['Сусід з 5го', 'Бармен Алекс', 'Юрій Ремонт', 'Світлана Стоматолог', 'Курєр Нової Пошти']
+  };
 
-const SEED_TAGS: Tag[] = [{ id: 'tg1', name: 'робота', color: '#3b82f6' }, { id: 'tg2', name: 'терміново', color: '#ef4444' }];
-const SEED_DIARY: DiaryEntry[] = [
-  { 
-    id: 'd-initial', 
-    date: new Date().toISOString().split('T')[0], 
-    content: "# Звіт дня\n\n**Як твій день?**\n- Продуктивний, багато кодував.\n\n**Чи були ситуації від яких я почувався не так як зазвичай?**\n- Олег написав підготувати звіт, сказав що партнери не задоволені. Тривожусь.\n\n**Що було позитивного сьогодні?**\n- Треня, дорога додому, відчуття сили.\n\n**Що не хочу терпіти?**\n- Живу біля туалету, це фу. Хочу жити сам.", 
-    createdAt: Date.now(), 
-    updatedAt: Date.now() 
-  }
-];
+  const results: Person[] = [];
+  categories.forEach(cat => {
+    names[cat].forEach((name, idx) => {
+      const lastInt = Date.now() - (Math.random() * 1000 * 60 * 60 * 24 * 40); // random contact in last 40 days
+      results.push({
+        id: `seed-${cat}-${idx}`,
+        name,
+        status: cat,
+        rating: 40 + Math.floor(Math.random() * 50),
+        loop: cat === 'friend' ? 'week' : cat === 'family' ? 'month' : 'quarter',
+        hobbies: ['Спорт', 'Технології', 'Книги'].slice(0, 1 + Math.floor(Math.random() * 2)),
+        tags: [cat.toUpperCase()],
+        socials: { telegram: name.split(' ')[0].toLowerCase() },
+        notes: [{ id: `n-${idx}`, text: 'Важливий контакт з початкової бази.', date: new Date().toISOString() }],
+        memories: [],
+        interactions: [],
+        importantDates: [{ id: `d-${idx}`, label: 'Річниця', date: '2024-06-15', showInCalendar: true, repeatYearly: true }],
+        lastInteractionAt: lastInt,
+        createdAt: Date.now() - 1000000
+      });
+    });
+  });
+  return results;
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
@@ -143,7 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0 });
 
   const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
-  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary && savedState.diary.length > 0 ? savedState.diary : SEED_DIARY);
+  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary && savedState.diary.length > 0 ? savedState.diary : []);
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || [
     { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
     { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
@@ -151,14 +159,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
   ]);
   const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
-  const [people, setPeople] = useState<Person[]>(savedState?.people || []);
+  const [people, setPeople] = useState<Person[]>(savedState?.people?.length ? savedState.people : generateSeedPeople());
   const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : SEED_TAGS);
+  const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : []);
   const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
-  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : DEFAULT_REPORT_TEMPLATE);
+  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : []);
   
   const [shoppingStores, setShoppingStores] = useState<ShoppingStore[]>(savedState?.shoppingStores || []);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(savedState?.shoppingItems || []);
@@ -245,7 +253,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addChecklistItem: (tid: string, title: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t)),
     toggleChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t)),
     removeChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.filter(i => i.id !== iid) } : t)),
-    addPerson: (n: string) => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status: 'friend', rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }]); return id; },
+    addPerson: (n: string, status: string = 'acquaintance') => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status, rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }]); return id; },
     updatePerson: (p: Person) => setPeople(prev => prev.map(old => old.id === p.id ? p : old)),
     deletePerson: (id: string) => setPeople(prev => prev.filter(p => p.id !== id)),
     addPersonMemory: (pid: string, m: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...x.memories] } : x)),

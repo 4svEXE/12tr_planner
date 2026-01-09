@@ -2,17 +2,7 @@
 import React, { useMemo } from 'react';
 import { Person, Interaction } from '../../types';
 import Typography from '../ui/Typography';
-import Badge from '../ui/Badge';
 import Card from '../ui/Card';
-
-const MISSING_INFO_QUESTIONS = [
-  { id: 'birthDate', text: 'Коли у неї/нього день народження?', field: 'birthDate', icon: 'fa-cake-candles' },
-  { id: 'hobby', text: 'Чим захоплюється у вільний час?', field: 'hobbies', icon: 'fa-masks-theater' },
-  { id: 'goal', text: 'Яка головна мета цієї людини зараз?', field: 'description', icon: 'fa-bullseye' },
-  { id: 'location', text: 'Де територіально знаходиться?', field: 'location', icon: 'fa-map-pin' },
-  { id: 'telegram', text: 'Який нік у Telegram?', field: 'socials.telegram', icon: 'fa-paper-plane' },
-  { id: 'work', text: 'Яка професійна спеціалізація?', field: 'tags', icon: 'fa-briefcase' },
-];
 
 interface DossierTabProps {
   person: Person;
@@ -20,7 +10,7 @@ interface DossierTabProps {
   onAddInteraction: (summary: string, ratingImpact: number, type: Interaction['type']) => void;
 }
 
-const DossierTab: React.FC<DossierTabProps> = ({ person, onUpdate, onAddInteraction }) => {
+const DossierTab: React.FC<DossierTabProps> = ({ person, onUpdate }) => {
   const age = useMemo(() => {
     if (!person.birthDate) return null;
     const birthDate = new Date(person.birthDate);
@@ -31,50 +21,15 @@ const DossierTab: React.FC<DossierTabProps> = ({ person, onUpdate, onAddInteract
     return age;
   }, [person.birthDate]);
 
-  const pendingQuestions = useMemo(() => {
-    return MISSING_INFO_QUESTIONS.filter(q => {
-      if (q.field === 'socials.telegram') return !person.socials?.telegram;
-      if (q.field === 'hobbies') return !person.hobbies || person.hobbies.length === 0;
-      if (q.field === 'tags') return !person.tags || person.tags.length === 0;
-      const fieldParts = q.field.split('.');
-      if (fieldParts.length > 1) {
-          const val = (person as any)[fieldParts[0]]?.[fieldParts[1]];
-          return !val;
-      }
-      const val = (person as any)[q.field];
-      return !val || (Array.isArray(val) && val.length === 0);
-    }).slice(0, 3);
-  }, [person]);
-
-  const handleAnswer = (q: typeof MISSING_INFO_QUESTIONS[0]) => {
-    const val = prompt(q.text);
-    if (val && val.trim()) {
-      const answer = val.trim();
-      let updates: Partial<Person> = { ...person };
-      if (q.field === 'socials.telegram') {
-        updates.socials = { ...person.socials, telegram: answer };
-      } else if (q.field === 'hobbies') {
-        updates.hobbies = [...(person.hobbies || []), answer];
-      } else if (q.field === 'tags') {
-        updates.tags = [...(person.tags || []), answer];
-      } else {
-        (updates as any)[q.field] = answer;
-      }
-      onUpdate(updates as Person);
-      onAddInteraction(`Дізнався інформацію (${q.id}): ${answer}`, 5, 'chat');
-    }
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6">
       <section className="bg-white border border-slate-100 rounded-[2.5rem] p-6 md:p-8 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-[60px]"></div>
         <div className="relative z-10 space-y-6">
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <Typography variant="tiny" className="text-orange-500 mb-2 block font-black uppercase tracking-[0.2em]">Оперативне Досьє</Typography>
               <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed italic">
-                {person.description || "Контекст знайомства не зафіксовано. Додайте опис, щоб ШІ міг краще аналізувати зв'язок."}
+                {person.description || "Контекст знайомства не зафіксовано."}
               </p>
             </div>
             <div className="text-right shrink-0">
@@ -82,61 +37,27 @@ const DossierTab: React.FC<DossierTabProps> = ({ person, onUpdate, onAddInteract
                <div className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Карма</div>
             </div>
           </div>
-          
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <span className="text-[7px] font-black uppercase text-slate-400 block mb-1">Вік / Характеристика</span>
+              <span className="text-[7px] font-black uppercase text-slate-400 block mb-1">Вік</span>
               <span className="text-xs font-black text-slate-700">{age ? `${age} років` : 'Не вказано'}</span>
             </div>
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <span className="text-[7px] font-black uppercase text-slate-400 block mb-1">Статус зв'язку</span>
+              <span className="text-[7px] font-black uppercase text-slate-400 block mb-1">Тип зв'язку</span>
               <span className="text-xs font-black text-orange-600 uppercase tracking-widest">{person.status}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {pendingQuestions.length > 0 && (
-        <section className="space-y-3">
-          <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest ml-1 flex items-center gap-2">
-            <i className="fa-solid fa-wand-magic-sparkles text-orange-500"></i> Питання для зближення
-          </Typography>
-          <div className="grid grid-cols-1 gap-2">
-            {pendingQuestions.map(q => (
-              <button 
-                key={q.id} 
-                onClick={() => handleAnswer(q)} 
-                className="flex items-center gap-3 p-3 bg-orange-50/50 border border-orange-100/50 rounded-2xl hover:bg-white hover:border-orange-200 hover:shadow-md transition-all text-left group"
-              >
-                <div className="w-8 h-8 rounded-xl bg-white text-orange-500 flex items-center justify-center text-xs group-hover:scale-110 transition-transform shadow-sm">
-                  <i className={`fa-solid ${q.icon}`}></i>
-                </div>
-                <span className="text-xs font-bold text-slate-700 flex-1">{q.text}</span>
-                <div className="text-[7px] font-black text-orange-400 uppercase bg-white px-1.5 py-0.5 rounded-lg shadow-sm">+5 XP</div>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card padding="md" className="bg-white border-slate-100 shadow-sm">
-          <Typography variant="tiny" className="text-slate-400 mb-3 uppercase font-black">Спеціалізація (Скіли)</Typography>
-          <div className="flex flex-wrap gap-1.5">
-            {person.tags?.length > 0 ? person.tags.map(t => (
-              <Badge key={t} variant="indigo" className="text-[8px]">{t}</Badge>
-            )) : <span className="text-[10px] text-slate-300 italic">Навички не вказані</span>}
-          </div>
-        </Card>
-        <Card padding="md" className="bg-white border-slate-100 shadow-sm">
-          <Typography variant="tiny" className="text-slate-400 mb-3 uppercase font-black">Захоплення</Typography>
-          <div className="flex flex-wrap gap-1.5">
-            {person.hobbies?.length > 0 ? person.hobbies.map(h => (
-              <Badge key={h} variant="orange" className="text-[8px]">{h}</Badge>
-            )) : <span className="text-[10px] text-slate-300 italic">Дані відсутні</span>}
-          </div>
-        </Card>
-      </div>
+      <Card padding="md" className="bg-slate-50/50 border-dashed border-slate-200">
+        <div className="text-center py-4">
+          <i className="fa-solid fa-circle-info text-slate-300 text-xl mb-2"></i>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+            Основні факти та інтерактивні питання перенесено у вкладку "ДЕТАЛІ" для системного аналізу.
+          </p>
+        </div>
+      </Card>
     </div>
   );
 };

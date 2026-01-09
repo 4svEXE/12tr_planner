@@ -9,8 +9,8 @@ import { analyzePersonPortrait } from '../../services/geminiService';
 
 // Tabs
 import DossierTab from './DossierTab';
-import InfoTab from './InfoTab'; // Тепер це вкладка Деталі (Скіли/Хобі/Біо)
-import DatesTab from './DatesTab'; // Нова вкладка тільки для дат
+import InfoTab from './InfoTab'; 
+import DatesTab from './DatesTab'; 
 import SocialsTab from './SocialsTab';
 import TimelineTab from './TimelineTab';
 import TasksTab from './TasksTab';
@@ -47,13 +47,38 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
     handleUpdate({ rating: Math.max(0, Math.min(100, currentRating + ratingImpact)) });
   };
 
-  const handleFetchSocialAvatar = (handle?: string) => {
+  /**
+   * Універсальний метод для отримання аватара.
+   * Використовує unavatar.io для автоматичного визначення або специфічних провайдерів.
+   */
+  const handleFetchSocialAvatar = (handle?: string, provider?: string) => {
     let targetHandle = handle;
     if (!targetHandle) {
-      targetHandle = prompt("Введіть нікнейм (напр. oleg_dev):") || undefined;
+      targetHandle = prompt("Введіть нікнейм або email (напр. user123 або mail@example.com):") || undefined;
     }
+    
     if (targetHandle) {
-      const newAvatar = `https://unavatar.io/${targetHandle}`;
+      const cleanHandle = targetHandle.replace('@', '').trim();
+      let newAvatar = '';
+      
+      if (provider === 'telegram') {
+        // Telegram через unavatar часто потребує префіксу або працює через twitter/github якщо ніки збігаються.
+        // unavatar підтримує прямий запит telegram через /telegram/username
+        newAvatar = `https://unavatar.io/telegram/${cleanHandle}`;
+      } else if (provider === 'instagram') {
+        newAvatar = `https://unavatar.io/instagram/${cleanHandle}`;
+      } else if (provider === 'linkedin') {
+        newAvatar = `https://unavatar.io/linkedin/${cleanHandle}`;
+      } else if (provider === 'github') {
+        newAvatar = `https://unavatar.io/github/${cleanHandle}`;
+      } else if (cleanHandle.includes('.')) {
+        // Спроба підтягнути за доменом або email
+        newAvatar = `https://unavatar.io/${cleanHandle}`;
+      } else {
+        // Універсальний пошук
+        newAvatar = `https://unavatar.io/${cleanHandle}?fallback=https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanHandle}`;
+      }
+      
       handleUpdate({ avatar: newAvatar });
     }
   };
@@ -73,13 +98,21 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
   };
 
   return (
-    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-white border-l border-slate-100 z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.05)] animate-in slide-in-from-right duration-300 flex flex-col overflow-hidden">
+    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-white border-l border-slate-100 z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
        <header className="p-5 md:p-8 border-b border-slate-50 flex justify-between items-start shrink-0">
           <div className="flex items-center gap-4 md:gap-5 min-w-0">
              <div className="w-16 h-16 md:w-20 md:h-20 rounded-[2rem] bg-slate-50 ring-4 ring-orange-50 overflow-hidden shadow-xl relative group shrink-0">
-                <img src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} className="w-full h-full object-cover" alt={person.name} />
+                <img 
+                  key={person.avatar} // Force re-render if avatar URL changes
+                  src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                  alt={person.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`;
+                  }}
+                />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => handleFetchSocialAvatar()}>
-                   <i className="fa-solid fa-camera text-white text-base"></i>
+                   <i className="fa-solid fa-sync text-white text-base animate-pulse"></i>
                 </div>
              </div>
              <div className="flex-1 min-w-0">
@@ -87,7 +120,7 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
                 <div className="flex items-center gap-2">
                    <Badge variant="orange" className="text-[8px] uppercase">{person.status}</Badge>
                    <Badge variant="yellow" className="text-[8px] uppercase">Karma {person.rating || 0}</Badge>
-                   <button onClick={() => handleFetchSocialAvatar()} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:text-orange-600 transition-colors"><i className="fa-solid fa-at text-[8px]"></i></button>
+                   <button onClick={() => handleFetchSocialAvatar()} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:text-orange-600 transition-colors shadow-sm border border-slate-100"><i className="fa-solid fa-link text-[8px]"></i></button>
                 </div>
              </div>
           </div>
@@ -103,7 +136,7 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
           ))}
        </div>
 
-       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8">
+       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8 bg-white">
           {activeTab === 'dossier' && (
             <DossierTab person={person} onUpdate={handleUpdate} onAddInteraction={handleAddKarmaLog} />
           )}

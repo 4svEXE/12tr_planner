@@ -6,7 +6,7 @@ import Typography from '../ui/Typography';
 interface SocialsTabProps {
   person: Person;
   onUpdate: (p: Person) => void;
-  onFetchAvatar: (handle?: string) => void;
+  onFetchAvatar: (handle?: string, provider?: string) => void;
 }
 
 const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar }) => {
@@ -16,17 +16,18 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
   const getCleanHandle = (val: string) => {
     if (!val) return '';
-    return val.replace('@', '').split('/').pop() || '';
+    // Прибираємо @, протоколи та зайві слеші
+    return val.replace('@', '').split('/').filter(Boolean).pop() || '';
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100 mb-6">
         <Typography variant="tiny" className="text-orange-600 font-black mb-2 uppercase flex items-center gap-2">
-           <i className="fa-solid fa-id-card-clip"></i> Авто-ідентифікація
+           <i className="fa-solid fa-id-card-clip"></i> Система розпізнавання
         </Typography>
         <p className="text-[10px] text-orange-800/60 leading-relaxed font-bold">
-           Введіть нікнейм у будь-яку мережу та натисніть іконку оновлення, щоб миттєво підтягнути актуальне фото союзника.
+           Додайте нікнейм союзника у відповідне поле. Натисніть кнопку зі стрілками, щоб автоматично підтягнути фото профілю з цієї мережі.
         </p>
       </div>
 
@@ -37,25 +38,25 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
           return (
             <div key={key} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 focus-within:ring-2 focus-within:ring-orange-100 transition-all shadow-sm group">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-focus-within:text-orange-500 transition-colors shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-focus-within:text-orange-500 transition-colors shrink-0 shadow-inner">
                 <i className={`fa-brands fa-${key === 'website' ? 'chrome' : key}`}></i>
               </div>
               <div className="flex-1 min-w-0">
-                 <span className="text-[7px] font-black uppercase text-slate-400 block mb-0.5">{key}</span>
+                 <span className="text-[7px] font-black uppercase text-slate-400 block mb-0.5 tracking-widest">{key}</span>
                  <div className="flex items-center gap-2">
                    <input 
                      value={val} 
                      onChange={e => handleSocialAction(key, e.target.value)}
-                     placeholder={`Нікнейм або лінк...`}
+                     placeholder={key === 'website' ? 'https://...' : `@username`}
                      className="flex-1 bg-transparent border-none p-0 text-xs font-bold outline-none text-slate-700 placeholder:text-slate-200"
                    />
                    {key !== 'website' && cleanHandle && (
                      <button 
-                       onClick={() => onFetchAvatar(cleanHandle)}
-                       className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm"
-                       title="Підтягнути аватар за цим ніком"
+                       onClick={() => onFetchAvatar(cleanHandle, key)}
+                       className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm border border-orange-100/50"
+                       title={`Оновити фото з ${key}`}
                      >
-                       <i className="fa-solid fa-rotate text-[9px]"></i>
+                       <i className="fa-solid fa-arrows-rotate text-[9px]"></i>
                      </button>
                    )}
                  </div>
