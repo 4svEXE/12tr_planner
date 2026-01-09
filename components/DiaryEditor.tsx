@@ -25,7 +25,6 @@ const EditableBlock: React.FC<{
   index: number;
   isFocused: boolean;
   onUpdate: (updates: Partial<Block>) => void;
-  // Fix: Added block parameter to match implementation
   onKeyDown: (e: React.KeyboardEvent, block: Block, currentHTML: string) => void;
   onFocus: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
@@ -59,7 +58,7 @@ const EditableBlock: React.FC<{
   return (
     <div className="flex items-start gap-2 md:gap-3 w-full group/row mb-1">
       <div className="w-5 flex flex-col items-center opacity-0 group-hover/row:opacity-100 transition-opacity pt-1 shrink-0">
-         <button onClick={() => onUpdate({ id: 'DELETE_BLOCK' })} className="text-[var(--text-muted)] hover:text-rose-500 p-1"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+         <button onClick={() => onUpdate({ id: 'DELETE_BLOCK' })} className="text-[var(--text-muted)] hover:text-rose-50 p-1"><i className="fa-solid fa-xmark text-[10px]"></i></button>
       </div>
       <div className="flex-1 min-w-0 flex items-start gap-2 md:gap-3">
         {block.type === 'task' && (
@@ -70,7 +69,6 @@ const EditableBlock: React.FC<{
         )}
         {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] mt-2 shrink-0 shadow-inner" />}
         {block.type === 'number' && <span className="text-[10px] font-black text-[var(--primary)] mt-1 shrink-0 w-4 text-right">{allBlocks.slice(0, index + 1).filter(b => b.type === 'number').length}.</span>}
-        {/* Fix line 72: Passed block as 2nd argument to onKeyDown */}
         <div ref={contentRef} contentEditable suppressContentEditableWarning data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'} onInput={handleInput} onKeyDown={(e) => onKeyDown(e, block, contentRef.current?.innerHTML || '')} onFocus={onFocus} onContextMenu={onContextMenu}
           className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)]/30 block-input transition-all ${typeClass}`}
         />
@@ -137,6 +135,12 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   useEffect(() => {
     if (blocks.length === 0) return;
     setIsSaving(true);
+    
+    // В режимі нотаток (standalone) викликаємо колбек одразу для синхронізації
+    if (standaloneMode) {
+      onContentChange?.(JSON.stringify(blocks));
+    }
+
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => handleManualSave(true), 1500);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
@@ -215,7 +219,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
 
         <div className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-1 bg-[var(--bg-card)] ${standaloneMode ? 'pb-10' : 'pb-32'}`}>
            {blocks.map((block, idx) => (
-             /* Fix line 216: handleKeyDown signature now matches the definition */
              <EditableBlock key={block.id} block={block} index={idx} allBlocks={blocks} isFocused={focusedBlockId === block.id} onUpdate={(updates) => updateBlock(block.id, updates)} onKeyDown={(e, b, content) => handleKeyDown(e, b, content)} onFocus={() => setFocusedBlockId(block.id)} onContextMenu={handleContextMenu} />
            ))}
         </div>

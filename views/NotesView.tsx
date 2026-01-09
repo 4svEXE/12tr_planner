@@ -74,14 +74,13 @@ const NotesView: React.FC = () => {
     };
   }, [isResizing, resize, stopResizing]);
 
-  const handleAddNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNoteTitle.trim()) return;
-    
+  const handleAddNote = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const title = newNoteTitle.trim() || "Нова нотатка";
     const projectId = (activeFolder !== 'all' && !systemFolders.find(f => f.id === activeFolder)) ? activeFolder : undefined;
     
     const newId = addTask(
-        newNoteTitle.trim(),
+        title,
         'note',
         projectId,
         'actions'
@@ -255,13 +254,7 @@ const NotesView: React.FC = () => {
             </div>
             
             {isMobile && (
-              <Button size="sm" onClick={() => {
-                const title = prompt('Назва нотатки:');
-                if (title) {
-                  const id = addTask(title, 'note', activeFolder !== 'all' ? activeFolder : undefined);
-                  setSelectedTaskId(id);
-                }
-              }} className="rounded-xl px-4 py-2 text-[8px] tracking-widest font-black uppercase shadow-lg">НОВА</Button>
+              <Button size="sm" onClick={() => handleAddNote()} className="rounded-xl px-4 py-2 text-[8px] tracking-widest font-black uppercase shadow-lg">НОВА</Button>
             )}
             
             {!isMobile && (

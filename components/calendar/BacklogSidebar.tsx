@@ -12,29 +12,30 @@ const TreeNode: React.FC<{
   level: number; 
   isOpen?: boolean; 
   count?: number;
+  color?: string;
   onToggle?: () => void; 
   onAdd?: (e: React.MouseEvent) => void; 
   onClick?: () => void; 
   isDraggable?: boolean; 
   onDragStart?: (e: React.DragEvent) => void; 
   children?: React.ReactNode; 
-}> = ({ label, icon, type, level, isOpen, count, onToggle, onAdd, onClick, isDraggable, onDragStart, children }) => (
+}> = ({ label, icon, type, level, isOpen, count, color, onToggle, onAdd, onClick, isDraggable, onDragStart, children }) => (
   <div className="flex flex-col">
     <div 
       draggable={isDraggable} 
       onDragStart={onDragStart} 
       onClick={onToggle || onClick} 
-      className={`group flex items-center gap-1.5 py-1 px-2 cursor-pointer hover:bg-black/5 rounded-lg transition-colors relative ${level > 0 ? 'ml-2' : ''} ${isOpen && type === 'folder' ? 'bg-black/[0.02]' : ''}`}
+      className={`group flex items-center gap-1.5 py-1 px-2 cursor-pointer hover:bg-black/5 rounded-lg transition-colors relative ${level > 0 ? 'ml-2' : ''} ${isOpen && (type === 'folder' || type === 'system') ? 'bg-black/[0.02]' : ''}`}
     >
       <div className="flex items-center gap-1 shrink-0">
-         {(type === 'folder' || type === 'system') && (
+         {(type === 'folder' || type === 'system' || (children && React.Children.count(children) > 0)) ? (
            <i className={`fa-solid fa-chevron-right text-[7px] text-slate-300 transition-transform ${isOpen ? 'rotate-90' : ''}`}></i>
-         )}
+         ) : <div className="w-2.5"></div>}
          <i className={`fa-solid ${icon} text-[10px] w-4 text-center ${
            type === 'event' ? 'text-pink-500' : 
            type === 'note' ? 'text-indigo-400' : 
            type === 'folder' ? 'text-orange-400' : 'text-slate-400'
-         }`}></i>
+         }`} style={color ? { color } : {}}></i>
       </div>
       <span className={`text-[10px] truncate flex-1 uppercase tracking-tight ${
         type === 'folder' || type === 'system' ? 'font-black text-slate-700' : 'font-bold text-slate-500'
@@ -57,14 +58,18 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({ 
     'root_planned': true,
     'root_inbox': true, 
+    'root_actions': true,
+    'root_notes': false,
     'root_projects': true 
   });
   
   const toggleNode = (nodeId: string) => setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
 
-  // Розподіл завдань
   const scheduledTasks = useMemo(() => tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate), [tasks]);
   const unscheduledTasks = useMemo(() => tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !t.scheduledDate), [tasks]);
+  
+  const allNotes = useMemo(() => tasks.filter(t => !t.isDeleted && t.category === 'note'), [tasks]);
+  const noteFolders = useMemo(() => projects.filter(p => p.status === 'active' && p.description?.includes('FOLDER_NOTE')), [projects]);
 
   const renderTaskNode = (t: Task, level: number) => (
     <TreeNode 
@@ -80,135 +85,31 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
     />
   );
 
-  const renderProjectTree = (parentId?: string, level = 0) => {
-    return projects
-      .filter(p => p.parentFolderId === parentId && p.status === 'active')
-      .map(p => {
-        const nodeId = `proj_${p.id}`;
-        const pScheduled = scheduledTasks.filter(t => t.projectId === p.id);
-        const pUnscheduled = unscheduledTasks.filter(t => t.projectId === p.id);
-        const subprojects = projects.filter(sp => sp.parentFolderId === p.id);
-
-        return (
-          <TreeNode 
-            key={p.id} 
-            id={p.id} 
-            label={p.name} 
-            icon={p.isStrategic ? 'fa-bolt-lightning' : 'fa-folder'} 
-            type="folder" 
-            level={level} 
-            isOpen={expandedNodes[nodeId]} 
-            onToggle={() => toggleNode(nodeId)}
-            onAdd={(e) => { e.stopPropagation(); const t = prompt('Нове завдання проєкті:'); if(t) addTask(t, 'tasks', p.id); }}
-          >
-            {/* Підпроєкти */}
-            {renderProjectTree(p.id, level + 1)}
-
-            {/* Події проєкту (Все що має дату) */}
-            {pScheduled.length > 0 && (
-              <TreeNode 
-                id={`${nodeId}_events`} 
-                label="Події" 
-                icon="fa-calendar-check" 
-                type="folder" 
-                level={level + 1} 
-                count={pScheduled.length}
-                isOpen={expandedNodes[`${nodeId}_events`]} 
-                onToggle={() => toggleNode(`${nodeId}_events`)}
-              >
-                {pScheduled.map(t => renderTaskNode(t, level + 2))}
-              </TreeNode>
-            )}
-
-            {/* Беклог проєкту (Все без дати) */}
-            {pUnscheduled.length > 0 && (
-              <TreeNode 
-                id={`${nodeId}_backlog`} 
-                label="Беклог" 
-                icon="fa-list-ul" 
-                type="folder" 
-                level={level + 1} 
-                count={pUnscheduled.length}
-                isOpen={expandedNodes[`${nodeId}_backlog`]} 
-                onToggle={() => toggleNode(`${nodeId}_backlog`)}
-              >
-                {pUnscheduled.map(t => renderTaskNode(t, level + 2))}
-              </TreeNode>
-            )}
-          </TreeNode>
-        );
-      });
-  };
-
   return (
     <aside className="w-64 bg-white border-r border-slate-100 flex flex-col hidden lg:flex shrink-0 select-none shadow-sm h-full overflow-hidden">
       <header className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-        <Typography variant="tiny" className="text-slate-400 font-black tracking-widest">Навігатор</Typography>
-        <div className="flex gap-1">
-           <button onClick={() => { const n = prompt('Нова ціль:'); if(n) addProject({ name: n, color: '#f97316', isStrategic: true, type: 'goal' }); }} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-400 flex items-center justify-center hover:text-orange-500 hover:shadow-sm transition-all"><i className="fa-solid fa-plus text-[8px]"></i></button>
-        </div>
+        <Typography variant="tiny" className="text-slate-400 font-black tracking-widest">Двигун Навігації</Typography>
       </header>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
-        
-        {/* ВСЕ ЩО МАЄ ДАТУ (ПОДІЇ) */}
-        <section>
-          <TreeNode 
-            id="root_planned" 
-            label="Заплановано" 
-            icon="fa-calendar-days" 
-            type="system" 
-            level={-1} 
-            count={scheduledTasks.length}
-            isOpen={expandedNodes['root_planned']} 
-            onToggle={() => toggleNode('root_planned')}
-          >
-            {scheduledTasks.length > 0 ? (
-               scheduledTasks.sort((a,b) => (a.scheduledDate || 0) - (b.scheduledDate || 0)).map(t => (
-                 <div key={t.id} className="relative">
-                    {renderTaskNode(t, 0)}
-                    <div className="absolute left-6 bottom-0 text-[6px] font-black text-orange-500 uppercase opacity-50">
-                       {new Date(t.scheduledDate!).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
-                    </div>
-                 </div>
-               ))
-            ) : (
-              <div className="px-6 py-2 text-[8px] text-slate-300 italic uppercase">Немає подій</div>
-            )}
-          </TreeNode>
-        </section>
-
-        {/* ВХІДНІ (КАТЕГОРІЇ) */}
+        {/* ВХІДНІ (INBOX SCOPE) */}
         <section>
           <TreeNode 
             id="root_inbox" 
-            label="Вхідні" 
+            label="Вхідні Думки" 
             icon="fa-inbox" 
             type="system" 
             level={-1} 
             isOpen={expandedNodes['root_inbox']} 
             onToggle={() => toggleNode('root_inbox')}
           >
-            {inboxCategories.map(cat => {
-              const nodeId = `cat_${cat.id}`;
-              const catTasks = unscheduledTasks.filter(t => {
-                if (cat.isPinned) return t.isPinned;
-                return t.category === cat.id && !t.isPinned && !t.projectId;
-              });
-
+            {inboxCategories.filter(c => c.scope === 'inbox' || c.id === 'unsorted' || c.id === 'pinned').map(cat => {
+              const nodeId = `cat_inbox_${cat.id}`;
+              const catTasks = unscheduledTasks.filter(t => t.category === cat.id && t.status === TaskStatus.INBOX);
+              if (catTasks.length === 0 && cat.id !== 'unsorted') return null;
+              
               return (
-                <TreeNode 
-                  key={cat.id} 
-                  id={cat.id} 
-                  label={cat.title} 
-                  icon={cat.icon} 
-                  type="folder" 
-                  level={0} 
-                  count={catTasks.length}
-                  isOpen={expandedNodes[nodeId]} 
-                  onToggle={() => toggleNode(nodeId)} 
-                  onAdd={(e) => { e.stopPropagation(); const t = prompt(`Додати у ${cat.title}:`); if(t) addTask(t, cat.id); }}
-                >
+                <TreeNode key={cat.id} id={cat.id} label={cat.title} icon={cat.icon} type="folder" level={0} count={catTasks.length} isOpen={expandedNodes[nodeId]} onToggle={() => toggleNode(nodeId)}>
                   {catTasks.map(t => renderTaskNode(t, 1))}
                 </TreeNode>
               );
@@ -216,25 +117,72 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
           </TreeNode>
         </section>
 
-        {/* ПРОЄКТИ ТА ЦІЛІ */}
+        {/* ДІЇ (ACTIONS SCOPE) */}
         <section>
           <TreeNode 
-            id="root_projects" 
-            label="Проєкти" 
-            icon="fa-folder-tree" 
+            id="root_actions" 
+            label="Наступні Дії" 
+            icon="fa-bolt" 
             type="system" 
             level={-1} 
-            isOpen={expandedNodes['root_projects']} 
-            onToggle={() => toggleNode('root_projects')}
+            isOpen={expandedNodes['root_actions']} 
+            onToggle={() => toggleNode('root_actions')}
           >
-            {renderProjectTree(undefined)}
+            {inboxCategories.filter(c => c.scope === 'actions' || c.id === 'tasks').map(cat => {
+              const nodeId = `cat_actions_${cat.id}`;
+              const catTasks = unscheduledTasks.filter(t => t.category === cat.id && t.status === TaskStatus.NEXT_ACTION);
+              if (catTasks.length === 0 && cat.id !== 'tasks') return null;
+
+              return (
+                <TreeNode key={cat.id} id={cat.id} label={cat.title} icon={cat.icon} type="folder" level={0} count={catTasks.length} isOpen={expandedNodes[nodeId]} onToggle={() => toggleNode(nodeId)}>
+                  {catTasks.map(t => renderTaskNode(t, 1))}
+                </TreeNode>
+              );
+            })}
+          </TreeNode>
+        </section>
+
+        {/* НОТАТКИ / БАЗА ЗНАНЬ */}
+        <section>
+          <TreeNode 
+            id="root_notes" 
+            label="База Знань" 
+            icon="fa-note-sticky" 
+            type="system" 
+            level={-1} 
+            isOpen={expandedNodes['root_notes']} 
+            onToggle={() => toggleNode('root_notes')}
+          >
+            {/* Папки нотаток */}
+            {noteFolders.map(folder => {
+              const nodeId = `folder_notes_${folder.id}`;
+              const folderNotes = allNotes.filter(n => n.projectId === folder.id);
+              return (
+                <TreeNode key={folder.id} id={folder.id} label={folder.name} icon="fa-folder" type="folder" level={0} count={folderNotes.length} isOpen={expandedNodes[nodeId]} onToggle={() => toggleNode(nodeId)}>
+                  {folderNotes.map(n => renderTaskNode(n, 1))}
+                </TreeNode>
+              );
+            })}
+            {/* Несортовані нотатки */}
+            {allNotes.filter(n => !n.projectId).length > 0 && (
+              <TreeNode id="unsorted_notes" label="Несортоване" icon="fa-file-lines" type="folder" level={0} count={allNotes.filter(n => !n.projectId).length} isOpen={expandedNodes['unsorted_notes']} onToggle={() => toggleNode('unsorted_notes')}>
+                {allNotes.filter(n => !n.projectId).map(n => renderTaskNode(n, 1))}
+              </TreeNode>
+            )}
+          </TreeNode>
+        </section>
+
+        {/* ЗАПЛАНОВАНО */}
+        <section>
+          <TreeNode id="root_planned" label="Календар" icon="fa-calendar-days" type="system" level={-1} isOpen={expandedNodes['root_planned']} onToggle={() => toggleNode('root_planned')}>
+            {scheduledTasks.length > 0 ? scheduledTasks.sort((a,b) => (a.scheduledDate || 0) - (b.scheduledDate || 0)).slice(0,10).map(t => renderTaskNode(t, 0)) : <div className="px-6 py-2 text-[8px] text-slate-300 italic uppercase">Порожньо</div>}
           </TreeNode>
         </section>
       </div>
 
       <footer className="p-3 bg-slate-50 border-t border-slate-100">
          <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest px-1">
-            <span>Активні квести</span>
+            <span>Активні справи</span>
             <span className="text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-md">{tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE).length}</span>
          </div>
       </footer>
