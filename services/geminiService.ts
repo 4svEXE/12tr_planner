@@ -2,9 +2,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Character, Task, Project, TaskStatus, Person } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Функція для отримання актуального ключа
+const getAiClient = () => {
+  const apiKey = localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key not found. Please set it in Settings.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const getCharacterDailyBriefing = async (character: Character, tasks: Task[], projects: Project[]) => {
+  const ai = getAiClient();
   const prompt = `
     Зіграй роль ${character.name}, мудрого наставника раси ${character.race} у фентезійному світі стратегії.
     Роль героя: ${character.role}
@@ -44,6 +52,7 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
 };
 
 export const analyzePersonPortrait = async (person: Person, userCharacter: Character) => {
+  const ai = getAiClient();
   const memoriesStr = person.memories.map(m => `${m.date}: ${m.event} (${m.emotion})`).join('\n');
   const notesStr = person.notes.map(n => `${n.date}: ${n.text}`).join('\n');
 
@@ -89,6 +98,7 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
 };
 
 export const analyzeSocialPresence = async (platform: string, handle: string, content?: string) => {
+  const ai = getAiClient();
   const prompt = `
     Ти — ШІ-аналітик соціальних зв'язків. 
     Проаналізуй дані профілю "${handle}" на платформі "${platform}".
@@ -126,6 +136,7 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
 };
 
 export const analyzeDailyReport = async (reportContent: string, character: Character) => {
+  const ai = getAiClient();
   const prompt = `
     Проаналізуй цей щоденний звіт користувача та витягни з нього корисні ідеї для системи GTD та ігрового двигуна життя.
     Біо героя: ${character.bio}
@@ -174,6 +185,7 @@ export const planProjectStrategically = async (
   projectDescription: string,
   character: Character
 ) => {
+  const ai = getAiClient();
   const prompt = `
     Ти — верховний стратег і наставник Героя: ${character.name} (${character.race} ${character.archetype}).
     Візія героя: ${character.vision}
@@ -227,6 +239,7 @@ export const planProjectStrategically = async (
 };
 
 export const processInboxWithAi = async (tasks: {id: string, title: string, content?: string}[], characterContext: Character, existingPeople: string[]) => {
+  const ai = getAiClient();
   const prompt = `
     Ти — верховний стратег GTD та ігрового двигуна життя.
     Проаналізуй ці вхідні (заголовки + опис) і розклади все по поличках.

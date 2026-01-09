@@ -19,7 +19,13 @@ const DiaryView: React.FC = () => {
   const [mobileTab, setMobileTab] = useState<'list' | 'stats'>('list');
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
 
-  const isMobile = window.innerWidth < 1024;
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const sortedDiary = useMemo(() => {
     return [...diary].sort((a, b) => {
@@ -84,33 +90,37 @@ const DiaryView: React.FC = () => {
     const daysToRender = isMinimized ? getWeekDays() : getMonthDays();
 
     return (
-      <div className={`bg-white p-4 md:p-5 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${isMobileCalendar ? 'mb-4' : ''}`}>
+      <div className={`bg-white p-4 md:p-5 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${isMobileCalendar ? 'mb-6 mx-2' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={() => isMobileCalendar && setIsCalendarExpanded(!isCalendarExpanded)}
-            className="flex items-center gap-2 text-left"
+            className="flex items-center gap-2 text-left group"
           >
-            <Typography variant="tiny" className="text-slate-900 font-black capitalize text-[10px] tracking-wider">
+            <Typography variant="tiny" className="text-slate-900 font-black capitalize text-[10px] tracking-wider group-hover:text-orange-600 transition-colors">
               {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
             </Typography>
             {isMobileCalendar && (
               <i className={`fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform ${isCalendarExpanded ? 'rotate-180' : ''}`}></i>
             )}
           </button>
-          <div className="flex gap-1 shrink-0">
-            <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-left text-[9px]"></i></button>
-            <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-right text-[9px]"></i></button>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-300 hover:text-orange-500 transition-colors"><i className="fa-solid fa-chevron-left text-[9px]"></i></button>
+            <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-300 hover:text-orange-500 transition-colors"><i className="fa-solid fa-chevron-right text-[9px]"></i></button>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-1 md:gap-2">
           {['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'].map(w => (
-            <div key={w} className="text-[7px] font-black text-slate-200 text-center uppercase">{w}</div>
+            <div key={w} className="text-[7px] font-black text-slate-200 text-center uppercase tracking-tighter">{w}</div>
           ))}
           {daysToRender.map((date, i) => {
             if (date === null) return <div key={`empty-${i}`} className="h-8" />;
-            const dateStr = date.toISOString().split('T')[0];
+            const dY = date.getFullYear();
+            const dM = String(date.getMonth() + 1).padStart(2, '0');
+            const dD = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${dY}-${dM}-${dD}`;
+
             const isSelected = selectedDate === dateStr;
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
             const hasEntry = diary.some(e => e.date === dateStr);
 
             return (
@@ -120,7 +130,7 @@ const DiaryView: React.FC = () => {
                 className={`h-8 md:h-9 rounded-xl flex items-center justify-center text-[10px] font-bold transition-all relative ${isSelected ? 'bg-orange-600 text-white shadow-lg' : isToday ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 {date.getDate()}
-                {hasEntry && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-orange-400 rounded-full"></div>}
+                {hasEntry && !isSelected && <div className="absolute bottom-1.5 w-1 h-1 bg-orange-400 rounded-full"></div>}
               </button>
             );
           })}
@@ -136,7 +146,7 @@ const DiaryView: React.FC = () => {
         <Typography variant="h2" className="text-base">Цей день в історії</Typography>
       </header>
       
-      <div className="p-6 space-y-8">
+      <div className="p-6 space-y-8 pb-32">
         <section className="space-y-4">
           <div className="flex items-center justify-between">
              <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Спогади минулого</Typography>
@@ -150,29 +160,33 @@ const DiaryView: React.FC = () => {
                    <span className="text-[10px] font-black text-orange-600">{new Date(mem.date).getFullYear()} рік</span>
                    <i className="fa-solid fa-arrow-right text-[8px] text-slate-300 group-hover:translate-x-1 transition-transform"></i>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed italic line-clamp-3">
-                  {mem.content.replace(/<[^>]*>?/gm, '').slice(0, 150)}...
+                <p className="text-[11px] text-slate-600 leading-relaxed italic line-clamp-4">
+                  {mem.content.replace(/<[^>]*>?/gm, '').slice(0, 200)}...
                 </p>
               </Card>
             ))
           ) : (
-            <div className="p-10 border-2 border-dashed border-slate-100 rounded-[2rem] text-center opacity-30">
+            <div className="p-10 border-2 border-dashed border-slate-100 rounded-[2.5rem] text-center opacity-30 bg-slate-50/30">
               <i className="fa-solid fa-ghost text-2xl mb-2 text-slate-300"></i>
-              <p className="text-[9px] font-black uppercase">Тут поки порожньо</p>
+              <p className="text-[9px] font-black uppercase tracking-widest">Немає спогадів для цієї дати</p>
             </div>
           )}
         </section>
 
         <section className="space-y-4">
-           <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Квести дня</Typography>
+           <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Статус дня</Typography>
            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                 <div className="text-lg font-black text-emerald-700">{tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === selectedDate).length}</div>
-                 <div className="text-[7px] font-black text-emerald-600 uppercase">Виконано</div>
+              <div className="p-5 bg-emerald-50 rounded-[1.8rem] border border-emerald-100 flex flex-col justify-center">
+                 <div className="text-2xl font-black text-emerald-700 leading-none mb-1">
+                    {tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === selectedDate).length}
+                 </div>
+                 <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">Виконано</div>
               </div>
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                 <div className="text-lg font-black text-slate-700">{tasks.filter(t => !t.isDeleted && t.scheduledDate && new Date(t.scheduledDate).toLocaleDateString('en-CA') === selectedDate).length}</div>
-                 <div className="text-[7px] font-black text-slate-400 uppercase">Планів</div>
+              <div className="p-5 bg-slate-50 rounded-[1.8rem] border border-slate-100 flex flex-col justify-center">
+                 <div className="text-2xl font-black text-slate-700 leading-none mb-1">
+                    {tasks.filter(t => !t.isDeleted && t.scheduledDate && new Date(t.scheduledDate).toLocaleDateString('en-CA') === selectedDate).length}
+                 </div>
+                 <div className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Планів</div>
               </div>
            </div>
         </section>
@@ -183,19 +197,28 @@ const DiaryView: React.FC = () => {
   return (
     <div className="h-screen flex bg-slate-50 overflow-hidden relative">
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <header className="px-4 md:px-6 py-3 md:py-4 bg-white border-b border-slate-100 z-10 flex flex-col gap-3 shrink-0">
+        <header className="px-4 md:px-8 py-3 md:py-6 bg-white border-b border-slate-100 z-10 flex flex-col gap-3 shrink-0">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm">
-                 <i className="fa-solid fa-book-open text-sm"></i>
+              <div className="w-8 h-8 md:w-11 md:h-11 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm">
+                 <i className="fa-solid fa-book-open text-xs md:text-sm"></i>
               </div>
-              <Typography variant="h1" className="text-lg md:text-xl">Щоденник</Typography>
+              <div>
+                <Typography variant="h1" className="text-lg md:text-2xl font-black">Щоденник</Typography>
+                <Typography variant="tiny" className="text-slate-300 uppercase tracking-widest text-[7px] hidden md:block">Архів подій та думок</Typography>
+              </div>
             </div>
             
-            {/* MOBILE TOGGLE */}
-            <div className="lg:hidden flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
-               <button onClick={() => setMobileTab('list')} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${mobileTab === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Записи</button>
-               <button onClick={() => setMobileTab('stats')} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${mobileTab === 'stats' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Ретро</button>
+            {/* MOBILE TABS SWITCHER */}
+            <div className="lg:hidden flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shadow-inner">
+               <button onClick={() => setMobileTab('list')} className={`px-4 py-2 rounded-[0.6rem] text-[8px] font-black uppercase transition-all flex items-center gap-1.5 ${mobileTab === 'list' ? 'bg-white shadow-md text-orange-600' : 'text-slate-400'}`}>
+                 <i className="fa-solid fa-list-ul"></i>
+                 Архів
+               </button>
+               <button onClick={() => setMobileTab('stats')} className={`px-4 py-2 rounded-[0.6rem] text-[8px] font-black uppercase transition-all flex items-center gap-1.5 ${mobileTab === 'stats' ? 'bg-white shadow-md text-orange-600' : 'text-slate-400'}`}>
+                 <i className="fa-solid fa-chart-pie"></i>
+                 Ретро
+               </button>
             </div>
           </div>
         </header>
@@ -215,20 +238,26 @@ const DiaryView: React.FC = () => {
           </aside>
 
           {/* MAIN CONTENT AREA */}
-          <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-slate-50/30 ${isMobile && mobileTab === 'stats' ? 'hidden' : 'block'}`}>
-            <div className="max-w-3xl mx-auto space-y-5 pb-40">
+          <main className={`flex-1 overflow-y-auto custom-scrollbar p-3 md:p-8 bg-slate-50/50 ${isMobile && mobileTab === 'stats' ? 'hidden' : 'block'}`}>
+            <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 pb-40">
               <div className="block lg:hidden">{renderCalendar(true)}</div>
               
-              {/* MOBILE QUICK ACTION */}
-              <div className="lg:hidden grid grid-cols-2 gap-3 mb-6">
-                <button onClick={() => setEditingEntryId('new')} className="bg-orange-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase"><i className="fa-solid fa-plus"></i> ЗАПИС</button>
-                <button onClick={() => setShowReportWizard(true)} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase text-slate-600"><i className="fa-solid fa-chart-line"></i> ЗВІТ</button>
+              {/* MOBILE QUICK ACTIONS */}
+              <div className="lg:hidden grid grid-cols-2 gap-3 mx-2 mb-6">
+                <button onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }} className="bg-orange-600 text-white p-5 rounded-[1.8rem] shadow-xl shadow-orange-100 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                  <i className="fa-solid fa-pen-fancy text-lg"></i>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Написати</span>
+                </button>
+                <button onClick={() => setShowReportWizard(true)} className="bg-white border border-slate-100 p-5 rounded-[1.8rem] shadow-sm flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                  <i className="fa-solid fa-chart-line text-lg text-slate-400"></i>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Звіт дня</span>
+                </button>
               </div>
 
               {(Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, entries]) => (
-                <div key={month} className="space-y-3">
-                  <div className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-sm py-2 px-1">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{month}</span>
+                <div key={month} className="space-y-3 px-2 md:px-0">
+                  <div className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-sm py-2">
+                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-200 pb-1">{month}</span>
                   </div>
                   {entries.map(entry => {
                     const dateParts = entry.date.split('-').map(Number);
@@ -241,33 +270,41 @@ const DiaryView: React.FC = () => {
 
                     return (
                       <Card key={entry.id} padding="none" hover onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
-                        className={`bg-white border-slate-100 rounded-[1.8rem] cursor-pointer overflow-hidden group/card transition-all ${editingEntryId === entry.id ? 'ring-2 ring-orange-100 border-orange-200 shadow-lg' : 'shadow-sm'}`}>
-                        <div className="flex items-center gap-4 md:gap-6 p-4 md:p-5">
-                          <div className="w-10 md:w-12 flex flex-col items-center shrink-0 border-r border-slate-50 pr-4 md:pr-5">
-                             <span className="text-[7px] md:text-[8px] font-black text-slate-300 uppercase leading-none mb-1.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
-                             <span className="text-sm md:text-lg font-black text-slate-800 leading-none">{d.getDate()}</span>
+                        className={`bg-white border-slate-100 rounded-[1.8rem] md:rounded-[2.5rem] cursor-pointer overflow-hidden group/card transition-all ${editingEntryId === entry.id ? 'ring-2 ring-orange-200 border-orange-200 shadow-lg' : 'shadow-sm hover:shadow-md'}`}>
+                        <div className="flex items-center gap-4 md:gap-8 p-4 md:p-6">
+                          <div className="w-10 md:w-14 flex flex-col items-center shrink-0 border-r border-slate-50 pr-4 md:pr-8">
+                             <span className="text-[7px] md:text-[9px] font-black text-slate-300 uppercase leading-none mb-1.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
+                             <span className="text-base md:text-2xl font-black text-slate-800 leading-none">{d.getDate()}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[13px] md:text-[15px] font-black text-slate-700 truncate block uppercase tracking-tight">{title}</span>
-                            <div className="flex items-center gap-3 mt-1">
-                               <p className="text-[8px] text-slate-300 truncate font-black uppercase tracking-widest">{entry.date}</p>
+                            <span className="text-[13px] md:text-base font-black text-slate-700 truncate block uppercase tracking-tight">{title}</span>
+                            <div className="flex items-center gap-3 mt-1.5">
+                               <p className="text-[8px] text-slate-300 truncate font-bold uppercase tracking-wider">{entry.date}</p>
                                <div className="w-1 h-1 rounded-full bg-slate-200"></div>
                                <span className="text-[8px] font-black text-orange-400 uppercase">{new Date(entry.createdAt).toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити цей запис?')) deleteDiaryEntry(entry.id); }} className="w-9 h-9 rounded-xl text-slate-200 hover:text-rose-500 flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can text-sm"></i></button>
+                          <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити цей запис?')) deleteDiaryEntry(entry.id); }} className="w-9 h-9 md:w-11 md:h-11 rounded-xl md:rounded-2xl text-slate-100 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can text-sm md:text-base"></i></button>
                         </div>
                       </Card>
                     );
                   })}
                 </div>
               ))}
+              
+              {diary.length === 0 && (
+                <div className="py-20 text-center opacity-20 grayscale select-none">
+                  <i className="fa-solid fa-book-open text-7xl mb-6"></i>
+                  <Typography variant="h2" className="text-xl uppercase font-black">Історія порожня</Typography>
+                  <p className="mt-2 text-sm">Створіть свій перший запис уже сьогодні</p>
+                </div>
+              )}
             </div>
           </main>
 
           {/* MOBILE STATS VIEW */}
           {isMobile && mobileTab === 'stats' && (
-            <main className="flex-1 bg-white overflow-hidden">
+            <main className="flex-1 bg-white overflow-hidden animate-in fade-in duration-300">
                {renderStatsPanel()}
             </main>
           )}
@@ -275,8 +312,10 @@ const DiaryView: React.FC = () => {
       </div>
 
       {/* RIGHT SIDE PANEL (DESKTOP EDITOR OR STATS) */}
-      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-slate-100 bg-white z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0' : 'translate-x-0'} flex ${isMobile && !editingEntryId ? 'hidden' : ''}`}>
-         <div onMouseDown={startResizing} className={`hidden lg:block w-[1px] h-full cursor-col-resize hover:bg-orange-500 z-[100] transition-colors ${isResizing ? 'bg-orange-500' : 'bg-slate-100'}`}></div>
+      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-slate-100 bg-white z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
+         {!isMobile && (
+           <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-orange-500 z-[100] transition-colors ${isResizing ? 'bg-orange-500' : 'bg-slate-100'}`}></div>
+         )}
          <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full flex flex-col bg-white shadow-2xl lg:shadow-none overflow-hidden">
             {editingEntryId ? (
               <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />

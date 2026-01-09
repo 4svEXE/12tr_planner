@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk" data-theme="classic">
 <head>
@@ -6,7 +7,7 @@
   <title>12TR: Ігровий Двигун Життя</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -17,9 +18,7 @@
       --text-main: #1e293b;
       --text-muted: #64748b;
       --border-color: #f1f5f9;
-      --sidebar-item-hover: #f8fafc;
-      --sidebar-item-active: #fff7ed;
-      --sidebar-text-active: #f97316;
+      --radius: 2rem;
     }
 
     [data-theme="midnight"] {
@@ -30,9 +29,68 @@
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
       --border-color: #334155;
-      --sidebar-item-hover: #1e293b;
-      --sidebar-item-active: #10b98120;
-      --sidebar-text-active: #10b981;
+    }
+
+    [data-theme="nordic"] {
+      --primary: #6366f1;
+      --bg-main: #f1f5f9;
+      --bg-sidebar: #e2e8f0;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #cbd5e1;
+    }
+
+    [data-theme="sakura"] {
+      --primary: #ec4899;
+      --bg-main: #fff1f2;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #881337;
+      --text-muted: #fb7185;
+      --border-color: #ffe4e6;
+    }
+
+    [data-theme="forest"] {
+      --primary: #059669;
+      --bg-main: #064e3b;
+      --bg-sidebar: #064e3b;
+      --bg-card: #065f46;
+      --text-main: #ecfdf5;
+      --text-muted: #6ee7b7;
+      --border-color: #047857;
+    }
+
+    [data-theme="amethyst"] {
+      --primary: #a855f7;
+      --bg-main: #2e1065;
+      --bg-sidebar: #4c1d95;
+      --bg-card: #5b21b6;
+      --text-main: #f5f3ff;
+      --text-muted: #c4b5fd;
+      --border-color: #6d28d9;
+    }
+
+    [data-theme="volcano"] {
+      --primary: #ef4444;
+      --bg-main: #000000;
+      --bg-sidebar: #111111;
+      --bg-card: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #7f1d1d;
+      --border-color: #450a0a;
+      --radius: 0.5rem;
+    }
+
+    [data-theme="slate"] {
+      --primary: #475569;
+      --bg-main: #f8fafc;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --radius: 0px;
     }
 
     body {
@@ -41,6 +99,7 @@
       color: var(--text-main);
       margin: 0;
       overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .tiktok-blur {
@@ -54,6 +113,10 @@
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: var(--border-color);
       border-radius: 10px;
+    }
+    
+    .theme-glow {
+      box-shadow: 0 0 15px var(--primary);
     }
   </style>
 <script type="importmap">

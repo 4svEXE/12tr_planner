@@ -30,6 +30,7 @@ const MainLayout: React.FC = () => {
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [notifications, setNotifications] = useState<{id: string, task: Task}[]>([]);
+  const hasApiKey = !!localStorage.getItem('GEMINI_API_KEY');
 
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
@@ -59,7 +60,6 @@ const MainLayout: React.FC = () => {
   }, [tasks]);
 
   const removeNotification = (id: string) => {
-    // Fixed: Correctly return the filtered array in the state setter
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
@@ -195,6 +195,14 @@ const MainLayout: React.FC = () => {
         </div>
 
         <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
+          {!hasApiKey && (
+            <div className="bg-rose-50 p-6 rounded-2xl border border-rose-100 text-center animate-in fade-in duration-500">
+               <i className="fa-solid fa-key text-rose-500 text-xl mb-3"></i>
+               <div className="text-xs font-black text-rose-900 uppercase mb-2">API Ключ не знайдено</div>
+               <p className="text-[10px] text-rose-700/70 mb-4 leading-relaxed">Для роботи асистента потрібно додати ваш персональний Gemini API Key.</p>
+               <button onClick={() => { setActiveTab('settings'); setIsAiOpen(false); }} className="w-full py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase">Налаштувати</button>
+            </div>
+          )}
           <div className="bg-orange-50 p-4 rounded-2xl rounded-tl-none border border-orange-100 text-sm font-medium leading-relaxed text-orange-800 shadow-sm">
             Привіт! Я твій стратегічний асистент. Увімкнути чи налаштувати мої функції можна в меню налаштувань. Чим можу допомогти зараз?
           </div>
