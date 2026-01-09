@@ -15,6 +15,9 @@ interface DiaryEditorProps {
   id?: string;
   date: string;
   onClose: () => void;
+  standaloneMode?: boolean;
+  initialContent?: string;
+  onContentChange?: (content: string) => void;
 }
 
 const EditableBlock: React.FC<{
@@ -22,7 +25,8 @@ const EditableBlock: React.FC<{
   index: number;
   isFocused: boolean;
   onUpdate: (updates: Partial<Block>) => void;
-  onKeyDown: (e: React.KeyboardEvent, currentHTML: string) => void;
+  // Fix: Added block parameter to match implementation
+  onKeyDown: (e: React.KeyboardEvent, block: Block, currentHTML: string) => void;
   onFocus: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   allBlocks: Block[];
@@ -46,35 +50,36 @@ const EditableBlock: React.FC<{
   };
 
   let typeClass = "";
-  if (block.type === 'heading') typeClass = "text-lg md:text-xl font-black text-slate-900 leading-tight";
-  if (block.type === 'text') typeClass = "text-sm font-medium text-slate-600 leading-relaxed";
-  if (block.type === 'quote') typeClass = "text-sm font-medium italic text-slate-500 border-l-4 border-orange-200 pl-3 py-1 bg-orange-50/30 rounded-r-lg";
-  if (block.type === 'task') typeClass = `text-sm font-bold transition-all ${block.checked ? 'line-through text-slate-300 opacity-60' : 'text-slate-700'}`;
-  if (block.type === 'bullet' || block.type === 'number') typeClass = "text-sm text-slate-700 font-medium";
+  if (block.type === 'heading') typeClass = "text-lg md:text-xl font-black text-[var(--text-main)] leading-tight";
+  if (block.type === 'text') typeClass = "text-sm font-medium text-[var(--text-main)] leading-relaxed";
+  if (block.type === 'quote') typeClass = "text-sm font-medium italic text-[var(--text-muted)] border-l-4 border-[var(--primary)]/30 pl-3 py-1 bg-[var(--primary)]/5 rounded-r-lg";
+  if (block.type === 'task') typeClass = `text-sm font-bold transition-all ${block.checked ? 'line-through text-[var(--text-muted)] opacity-60' : 'text-[var(--text-main)]'}`;
+  if (block.type === 'bullet' || block.type === 'number') typeClass = "text-sm text-[var(--text-main)] font-medium";
 
   return (
     <div className="flex items-start gap-2 md:gap-3 w-full group/row mb-1">
       <div className="w-5 flex flex-col items-center opacity-0 group-hover/row:opacity-100 transition-opacity pt-1 shrink-0">
-         <button onClick={() => onUpdate({ id: 'DELETE_BLOCK' })} className="text-slate-200 hover:text-rose-500 p-1"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+         <button onClick={() => onUpdate({ id: 'DELETE_BLOCK' })} className="text-[var(--text-muted)] hover:text-rose-500 p-1"><i className="fa-solid fa-xmark text-[10px]"></i></button>
       </div>
       <div className="flex-1 min-w-0 flex items-start gap-2 md:gap-3">
         {block.type === 'task' && (
           <button onClick={() => onUpdate({ checked: !block.checked })} 
-            className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-slate-200 bg-white hover:border-orange-400 shadow-sm'}`}>
+            className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--primary)] shadow-sm'}`}>
             {block.checked && <i className="fa-solid fa-check text-[10px]"></i>}
           </button>
         )}
-        {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0 shadow-inner" />}
-        {block.type === 'number' && <span className="text-[10px] font-black text-orange-400 mt-1 shrink-0 w-4 text-right">{allBlocks.slice(0, index + 1).filter(b => b.type === 'number').length}.</span>}
-        <div ref={contentRef} contentEditable suppressContentEditableWarning data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'} onInput={handleInput} onKeyDown={(e) => onKeyDown(e, contentRef.current?.innerHTML || '')} onFocus={onFocus} onContextMenu={onContextMenu}
-          className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 block-input transition-all ${typeClass}`}
+        {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] mt-2 shrink-0 shadow-inner" />}
+        {block.type === 'number' && <span className="text-[10px] font-black text-[var(--primary)] mt-1 shrink-0 w-4 text-right">{allBlocks.slice(0, index + 1).filter(b => b.type === 'number').length}.</span>}
+        {/* Fix line 72: Passed block as 2nd argument to onKeyDown */}
+        <div ref={contentRef} contentEditable suppressContentEditableWarning data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'} onInput={handleInput} onKeyDown={(e) => onKeyDown(e, block, contentRef.current?.innerHTML || '')} onFocus={onFocus} onContextMenu={onContextMenu}
+          className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)]/30 block-input transition-all ${typeClass}`}
         />
       </div>
     </div>
   );
 };
 
-const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
+const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standaloneMode = false, initialContent, onContentChange }) => {
   const { diary, saveDiaryEntry } = useApp();
   const [currentId, setCurrentId] = useState<string | undefined>(id);
   const [localDate, setLocalDate] = useState(date);
@@ -84,16 +89,16 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
   const [floatingMenu, setFloatingMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
   
   const saveTimeoutRef = useRef<number | null>(null);
-  const existingEntry = useMemo(() => diary.find(e => e.id === currentId), [diary, currentId]);
+  const contentToLoad = standaloneMode ? initialContent : diary.find(e => e.id === currentId)?.content;
 
   useEffect(() => {
-    if (existingEntry) {
+    if (contentToLoad) {
       try {
-        const parsed = JSON.parse(existingEntry.content);
+        const parsed = JSON.parse(contentToLoad);
         if (Array.isArray(parsed)) setBlocks(parsed);
         else throw new Error();
       } catch (e) {
-        const lines = existingEntry.content.split('\n').filter(l => l.trim() !== '');
+        const lines = contentToLoad.split('\n').filter(l => l.trim() !== '');
         const initialBlocks: Block[] = lines.map(l => ({
           id: Math.random().toString(36).substr(2, 9),
           type: l.startsWith('#') ? 'heading' : 'text',
@@ -105,10 +110,17 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
     } else {
       setBlocks([{ id: 'b-init', type: 'text', content: '' }]);
     }
-  }, [currentId]);
+  }, [id, contentToLoad]);
 
   const handleManualSave = (isAutoSave = false) => {
     const contentStr = JSON.stringify(blocks);
+    
+    if (standaloneMode) {
+      onContentChange?.(contentStr);
+      setIsSaving(false);
+      return;
+    }
+
     const hasContent = blocks.some(b => b.content.trim() !== '' && b.content !== '<br>');
     if (!hasContent && !currentId) return;
     const savedId = saveDiaryEntry(localDate, contentStr, currentId);
@@ -126,7 +138,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
     if (blocks.length === 0) return;
     setIsSaving(true);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = window.setTimeout(() => handleManualSave(true), 3000);
+    saveTimeoutRef.current = window.setTimeout(() => handleManualSave(true), 1500);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [blocks, localDate]);
 
@@ -176,32 +188,35 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white relative">
-      <header className="p-4 border-b border-slate-50 flex justify-between items-center bg-white/90 backdrop-blur-md shrink-0 sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)} className="bg-transparent border-none text-orange-600 font-black uppercase text-[10px] tracking-widest focus:ring-0 p-0 cursor-pointer" />
-          <div className="h-3 w-px bg-slate-100 hidden sm:block"></div>
-          <Typography variant="tiny" className="text-slate-300 font-black uppercase text-[8px] tracking-widest hidden sm:block">Редактор</Typography>
-        </div>
-        <div className="flex items-center gap-2">
-           <button onClick={handleSaveAndClose} className="px-5 py-2 bg-orange-600 text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-orange-100 active:scale-95 transition-all">Зберегти</button>
-           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center transition-all hover:text-slate-900 active:scale-95"><i className="fa-solid fa-xmark"></i></button>
-        </div>
-      </header>
+    <div className={`h-full flex flex-col bg-[var(--bg-card)] relative ${standaloneMode ? 'rounded-2xl border border-[var(--border-color)] overflow-hidden' : ''}`}>
+      {!standaloneMode && (
+        <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] shrink-0 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)} className="bg-transparent border-none text-[var(--primary)] font-black uppercase text-[10px] tracking-widest focus:ring-0 p-0 cursor-pointer" />
+            <div className="h-3 w-px bg-[var(--border-color)] hidden sm:block"></div>
+            <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase text-[8px] tracking-widest hidden sm:block">Редактор</Typography>
+          </div>
+          <div className="flex items-center gap-2">
+             <button onClick={handleSaveAndClose} className="px-5 py-2 bg-[var(--primary)] text-white rounded-xl text-[9px] font-black uppercase shadow-lg active:scale-95 transition-all">Зберегти</button>
+             <button onClick={onClose} className="w-9 h-9 rounded-xl bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all hover:text-[var(--text-main)] active:scale-95"><i className="fa-solid fa-xmark"></i></button>
+          </div>
+        </header>
+      )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-2 md:px-4 py-2 bg-slate-50/50 flex items-center gap-1 overflow-x-auto no-scrollbar border-b border-slate-50 shrink-0">
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'heading'})} title="Заголовок" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-heading text-xs"></i></button>
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'text'})} title="Текст" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-paragraph text-xs"></i></button>
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'task'})} title="Завдання" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-square-check text-xs"></i></button>
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'bullet'})} title="Список" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-list-ul text-xs"></i></button>
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'number'})} title="Нумерація" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-list-ol text-xs"></i></button>
-           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'quote'})} title="Цитата" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-quote-left text-xs"></i></button>
+        <div className="px-2 md:px-4 py-1.5 bg-[var(--bg-main)]/30 flex items-center gap-1 overflow-x-auto no-scrollbar border-b border-[var(--border-color)] shrink-0">
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'heading'})} title="Заголовок" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-heading text-xs"></i></button>
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'text'})} title="Текст" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-paragraph text-xs"></i></button>
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'task'})} title="Завдання" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-square-check text-xs"></i></button>
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'bullet'})} title="Список" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-list-ul text-xs"></i></button>
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'number'})} title="Нумерація" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-list-ol text-xs"></i></button>
+           <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'quote'})} title="Цитата" className="p-2 hover:bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"><i className="fa-solid fa-quote-left text-xs"></i></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10 space-y-1 bg-white pb-32">
+        <div className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-1 bg-[var(--bg-card)] ${standaloneMode ? 'pb-10' : 'pb-32'}`}>
            {blocks.map((block, idx) => (
-             <EditableBlock key={block.id} block={block} index={idx} allBlocks={blocks} isFocused={focusedBlockId === block.id} onUpdate={(updates) => updateBlock(block.id, updates)} onKeyDown={(e, content) => handleKeyDown(e, block, content)} onFocus={() => setFocusedBlockId(block.id)} onContextMenu={handleContextMenu} />
+             /* Fix line 216: handleKeyDown signature now matches the definition */
+             <EditableBlock key={block.id} block={block} index={idx} allBlocks={blocks} isFocused={focusedBlockId === block.id} onUpdate={(updates) => updateBlock(block.id, updates)} onKeyDown={(e, b, content) => handleKeyDown(e, b, content)} onFocus={() => setFocusedBlockId(block.id)} onContextMenu={handleContextMenu} />
            ))}
         </div>
 
@@ -209,18 +224,14 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
           <div className="fixed z-[200] bg-slate-900 text-white p-1 rounded-xl shadow-2xl flex items-center gap-1 tiktok-blur animate-in fade-in zoom-in-95 scale-90" style={{ top: floatingMenu.y - 45, left: floatingMenu.x }}>
              <button onMouseDown={e => { e.preventDefault(); applyFormat('bold'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors"><i className="fa-solid fa-bold text-xs"></i></button>
              <button onMouseDown={e => { e.preventDefault(); applyFormat('italic'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors"><i className="fa-solid fa-italic text-xs"></i></button>
-             <button onMouseDown={e => { e.preventDefault(); applyFormat('underline'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors text-orange-400"><i className="fa-solid fa-underline text-xs"></i></button>
-             <button onMouseDown={e => { e.preventDefault(); applyFormat('hiliteColor', '#fef08a'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors text-yellow-300"><i className="fa-solid fa-highlighter text-xs"></i></button>
+             <button onMouseDown={e => { e.preventDefault(); applyFormat('underline'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors text-[var(--primary)]"><i className="fa-solid fa-underline text-xs"></i></button>
           </div>
         )}
 
-        <footer className="p-4 border-t border-slate-50 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0 pb-safe">
+        <footer className="p-3 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-card)] shrink-0">
           <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-orange-400 animate-pulse' : 'bg-emerald-400'}`}></div>
-            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{isSaving ? 'Збереження' : 'Збережено'}</span>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="primary" size="sm" className="hidden md:flex text-[9px] rounded-xl px-4 md:px-6 shadow-orange-100" onClick={handleSaveAndClose}>ЗБЕРЕГТИ ТА ЗАКРИТИ</Button>
+            <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-[var(--primary)] animate-pulse' : 'bg-emerald-400'}`}></div>
+            <span className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest">{isSaving ? 'Синхронізація' : 'Збережено'}</span>
           </div>
         </footer>
       </div>

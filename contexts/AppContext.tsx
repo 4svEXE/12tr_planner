@@ -221,7 +221,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return id;
     },
     addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); setProjects(prev => [...prev, { ...p, id, progress: 0, status: 'active' }]); return id; },
-    updateTask: (t: Task) => setTasks(prev => prev.map(old => old.id === t.id ? t : old)),
+    updateTask: (t: Task) => setTasks(prev => {
+      const exists = prev.some(old => old.id === t.id);
+      if (exists) return prev.map(old => old.id === t.id ? t : old);
+      return [t, ...prev];
+    }),
     updateProject: (p: Project) => setProjects(prev => prev.map(old => old.id === p.id ? p : old)),
     deleteProject: (id: string) => setProjects(prev => prev.filter(p => p.id !== id)),
     deleteTask: (id: string, perm = false) => setTasks(prev => perm ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, isDeleted: true } : t)),

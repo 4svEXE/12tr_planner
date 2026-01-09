@@ -20,11 +20,12 @@ const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-black transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
   
   const variants = {
-    primary: 'bg-orange-600 text-white shadow-lg shadow-orange-100 hover:bg-orange-700',
-    secondary: 'bg-orange-50 text-orange-700 border border-orange-100 hover:bg-orange-100',
-    ghost: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+    // Використовуємо --primary для фону та тіней
+    primary: 'bg-[var(--primary)] text-white shadow-lg hover:brightness-110',
+    secondary: 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 hover:bg-[var(--primary)]/20',
+    ghost: 'text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)]',
     danger: 'bg-rose-500 text-white hover:bg-rose-600',
-    white: 'bg-white text-slate-900 border border-slate-100 shadow-sm hover:bg-slate-50'
+    white: 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-sm hover:bg-[var(--bg-main)]'
   };
 
   const sizes = {
