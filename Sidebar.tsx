@@ -141,11 +141,14 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
     const themes: {id: ThemeType, label: string, color: string}[] = [
       { id: 'classic', label: 'Classic', color: '#f97316' },
       { id: 'midnight', label: 'Midnight', color: '#10b981' },
-      { id: 'nordic', label: 'Nordic', color: '#6366f1' },
+      // Fixed: Change "nordic" to "nordic-dark" to match ThemeType
+      { id: 'nordic-dark', label: 'Nordic', color: '#6366f1' },
       { id: 'sakura', label: 'Sakura', color: '#ec4899' },
       { id: 'forest', label: 'Forest', color: '#059669' },
-      { id: 'amethyst', label: 'Amethyst', color: '#a855f7' },
-      { id: 'volcano', label: 'Volcano', color: '#ef4444' },
+      // Fixed: Change "amethyst" to "lavender" to match ThemeType
+      { id: 'lavender', label: 'Lavender', color: '#a855f7' },
+      // Fixed: Change "volcano" to "mars" to match ThemeType
+      { id: 'mars', label: 'Volcano', color: '#ef4444' },
       { id: 'slate', label: 'Slate', color: '#475569' },
     ];
 

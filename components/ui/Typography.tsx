@@ -17,13 +17,15 @@ const Typography: React.FC<TypographyProps> = ({ variant, children, className = 
     h2: 'text-2xl font-black tracking-tight font-heading',
     h3: 'text-lg font-bold font-heading',
     body: 'text-sm font-medium leading-relaxed',
-    caption: 'text-xs font-bold uppercase tracking-widest text-slate-400',
+    caption: 'text-xs font-bold uppercase tracking-widest opacity-60',
     tiny: 'text-[10px] font-black uppercase tracking-widest'
   };
 
+  // Використовуємо CSS-змінну --text-main
   return (
     <div 
       className={`${variants[variant]} ${baseClasses} ${className}`}
+      style={{ color: 'var(--text-main)' }}
       onDoubleClick={onDoubleClick}
     >
       {children}

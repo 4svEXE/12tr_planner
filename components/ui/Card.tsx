@@ -7,7 +7,6 @@ interface CardProps {
   blur?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
-  // Added optional onClick prop to handle click events on the Card's container div
   onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
@@ -19,9 +18,15 @@ const Card: React.FC<CardProps> = ({
   hover = false,
   onClick
 }) => {
-  const baseClasses = 'rounded-[2rem] border border-slate-100 transition-all';
-  const blurClasses = blur ? 'tiktok-blur' : 'bg-white';
-  const hoverClasses = hover ? 'hover:shadow-xl hover:shadow-slate-200/50 hover:border-orange-100' : 'shadow-sm';
+  // Використовуємо змінні теми замість жорстких кольорів Tailwind
+  const baseClasses = 'border transition-all duration-300';
+  const themeClasses = blur 
+    ? 'backdrop-blur-xl bg-[var(--bg-card)]/80' 
+    : 'bg-[var(--bg-card)]';
+  
+  const borderClasses = 'border-[var(--border-color)]';
+  const radiusClasses = 'rounded-[var(--radius)]';
+  const hoverClasses = hover ? 'hover:shadow-lg hover:border-[var(--primary)]/30' : 'shadow-sm';
   
   const paddings = {
     none: '',
@@ -32,8 +37,9 @@ const Card: React.FC<CardProps> = ({
 
   return (
     <div 
-      className={`${baseClasses} ${blurClasses} ${hoverClasses} ${paddings[padding]} ${className}`}
+      className={`${baseClasses} ${themeClasses} ${borderClasses} ${radiusClasses} ${hoverClasses} ${paddings[padding]} ${className}`}
       onClick={onClick}
+      style={{ color: 'var(--text-main)' }}
     >
       {children}
     </div>

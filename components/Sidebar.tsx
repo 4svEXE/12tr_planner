@@ -68,11 +68,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     
     return (
       <div key={item.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleGlobalDrop(e, item.id)} className="relative group px-1">
-        <button onClick={() => { setActiveTab(item.id); setShowMobileTools(false); }} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
-          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-orange-600' : ''}`}><i className={`fa-solid ${item.icon}`}></i></span>
+        <button 
+          onClick={() => { setActiveTab(item.id); setShowMobileTools(false); }} 
+          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${
+            isActive 
+              ? 'bg-[var(--primary)] text-white shadow-md' 
+              : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)]'
+          }`}
+        >
+          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-white' : ''}`}>
+            <i className={`fa-solid ${item.icon}`}></i>
+          </span>
           {!isSidebarCollapsed && (
             <><span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
-              {counts[item.id] > 0 && <span className="h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 bg-slate-100 text-slate-500">{counts[item.id]}</span>}</>
+              {counts[item.id] > 0 && (
+                <span className={`h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-[var(--border-color)] text-[var(--text-muted)]'
+                }`}>
+                  {counts[item.id]}
+                </span>
+              )}</>
           )}
         </button>
       </div>
@@ -81,44 +96,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   return (
     <>
-      <div className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} hidden md:flex bg-white border-r border-slate-100 flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0`}>
+      <div className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} hidden md:flex bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0`}>
         <div className="p-4 flex items-center justify-between">
-          {!isSidebarCollapsed && <div className="text-xl font-black font-heading text-orange-600 flex items-center gap-2 tracking-tighter leading-none"><span>12TR</span></div>}
-          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-8 h-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-600"><i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'}`}></i></button>
+          {!isSidebarCollapsed && <div className="text-xl font-black text-[var(--primary)] flex items-center gap-2 tracking-tighter leading-none"><span>12TR</span></div>}
+          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-8 h-8 rounded-xl hover:bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)]"><i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'}`}></i></button>
         </div>
-        <nav className="flex-1 space-y-0.5 py-2 overflow-y-auto custom-scrollbar no-scrollbar pl-0.5">
+        <nav className="flex-1 space-y-0.5 py-2 overflow-y-auto custom-scrollbar pl-0.5">
           {primaryItems.map(renderMenuItem)}
-          <div className="my-3 mx-4 border-t border-slate-50"></div>
-          {!isSidebarCollapsed && <div className="px-4 mb-1"><span className="text-[7px] uppercase font-black tracking-widest text-slate-300">Toolbox</span></div>}
+          <div className="my-3 mx-4 border-t border-[var(--border-color)] opacity-50"></div>
+          {!isSidebarCollapsed && <div className="px-4 mb-1"><span className="text-[7px] uppercase font-black tracking-widest text-[var(--text-muted)]">Toolbox</span></div>}
           {widgetItems.map(renderMenuItem)}
         </nav>
-        <div className="px-1 py-4 border-t border-slate-50 space-y-0.5">
+        <div className="px-1 py-4 border-t border-[var(--border-color)] space-y-0.5">
           {bottomItems.map(renderMenuItem)}
-          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-orange-50 text-orange-700 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`}>
-            <span className={`w-4 flex justify-center text-[10px] ${activeTab === 'settings' ? 'text-orange-600' : ''}`}><i className="fa-solid fa-gear"></i></span>
+          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'}`}>
+            <span className="w-4 flex justify-center text-[10px]"><i className="fa-solid fa-gear"></i></span>
             {!isSidebarCollapsed && <span className="font-black text-[9px] tracking-widest uppercase">Налаштування</span>}
           </button>
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-[100] flex items-center justify-around px-2 pb-safe">
-         <button onClick={() => setActiveTab('today')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'today' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
-           <i className="fa-solid fa-star text-lg mb-1"></i>
-           <span className="text-[6px] font-black uppercase tracking-tighter">Сьогодні</span>
-         </button>
-         <button onClick={() => setActiveTab('inbox')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'inbox' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
-           <i className="fa-solid fa-inbox text-lg mb-1"></i>
-           <span className="text-[6px] font-black uppercase tracking-tighter">Вхідні</span>
-         </button>
-         <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'calendar' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
-           <i className="fa-solid fa-calendar-days text-lg mb-1"></i>
-           <span className="text-[6px] font-black uppercase tracking-tighter">Календар</span>
-         </button>
-         <button onClick={() => setActiveTab('projects')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'projects' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
-           <i className="fa-solid fa-folder-tree text-lg mb-1"></i>
-           <span className="text-[6px] font-black uppercase tracking-tighter">Проєкти</span>
-         </button>
-         <button onClick={() => setShowMobileTools(true)} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${showMobileTools ? 'text-orange-600 bg-orange-50' : 'text-slate-400'}`}>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-sidebar)]/95 backdrop-blur-xl border-t border-[var(--border-color)] z-[100] flex items-center justify-around px-2 pb-safe">
+         {[primaryItems[0], primaryItems[2], primaryItems[5], primaryItems[4]].map(item => (
+           <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-12 h-12 transition-all ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
+             <i className={`fa-solid ${item.icon} text-lg mb-1`}></i>
+             <span className="text-[6px] font-black uppercase tracking-tighter">{item.label}</span>
+           </button>
+         ))}
+         <button onClick={() => setShowMobileTools(true)} className={`flex flex-col items-center justify-center w-12 h-12 transition-all ${showMobileTools ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
            <i className="fa-solid fa-shapes text-lg mb-1"></i>
            <span className="text-[6px] font-black uppercase tracking-tighter">Меню</span>
          </button>
@@ -126,31 +131,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
       {showMobileTools && (
         <div className="md:hidden fixed inset-0 z-[200] tiktok-blur animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-white/60" onClick={() => setShowMobileTools(false)}></div>
-          <div className="absolute inset-x-4 bottom-24 top-12 bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
-             <header className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                <Typography variant="h2" className="text-lg">Арсенал Героя</Typography>
-                <button onClick={() => setShowMobileTools(false)} className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-400"><i className="fa-solid fa-xmark"></i></button>
+          <div className="absolute inset-0 bg-[var(--bg-main)]/60" onClick={() => setShowMobileTools(false)}></div>
+          <div className="absolute inset-x-4 bottom-24 top-12 bg-[var(--bg-card)] rounded-[var(--radius)] shadow-2xl border border-[var(--border-color)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
+             <header className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                <Typography variant="h2" className="text-lg">Арсенал</Typography>
+                <button onClick={() => setShowMobileTools(false)} className="w-10 h-10 rounded-2xl bg-[var(--bg-main)] shadow-sm flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark"></i></button>
              </header>
              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-4 content-start">
-                {[...primaryItems, ...widgetItems, ...bottomItems].map(item => {
+                {[...primaryItems, ...widgetItems, ...bottomItems, {id: 'settings', label: 'Опції', icon: 'fa-gear'}].map(item => {
                   const isActive = activeTab === item.id;
                   return (
                     <button 
                       key={item.id} 
                       onClick={() => { setActiveTab(item.id); setShowMobileTools(false); }}
-                      className={`flex flex-col items-center justify-center p-4 rounded-[1.5rem] transition-all aspect-square border ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all aspect-square border ${
+                        isActive 
+                          ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-lg' 
+                          : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]'
+                      }`}
                     >
                       <i className={`fa-solid ${item.icon} text-xl mb-2`}></i>
                       <span className="text-[7px] font-black uppercase text-center leading-tight">{item.label}</span>
-                      {counts[item.id] > 0 && <span className={`mt-1 px-1.5 py-0.5 rounded-full text-[6px] font-black ${isActive ? 'bg-white text-orange-600' : 'bg-slate-200 text-slate-500'}`}>{counts[item.id]}</span>}
                     </button>
                   );
                 })}
-                <button onClick={() => { setActiveTab('settings'); setShowMobileTools(false); }} className={`flex flex-col items-center justify-center p-4 rounded-[1.5rem] transition-all aspect-square border ${activeTab === 'settings' ? 'bg-orange-600 border-orange-600 text-white shadow-lg' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>
-                    <i className="fa-solid fa-gear text-xl mb-2"></i>
-                    <span className="text-[7px] font-black uppercase text-center leading-tight">Налаштування</span>
-                </button>
              </div>
           </div>
         </div>

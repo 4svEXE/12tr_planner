@@ -18,106 +18,76 @@
       --text-main: #1e293b;
       --text-muted: #64748b;
       --border-color: #f1f5f9;
-      --radius: 2rem;
+      --radius: 1.5rem;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    [data-theme="midnight"] {
-      --primary: #10b981;
-      --bg-main: #020617;
-      --bg-sidebar: #0f172a;
-      --bg-card: #1e293b;
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --border-color: #334155;
-    }
+    /* DARK THEMES */
+    [data-theme="midnight"] { --primary: #10b981; --bg-main: #020617; --bg-sidebar: #0f172a; --bg-card: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; --border-color: #334155; }
+    [data-theme="obsidian"] { --primary: #8b5cf6; --bg-main: #000000; --bg-sidebar: #0a0a0a; --bg-card: #141414; --text-main: #ffffff; --text-muted: #525252; --border-color: #262626; }
+    [data-theme="cyberpunk"] { --primary: #fef08a; --bg-main: #09090b; --bg-sidebar: #09090b; --bg-card: #18181b; --text-main: #00ff9f; --text-muted: #ff003c; --border-color: #3f3f46; --radius: 0; }
+    [data-theme="dracula"] { --primary: #ff79c6; --bg-main: #282a36; --bg-sidebar: #21222c; --bg-card: #44475a; --text-main: #f8f8f2; --text-muted: #6272a4; --border-color: #44475a; }
+    [data-theme="nordic-dark"] { --primary: #88c0d0; --bg-main: #2e3440; --bg-sidebar: #3b4252; --bg-card: #434c5e; --text-main: #eceff4; --text-muted: #d8dee9; --border-color: #4c566a; }
+    
+    /* RPG & GAME THEMES */
+    [data-theme="diablo"] { --primary: #991b1b; --bg-main: #0a0000; --bg-sidebar: #1a0505; --bg-card: #2a0a0a; --text-main: #d1d5db; --text-muted: #7f1d1d; --border-color: #450a0a; --radius: 0.25rem; }
+    [data-theme="witcher"] { --primary: #4ade80; --bg-main: #1c1917; --bg-sidebar: #292524; --bg-card: #44403c; --text-main: #e7e5e4; --text-muted: #a8a29e; --border-color: #57534e; }
+    [data-theme="minecraft"] { --primary: #15803d; --bg-main: #313131; --bg-sidebar: #4a4a4a; --bg-card: #c6c6c6; --text-main: #000000; --text-muted: #525252; --border-color: #ffffff; --radius: 0; }
+    [data-theme="fallout"] { --primary: #4ade80; --bg-main: #052e16; --bg-sidebar: #052e16; --bg-card: #064e3b; --text-main: #4ade80; --text-muted: #14532d; --border-color: #065f46; }
+    [data-theme="skyrim"] { --primary: #94a3b8; --bg-main: #0f172a; --bg-sidebar: #1e293b; --bg-card: #ffffff10; --text-main: #f1f5f9; --text-muted: #64748b; --border-color: #ffffff20; }
 
-    [data-theme="nordic"] {
-      --primary: #6366f1;
-      --bg-main: #f1f5f9;
-      --bg-sidebar: #e2e8f0;
-      --bg-card: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --border-color: #cbd5e1;
-    }
+    /* LIGHT & SOFT THEMES */
+    [data-theme="sakura"] { --primary: #ec4899; --bg-main: #fff1f2; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #881337; --text-muted: #fb7185; --border-color: #ffe4e6; }
+    [data-theme="ocean"] { --primary: #0ea5e9; --bg-main: #f0f9ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #075985; --text-muted: #38bdf8; --border-color: #e0f2fe; }
+    [data-theme="forest"] { --primary: #166534; --bg-main: #f0fdf4; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #14532d; --text-muted: #22c55e; --border-color: #dcfce7; }
+    [data-theme="lavender"] { --primary: #8b5cf6; --bg-main: #faf5ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #581c87; --text-muted: #a78bfa; --border-color: #f3e8ff; }
+    [data-theme="desert"] { --primary: #b45309; --bg-main: #fffbeb; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #78350f; --text-muted: #fbbf24; --border-color: #fef3c7; }
 
-    [data-theme="sakura"] {
-      --primary: #ec4899;
-      --bg-main: #fff1f2;
-      --bg-sidebar: #ffffff;
-      --bg-card: #ffffff;
-      --text-main: #881337;
-      --text-muted: #fb7185;
-      --border-color: #ffe4e6;
-    }
+    /* VIBRANT & NEON */
+    [data-theme="toxic"] { --primary: #d9f99d; --bg-main: #020617; --bg-sidebar: #0f172a; --bg-card: #1e293b; --text-main: #bef264; --text-muted: #4d7c0f; --border-color: #3f6212; }
+    [data-theme="synthwave"] { --primary: #f472b6; --bg-main: #2e1065; --bg-sidebar: #4c1d95; --bg-card: #5b21b6; --text-main: #2dd4bf; --text-muted: #c084fc; --border-color: #7c3aed; }
+    [data-theme="mars"] { --primary: #ef4444; --bg-main: #450a0a; --bg-sidebar: #7f1d1d; --bg-card: #991b1b; --text-main: #fecaca; --text-muted: #f87171; --border-color: #b91c1c; }
+    [data-theme="gold"] { --primary: #fbbf24; --bg-main: #1e1b4b; --bg-sidebar: #312e81; --bg-card: #3730a3; --text-main: #fde68a; --text-muted: #fbbf24; --border-color: #4338ca; }
+    [data-theme="matrix"] { --primary: #22c55e; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #050505; --text-main: #22c55e; --text-muted: #14532d; --border-color: #166534; --radius: 0; }
 
-    [data-theme="forest"] {
-      --primary: #059669;
-      --bg-main: #064e3b;
-      --bg-sidebar: #064e3b;
-      --bg-card: #065f46;
-      --text-main: #ecfdf5;
-      --text-muted: #6ee7b7;
-      --border-color: #047857;
-    }
+    /* MODERN & MINIMAL */
+    [data-theme="slate"] { --primary: #475569; --bg-main: #f8fafc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #94a3b8; --border-color: #e2e8f0; --radius: 0; }
+    [data-theme="glass"] { --primary: #ffffff; --bg-main: #0f172a; --bg-sidebar: #ffffff05; --bg-card: #ffffff10; --text-main: #ffffff; --text-muted: #ffffff60; --border-color: #ffffff20; --radius: 2rem; }
+    [data-theme="coffee"] { --primary: #92400e; --bg-main: #fafaf9; --bg-sidebar: #f5f5f4; --bg-card: #ffffff; --text-main: #44403c; --text-muted: #a8a29e; --border-color: #e7e5e4; }
+    [data-theme="linear"] { --primary: #5e6ad2; --bg-main: #08090a; --bg-sidebar: #08090a; --bg-card: #111213; --text-main: #ffffff; --text-muted: #8a8d90; --border-color: #ffffff10; --radius: 0.5rem; }
+    [data-theme="apple"] { --primary: #007aff; --bg-main: #f5f5f7; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #1d1d1f; --text-muted: #86868b; --border-color: #d2d2d7; --radius: 1rem; }
 
-    [data-theme="amethyst"] {
-      --primary: #a855f7;
-      --bg-main: #2e1065;
-      --bg-sidebar: #4c1d95;
-      --bg-card: #5b21b6;
-      --text-main: #f5f3ff;
-      --text-muted: #c4b5fd;
-      --border-color: #6d28d9;
-    }
+    /* PROFESSIONAL & BRAND */
+    [data-theme="uber"] { --primary: #22c55e; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #ffffff; --text-main: #000000; --text-muted: #6b7280; --border-color: #e5e7eb; --radius: 0; }
+    [data-theme="slack"] { --primary: #36c5f0; --bg-main: #ffffff; --bg-sidebar: #4a154b; --bg-card: #ffffff; --text-main: #1d1d1d; --text-muted: #616061; --border-color: #dddddd; }
+    [data-theme="spotify"] { --primary: #1db954; --bg-main: #121212; --bg-sidebar: #000000; --bg-card: #181818; --text-main: #ffffff; --text-muted: #b3b3b3; --border-color: #282828; }
+    [data-theme="stripe"] { --primary: #635bff; --bg-main: #f6f9fc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #1a1f36; --text-muted: #aab7c4; --border-color: #e6ebf1; }
+    [data-theme="github"] { --primary: #2ea44f; --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff; --text-main: #24292e; --text-muted: #6a737d; --border-color: #e1e4e8; --radius: 0.3rem; }
 
-    [data-theme="volcano"] {
-      --primary: #ef4444;
-      --bg-main: #000000;
-      --bg-sidebar: #111111;
-      --bg-card: #1a1a1a;
-      --text-main: #ffffff;
-      --text-muted: #7f1d1d;
-      --border-color: #450a0a;
-      --radius: 0.5rem;
-    }
+    /* EARTH & NATURE */
+    [data-theme="clay"] { --primary: #c2410c; --bg-main: #fff7ed; --bg-sidebar: #ffedd5; --bg-card: #ffffff; --text-main: #431407; --text-muted: #9a3412; --border-color: #fed7aa; }
+    [data-theme="olive"] { --primary: #65a30d; --bg-main: #f7fee7; --bg-sidebar: #ecfccb; --bg-card: #ffffff; --text-main: #1a2e05; --text-muted: #4d7c0f; --border-color: #d9f99d; }
+    [data-theme="steel"] { --primary: #334155; --bg-main: #f1f5f9; --bg-sidebar: #e2e8f0; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b; --border-color: #cbd5e1; }
+    [data-theme="wine"] { --primary: #991b1b; --bg-main: #fdf2f2; --bg-sidebar: #fee2e2; --bg-card: #ffffff; --text-main: #450a0a; --text-muted: #b91c1c; --border-color: #fecaca; }
+    [data-theme="midnight-blue"] { --primary: #3b82f6; --bg-main: #0f172a; --bg-sidebar: #1e293b; --bg-card: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; }
 
-    [data-theme="slate"] {
-      --primary: #475569;
-      --bg-main: #f8fafc;
-      --bg-sidebar: #ffffff;
-      --bg-card: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #94a3b8;
-      --border-color: #e2e8f0;
-      --radius: 0px;
-    }
+    /* RETRO & VINTAGE */
+    [data-theme="gameboy"] { --primary: #306230; --bg-main: #9bbc0f; --bg-sidebar: #8bac0f; --bg-card: #8bac0f; --text-main: #0f380f; --text-muted: #306230; --border-color: #0f380f; --radius: 0; }
+    [data-theme="commodore"] { --primary: #7070ff; --bg-main: #4040ff; --bg-sidebar: #4040ff; --bg-card: #0000aa; --text-main: #7070ff; --text-muted: #7070ff; --border-color: #7070ff; --radius: 0; }
+    [data-theme="sepia"] { --primary: #78350f; --bg-main: #fef3c7; --bg-sidebar: #fde68a; --bg-card: #ffffff; --text-main: #451a03; --text-muted: #92400e; --border-color: #fcd34d; }
+    [data-theme="paper"] { --primary: #1e293b; --bg-main: #fcfcfc; --bg-sidebar: #f5f5f5; --bg-card: #ffffff; --text-main: #111111; --text-muted: #777777; --border-color: #eeeeee; --radius: 0; }
+    [data-theme="blueprint"] { --primary: #ffffff; --bg-main: #1e40af; --bg-sidebar: #1e40af; --bg-card: #1e3a8a; --text-main: #ffffff; --text-muted: #93c5fd; --border-color: #ffffff40; --radius: 0; }
 
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
       margin: 0;
-      overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      transition: background-color var(--transition), color var(--transition);
     }
 
-    .tiktok-blur {
-      backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.8);
-    }
-
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 10px;
-    }
-    
-    .theme-glow {
-      box-shadow: 0 0 15px var(--primary);
-    }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
   </style>
 <script type="importmap">
 {
