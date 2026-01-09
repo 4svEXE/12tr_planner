@@ -14,7 +14,7 @@ const SettingsView: React.FC = () => {
     updateSidebarSetting, character, updateCharacter 
   } = useApp();
   
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(window.innerWidth < 1024 ? null : 'profile');
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(window.innerWidth < 1024 ? 'profile' : 'profile');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -48,7 +48,6 @@ const SettingsView: React.FC = () => {
     { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
-    { id: 'ai-roadmap', icon: 'fa-brain-circuit', label: 'ШІ Стратегія', color: 'text-pink-500', desc: 'Пропозиції розвитку' },
     { id: 'sidebar', icon: 'fa-bars-staggered', label: 'Навігація', color: 'text-amber-500', desc: 'Бокова панель' },
     { id: 'data', icon: 'fa-database', label: 'Сховище', color: 'text-rose-500', desc: 'Резервні копії' },
     { id: 'feedback', icon: 'fa-comment-dots', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
@@ -58,64 +57,12 @@ const SettingsView: React.FC = () => {
     { id: 'classic', label: 'Classic', main: '#ffffff', accent: '#f97316' },
     { id: 'midnight', label: 'Midnight', main: '#020617', accent: '#10b981' },
     { id: 'obsidian', label: 'Obsidian', main: '#000000', accent: '#8b5cf6' },
-    { id: 'cyberpunk', label: 'Cyberpunk', main: '#09090b', accent: '#fef08a' },
-    { id: 'nordic-dark', label: 'Nordic', main: '#2e3440', accent: '#88c0d0' },
-    { id: 'diablo', label: 'Diablo', main: '#0a0000', accent: '#991b1b' },
-    { id: 'witcher', label: 'Witcher', main: '#1c1917', accent: '#4ade80' },
-    { id: 'minecraft', label: 'Minecraft', main: '#313131', accent: '#15803d' },
-    { id: 'fallout', label: 'Fallout', main: '#052e16', accent: '#4ade80' },
-    { id: 'skyrim', label: 'Skyrim', main: '#0f172a', accent: '#94a3b8' },
     { id: 'sakura', label: 'Sakura', main: '#fff1f2', accent: '#ec4899' },
-    { id: 'ocean', label: 'Ocean', main: '#f0f9ff', accent: '#0ea5e9' },
+    { id: 'nordic-dark', label: 'Nordic', main: '#2e3440', accent: '#88c0d0' },
     { id: 'forest', label: 'Forest', main: '#f0fdf4', accent: '#166534' },
     { id: 'lavender', label: 'Lavender', main: '#faf5ff', accent: '#8b5cf6' },
-    { id: 'desert', label: 'Desert', main: '#fffbeb', accent: '#b45309' },
-    { id: 'toxic', label: 'Toxic', main: '#020617', accent: '#bef264' },
-    { id: 'synthwave', label: 'Synthwave', main: '#2e1065', accent: '#f472b6' },
     { id: 'mars', label: 'Mars', main: '#450a0a', accent: '#ef4444' },
-    { id: 'gold', label: 'Golden', main: '#1e1b4b', accent: '#fbbf24' },
-    { id: 'matrix', label: 'Matrix', main: '#000000', accent: '#22c55e' },
     { id: 'slate', label: 'Slate', main: '#f8fafc', accent: '#475569' },
-    { id: 'glass', label: 'Glass', main: '#0f172a', accent: '#ffffff' },
-    { id: 'coffee', label: 'Coffee', main: '#fafaf9', accent: '#92400e' },
-    { id: 'linear', label: 'Linear', main: '#08090a', accent: '#5e6ad2' },
-    { id: 'apple', label: 'Apple', main: '#f5f5f7', accent: '#007aff' },
-    { id: 'uber', label: 'Uber', main: '#000000', accent: '#22c55e' },
-    { id: 'slack', label: 'Slack', main: '#ffffff', accent: '#4a154b' },
-    { id: 'spotify', label: 'Spotify', main: '#121212', accent: '#1db954' },
-    { id: 'stripe', label: 'Stripe', main: '#f6f9fc', accent: '#635bff' },
-    { id: 'github', label: 'Github', main: '#ffffff', accent: '#2ea44f' },
-    { id: 'clay', label: 'Clay', main: '#fff7ed', accent: '#c2410c' },
-    { id: 'olive', label: 'Olive', main: '#f7fee7', accent: '#65a30d' },
-    { id: 'steel', label: 'Steel', main: '#f1f5f9', accent: '#334155' },
-    { id: 'wine', label: 'Wine', main: '#fdf2f2', accent: '#991b1b' },
-    { id: 'midnight-blue', label: 'Deep Blue', main: '#0f172a', accent: '#3b82f6' },
-    { id: 'gameboy', label: 'Gameboy', main: '#9bbc0f', accent: '#306230' },
-    { id: 'commodore', label: 'Commodore', main: '#4040ff', accent: '#7070ff' },
-    { id: 'sepia', label: 'Sepia', main: '#fef3c7', accent: '#78350f' },
-    { id: 'paper', label: 'Paper', main: '#fcfcfc', accent: '#1e293b' },
-    { id: 'blueprint', label: 'Blueprint', main: '#1e40af', accent: '#ffffff' },
-  ];
-
-  const navItems = [
-    { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
-    { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
-    { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
-    { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні' },
-    { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
-    { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
-    { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки' },
-    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта' },
-    { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
-    { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
-    { id: 'people', icon: 'fa-user-ninja', label: 'Люди' },
-    { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
-    { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
-    { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
-    { id: 'character', icon: 'fa-user-shield', label: 'Герой' },
-    { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
-    { id: 'completed', icon: 'fa-circle-check', label: 'Готово' },
-    { id: 'trash', icon: 'fa-trash-can', label: 'Корзина' },
   ];
 
   const renderContent = () => {
@@ -135,12 +82,20 @@ const SettingsView: React.FC = () => {
                    <label className="text-[10px] font-black uppercase text-[var(--text-muted)] ml-1">Псевдонім</label>
                    <input value={character.name} onChange={e => updateCharacter({name: e.target.value})} className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl py-4 px-5 text-sm font-bold focus:ring-4 focus:ring-[var(--primary)]/10 outline-none transition-all shadow-sm" />
                 </div>
+                <div className="p-4 bg-slate-900 rounded-3xl text-white">
+                   <Typography variant="tiny" className="text-orange-500 mb-2 font-black">Статус Гравця</Typography>
+                   <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold uppercase tracking-widest">Рівень {character.level}</span>
+                      <span className="text-[10px] opacity-50">{character.xp} XP</span>
+                   </div>
+                </div>
              </div>
           </div>
         );
       case 'appearance':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20">
+             <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest ml-1">Доступні візуальні схеми</Typography>
              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {themesData.map(t => (
                   <button 
@@ -168,7 +123,8 @@ const SettingsView: React.FC = () => {
                    <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-14 h-7 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-[var(--text-muted)]/20'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${aiEnabled ? 'right-1.5' : 'left-1.5'}`}></div></button>
                 </div>
                 <Typography variant="h2" className="mb-2 text-2xl">Двигун Інтелекту</Typography>
-                <div className="space-y-3 bg-[var(--bg-main)] p-6 rounded-[1.8rem] border border-[var(--border-color)] mt-6">
+                <p className="text-xs text-slate-500 leading-relaxed mb-6 italic">Використовується для декомпозиції завдань, аналізу людей та ранкових брифінгів.</p>
+                <div className="space-y-3 bg-[var(--bg-main)] p-6 rounded-[1.8rem] border border-[var(--border-color)]">
                    <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] block">Gemini Cloud API Key</label>
                    <div className="flex gap-2">
                       <div className="relative flex-1">
@@ -181,64 +137,15 @@ const SettingsView: React.FC = () => {
              </Card>
           </div>
         );
-      case 'ai-roadmap':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20">
-             <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden mb-8">
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-600/20 blur-3xl"></div>
-                <Typography variant="tiny" className="text-orange-500 font-black mb-2 tracking-[0.3em]">PROPOSALS v3.0</Typography>
-                <Typography variant="h1" className="text-3xl mb-4">Вектор розвитку ШІ</Typography>
-                <p className="text-slate-400 text-sm leading-relaxed">Нижче наведено концепції модулів, які можуть кардинально змінити обробку ваших даних за допомогою Gemini.</p>
-             </div>
-
-             <section className="space-y-4">
-                <div className="flex items-center gap-3 px-2">
-                   <i className="fa-solid fa-folder-tree text-indigo-500"></i>
-                   <Typography variant="h3" className="text-base uppercase font-black">1. Автоматична Декомпозиція</Typography>
-                </div>
-                <Card className="bg-white border-slate-100 p-6 space-y-3">
-                   <p className="text-xs font-medium text-slate-600 leading-relaxed">
-                     ШІ міг би аналізувати назву нового проєкту (напр. "Запустити YouTube канал") і автоматично пропонувати дерево підпроєктів ("Обладнання", "Контент-план", "Монтаж") та перші 10 квестів за GTD.
-                   </p>
-                   <Badge variant="indigo" className="text-[7px]">GTD OPTIMIZATION</Badge>
-                </Card>
-
-                <div className="flex items-center gap-3 px-2 mt-8">
-                   <i className="fa-solid fa-heart-pulse text-rose-500"></i>
-                   <Typography variant="h3" className="text-base uppercase font-black">2. ШІ-Психолог (Аналіз Щоденника)</Typography>
-                </div>
-                <Card className="bg-white border-slate-100 p-6 space-y-3">
-                   <p className="text-xs font-medium text-slate-600 leading-relaxed">
-                     Аналіз блоків тексту в Щоденнику на наявність патернів вигорання, когнітивних викривлень або повторюваних негативних емоцій. ШІ міг би пропонувати "квести на відновлення", якщо тон записів стає тривожним.
-                   </p>
-                   <Badge variant="rose" className="text-[7px]">MENTAL HEALTH</Badge>
-                </Card>
-
-                <div className="flex items-center gap-3 px-2 mt-8">
-                   <i className="fa-solid fa-users-viewfinder text-orange-500"></i>
-                   <Typography variant="h3" className="text-base uppercase font-black">3. Соціальний Стратег</Typography>
-                </div>
-                <Card className="bg-white border-slate-100 p-6 space-y-3">
-                   <p className="text-xs font-medium text-slate-600 leading-relaxed">
-                     ШІ аналізує ваші нотатки про людей і перед кожною запланованою зустріччю (з Календаря) видає стислий "брифінг": про що ви говорили минулого разу, які хобі у людини, та які 3 питання варто поставити для зміцнення зв'язку.
-                   </p>
-                   <Badge variant="orange" className="text-[7px]">NETWORKING PRO</Badge>
-                </Card>
-
-                <div className="flex items-center gap-3 px-2 mt-8">
-                   <i className="fa-solid fa-ranking-star text-amber-500"></i>
-                   <Typography variant="h3" className="text-base uppercase font-black">4. Динамічне Балансування Складності</Typography>
-                </div>
-                <Card className="bg-white border-slate-100 p-6 space-y-3">
-                   <p className="text-xs font-medium text-slate-600 leading-relaxed">
-                     ШІ моніторіть швидкість закриття квестів. Якщо ви "застрягли", він пропонує розбити квест на дрібніші частини. Якщо все занадто легко — пропонує "Бос-Квест" для отримання легендарної ачівки.
-                   </p>
-                   <Badge variant="yellow" className="text-[7px]">GAMIFICATION AI</Badge>
-                </Card>
-             </section>
-          </div>
-        );
       case 'sidebar':
+        const navItems = [
+          { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
+          { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
+          { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні' },
+          { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
+          { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
+          { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки' },
+        ];
         return (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest ml-2 mb-2">Видимість модулів навігації</Typography>
@@ -275,23 +182,20 @@ const SettingsView: React.FC = () => {
       case 'feedback':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-[var(--primary)]/5 p-6 rounded-[2rem] border border-[var(--primary)]/10">
-              <Typography variant="tiny" className="text-[var(--primary)] font-black mb-2 uppercase">Ваш голос має значення</Typography>
-              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed font-medium">Маєте ідею для нового модуля? Знайшли баг у мапі світу? Напишіть нам.</p>
-            </div>
+            <Typography variant="tiny" className="text-violet-500 font-black mb-2 uppercase">Ваш голос має значення</Typography>
             <form onSubmit={handleSendFeedback} className="space-y-4">
               <textarea 
                 value={feedback} 
                 onChange={e => setFeedback(e.target.value)}
-                placeholder="Опишіть вашу ідею..." 
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.5rem] p-5 text-sm font-medium focus:ring-4 focus:ring-[var(--primary)]/10 outline-none transition-all shadow-sm min-h-[160px] resize-none leading-relaxed text-[var(--text-main)]"
+                placeholder="Опишіть вашу ідею або баг..." 
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.5rem] p-5 text-sm font-medium focus:ring-4 focus:ring-indigo-100 outline-none transition-all shadow-sm min-h-[160px] resize-none leading-relaxed text-[var(--text-main)]"
               />
               <button 
                 type="submit" 
                 disabled={!feedback.trim() || feedbackSent}
-                className={`w-full py-5 rounded-[1.8rem] font-black uppercase tracking-widest text-[10px] transition-all shadow-lg flex items-center justify-center gap-3 ${feedbackSent ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-[var(--primary)] text-white shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95'}`}
+                className={`w-full py-5 rounded-[1.8rem] font-black uppercase tracking-widest text-[10px] transition-all shadow-lg flex items-center justify-center gap-3 ${feedbackSent ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-indigo-600 text-white shadow-indigo-100 hover:scale-[1.02] active:scale-95'}`}
               >
-                {feedbackSent ? 'ВІДПРАВЛЕНО!' : 'ВІДПРАВИТИ ЗВІТ'}
+                {feedbackSent ? 'ВІДПРАВЛЕНО!' : 'ВІДПРАВИТИ В ЯДРО'}
               </button>
             </form>
           </div>
@@ -306,7 +210,7 @@ const SettingsView: React.FC = () => {
       <div className={`flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300 ${isMobile && selectedSectionId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
         <header className="px-6 py-8 md:px-10 md:py-10 bg-[var(--bg-card)] border-b border-[var(--border-color)] sticky top-0 z-20 shrink-0">
           <Typography variant="h1" className="text-2xl md:text-3xl font-black tracking-tight">Налаштування</Typography>
-          <Typography variant="tiny" className="text-[var(--text-muted)] mt-1 uppercase tracking-[0.2em] text-[8px] md:text-[9px]">Ядро Системи 12TR</Typography>
+          <Typography variant="tiny" className="text-[var(--text-muted)] mt-1 uppercase tracking-[0.2em] text-[8px] md:text-[9px]">Двигун Системи 12TR</Typography>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 space-y-2">
@@ -330,13 +234,9 @@ const SettingsView: React.FC = () => {
              </Card>
            ))}
         </div>
-        
-        <footer className="p-8 border-t border-[var(--border-color)] bg-[var(--bg-card)] text-center">
-           <Typography variant="tiny" className="text-[var(--text-muted)] opacity-30">12TR ENGINE v.2.9.8 PRO PREVIEW</Typography>
-        </footer>
       </div>
 
-      {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ */}
+      {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ (на ПК вона постійна, на мобільних перекриває) */}
       <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedSectionId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
         {!isMobile && (
           <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
