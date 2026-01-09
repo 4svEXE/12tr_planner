@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus, ThemeType } from '../types';
 import Typography from './ui/Typography';
 import Button from './ui/Button';
-import MiniCalendar from './sidebar/MiniCalendar';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,40 +15,41 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const { 
     tasks, updateTask, scheduleTask, toggleTaskStatus, 
     isSidebarCollapsed, setSidebarCollapsed, sidebarSettings, updateSidebarSetting,
-    theme, setTheme
+    aiEnabled, setAiEnabled, theme, setTheme
   } = useApp();
+  
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMobileTools, setShowMobileTools] = useState(false);
 
   const primaryItems = [
     { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
     { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
     { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні', acceptDrop: true },
-    { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні дії', acceptDrop: true },
+    { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні', acceptDrop: true },
     { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
     { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
     { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки', acceptDrop: true },
   ];
 
   const widgetItems = [
-    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта світу' },
+    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта' },
     { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
-    { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
-    { id: 'focus', icon: 'fa-bullseye', label: 'Глибокий фокус' },
-    { id: 'character', icon: 'fa-user-shield', label: 'Профіль героя' },
     { id: 'people', icon: 'fa-users-between-lines', label: 'Люди' },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
+    { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
+    { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
+    { id: 'character', icon: 'fa-user-shield', label: 'Герой' },
+    { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
   ];
 
   const bottomItems = [
-    { id: 'completed', icon: 'fa-clipboard-check', label: 'Завершено', acceptDrop: true },
+    { id: 'completed', icon: 'fa-circle-check', label: 'Готово', acceptDrop: true },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
 
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-
   const handleGlobalDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    setDropTargetId(null);
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
     const task = tasks.find(t => t.id === taskId);
@@ -70,14 +70,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     const isActive = activeTab === item.id;
     
     return (
-      <div key={item.id} onDragOver={(e) => { e.preventDefault(); item.acceptDrop && setDropTargetId(item.id); }} onDragLeave={() => setDropTargetId(null)} onDrop={(e) => handleGlobalDrop(e, item.id)} className={`relative group mb-0.5 px-2 ${dropTargetId === item.id ? 'scale-105 z-20' : ''}`}>
-        <button 
-          onClick={() => setActiveTab(item.id)} 
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-600 font-black shadow-sm ring-1 ring-orange-100' : dropTargetId === item.id ? 'bg-orange-600 text-white shadow-lg' : 'hover:bg-[var(--sidebar-item-hover)] opacity-70 hover:opacity-100'}`}
-        >
-          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-orange-600' : 'text-[var(--text-muted)]'}`}><i className={`fa-solid ${item.icon}`}></i></span>
-          <span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
-          {counts[item.id] > 0 && <span className="h-4 min-w-[16px] flex items-center justify-center rounded-full text-[7px] font-black px-1 bg-[var(--border-color)] text-slate-500">{counts[item.id]}</span>}
+      <div key={item.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleGlobalDrop(e, item.id)} className="relative group px-1">
+        <button onClick={() => { setActiveTab(item.id); setShowMobileTools(false); }} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
+          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-orange-600' : ''}`}><i className={`fa-solid ${item.icon}`}></i></span>
+          {!isSidebarCollapsed && (
+            <><span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
+              {counts[item.id] > 0 && <span className="h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 bg-slate-100 text-slate-500">{counts[item.id]}</span>}</>
+          )}
         </button>
       </div>
     );
@@ -85,61 +84,277 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   return (
     <>
-      <div 
-        style={{ backgroundColor: 'var(--bg-sidebar)' }}
-        className="hidden md:flex w-64 border-r border-[var(--border-color)] flex-col h-screen sticky top-0 z-40 transition-all shadow-sm shrink-0"
-      >
-        <div className="p-6 flex items-center justify-between shrink-0">
-          <div className="text-xl font-black font-heading flex items-center gap-3 tracking-tighter text-[var(--text-main)]">
-            <div className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center text-white text-sm shadow-lg shadow-orange-200">
-               <i className="fa-solid fa-bolt-lightning"></i>
-            </div>
-            <span>12TR</span>
-          </div>
+      {/* Desktop Sidebar */}
+      <div className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} hidden md:flex bg-white border-r border-slate-100 flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0`}>
+        <div className="p-4 flex items-center justify-between">
+          {!isSidebarCollapsed && <div className="text-xl font-black font-heading text-orange-600 flex items-center gap-2 tracking-tighter leading-none"><span>12TR</span></div>}
+          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-8 h-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-600"><i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'}`}></i></button>
         </div>
-        
-        <nav className="flex-1 space-y-0.5 py-2 overflow-y-auto custom-scrollbar no-scrollbar">
+        <nav className="flex-1 space-y-0.5 py-2 overflow-y-auto custom-scrollbar no-scrollbar pl-0.5">
           {primaryItems.map(renderMenuItem)}
-          <div className="my-4 mx-6 border-t border-[var(--border-color)] opacity-50"></div>
-          <div className="px-6 mb-2"><span className="text-[8px] uppercase font-black tracking-[0.2em] text-[var(--text-muted)] opacity-40">Інструменти</span></div>
+          <div className="my-3 mx-4 border-t border-slate-50"></div>
+          {!isSidebarCollapsed && <div className="px-4 mb-1"><span className="text-[7px] uppercase font-black tracking-widest text-slate-300">Toolbox</span></div>}
           {widgetItems.map(renderMenuItem)}
         </nav>
-
-        <div className="py-4 border-t border-[var(--border-color)] opacity-80 shrink-0 bg-slate-50/30">
-          <div className="px-4 mb-4">
-             <MiniCalendar />
-          </div>
+        <div className="px-1 py-4 border-t border-slate-50 space-y-0.5">
           {bottomItems.map(renderMenuItem)}
-          <div className="px-2 mt-2">
-              <button 
-                onClick={() => setActiveTab('settings')} 
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-orange-50 text-orange-600 font-black shadow-sm ring-1 ring-orange-100' : 'text-[var(--text-muted)] hover:bg-white hover:text-[var(--text-main)]'}`}
-              >
-                  <span className="w-4 flex justify-center text-xs"><i className="fa-solid fa-gear"></i></span>
-                  <span className="font-black text-[9px] tracking-widest uppercase">Налаштування</span>
-              </button>
-          </div>
+          <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-slate-400 hover:bg-slate-50 transition-all">
+            <span className="w-4 flex justify-center text-[10px]"><i className="fa-solid fa-gear"></i></span>
+            {!isSidebarCollapsed && <span className="font-black text-[9px] tracking-widest uppercase">Опції</span>}
+          </button>
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-lg border-t border-slate-100 z-50 flex items-center justify-around px-2 pb-safe">
-         {[primaryItems[0], primaryItems[2], widgetItems[1], widgetItems[3]].map(item => (
-           <button 
-            key={item.id} 
-            onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all ${activeTab === item.id ? 'text-orange-600 bg-orange-50 font-black' : 'text-slate-400'}`}
-           >
-             <i className={`fa-solid ${item.icon} text-lg mb-1`}></i>
-             <span className="text-[7px] font-black uppercase tracking-tight">{item.label}</span>
-           </button>
-         ))}
-         <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all ${activeTab === 'settings' ? 'text-orange-600 bg-orange-50 font-black' : 'text-slate-400'}`}>
-           <i className="fa-solid fa-gear text-lg mb-1"></i>
-           <span className="text-[7px] font-black uppercase">Опції</span>
+      {/* Mobile Bottom Navigation - Updated layout */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-[100] flex items-center justify-around px-2 pb-safe">
+         {/* СЬОГОДНІ */}
+         <button onClick={() => setActiveTab('today')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'today' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
+           <i className="fa-solid fa-star text-lg mb-1"></i>
+           <span className="text-[6px] font-black uppercase tracking-tighter">Сьогодні</span>
+         </button>
+         
+         {/* ВХІДНІ */}
+         <button onClick={() => setActiveTab('inbox')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'inbox' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
+           <i className="fa-solid fa-inbox text-lg mb-1"></i>
+           <span className="text-[6px] font-black uppercase tracking-tighter">Вхідні</span>
+         </button>
+
+         {/* КАЛЕНДАР */}
+         <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'calendar' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
+           <i className="fa-solid fa-calendar-days text-lg mb-1"></i>
+           <span className="text-[6px] font-black uppercase tracking-tighter">Календар</span>
+         </button>
+
+         {/* ПРОЄКТИ */}
+         <button onClick={() => setActiveTab('projects')} className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === 'projects' ? 'text-orange-600 font-black' : 'text-slate-400'}`}>
+           <i className="fa-solid fa-folder-tree text-lg mb-1"></i>
+           <span className="text-[6px] font-black uppercase tracking-tighter">Проєкти</span>
+         </button>
+         
+         {/* ІНСТРУМЕНТИ */}
+         <button 
+            onClick={() => setShowMobileTools(true)} 
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${showMobileTools ? 'text-orange-600 bg-orange-50' : 'text-slate-400'}`}
+         >
+           <i className="fa-solid fa-shapes text-lg mb-1"></i>
+           <span className="text-[6px] font-black uppercase tracking-tighter">Інструменти</span>
          </button>
       </div>
+
+      {/* Mobile Tools Overlay Menu */}
+      {showMobileTools && (
+        <div className="md:hidden fixed inset-0 z-[200] tiktok-blur animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-white/60" onClick={() => setShowMobileTools(false)}></div>
+          <div className="absolute inset-x-4 bottom-24 top-12 bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
+             <header className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                <Typography variant="h2" className="text-lg">Арсенал Героя</Typography>
+                <button onClick={() => setShowMobileTools(false)} className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-400"><i className="fa-solid fa-xmark"></i></button>
+             </header>
+             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-4 content-start">
+                {[...primaryItems, ...widgetItems, ...bottomItems].map(item => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button 
+                      key={item.id} 
+                      onClick={() => { setActiveTab(item.id); setShowMobileTools(false); }}
+                      className={`flex flex-col items-center justify-center p-4 rounded-[1.5rem] transition-all aspect-square border ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                    >
+                      <i className={`fa-solid ${item.icon} text-xl mb-2`}></i>
+                      <span className="text-[7px] font-black uppercase text-center leading-tight">{item.label}</span>
+                      {counts[item.id] > 0 && <span className={`mt-1 px-1.5 py-0.5 rounded-full text-[6px] font-black ${isActive ? 'bg-white text-orange-600' : 'bg-slate-200 text-slate-500'}`}>{counts[item.id]}</span>}
+                    </button>
+                  );
+                })}
+                {/* SETTINGS Button in tools grid */}
+                <button 
+                    onClick={() => { setShowSettings(true); setShowMobileTools(false); }}
+                    className="flex flex-col items-center justify-center p-4 rounded-[1.5rem] transition-all aspect-square border bg-slate-100 border-slate-200 text-slate-500"
+                >
+                    <i className="fa-solid fa-gear text-xl mb-2"></i>
+                    <span className="text-[7px] font-black uppercase text-center leading-tight">Опції</span>
+                </button>
+             </div>
+             <footer className="p-6 border-t border-slate-50 bg-slate-50/30 text-center">
+                <Typography variant="tiny" className="text-slate-300">Оберіть інструмент для швидкого переходу</Typography>
+             </footer>
+          </div>
+        </div>
+      )}
+
+      {showSettings && <SettingsModal 
+        onHide={() => setShowSettings(false)} 
+        allSections={[...primaryItems, ...widgetItems, ...bottomItems]}
+      />}
     </>
   );
 };
+
+const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ onHide, allSections }) => {
+    const { theme, setTheme, aiEnabled, setAiEnabled, sidebarSettings, updateSidebarSetting } = useApp();
+    const [activeTab, setActiveTab] = useState<'main' | 'about'>('main');
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+      'appearance': false,
+      'visibility': true,
+      'system': false
+    });
+
+    const themes: {id: ThemeType, label: string, color: string}[] = [
+      { id: 'classic', label: 'Classic', color: '#f97316' },
+      { id: 'midnight', label: 'Midnight', color: '#10b981' },
+      { id: 'nordic', label: 'Nordic', color: '#6366f1' },
+      { id: 'sakura', label: 'Sakura', color: '#ec4899' },
+      { id: 'forest', label: 'Forest', color: '#059669' },
+      { id: 'amethyst', label: 'Amethyst', color: '#a855f7' },
+      { id: 'volcano', label: 'Volcano', color: '#ef4444' },
+      { id: 'slate', label: 'Slate', color: '#475569' },
+    ];
+
+    const toggleSection = (id: string) => setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
+
+    const SettingRow = ({ label, icon, children, colorClass = "text-slate-300" }: any) => (
+      <div className="flex items-center justify-between py-2.5 px-4 hover:bg-black/5 transition-colors border-b border-slate-50 last:border-0">
+        <div className="flex items-center gap-3">
+          <i className={`fa-solid ${icon} ${colorClass} text-[10px] w-4 text-center`}></i>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{label}</span>
+        </div>
+        <div>{children}</div>
+      </div>
+    );
+
+    const CollapsibleSection = ({ id, title, icon, colorClass, children }: any) => {
+      const isCol = collapsed[id];
+      return (
+        <div className={`flex flex-col border-b border-slate-100 transition-all ${isCol ? '' : 'bg-slate-50/30'}`}>
+          <div 
+            onClick={() => toggleSection(id)}
+            className="flex items-center gap-3 py-3 px-5 hover:bg-black/5 cursor-pointer select-none"
+          >
+            <i className={`fa-solid fa-chevron-right text-[8px] text-slate-300 transition-transform ${!isCol ? 'rotate-90' : ''}`}></i>
+            <i className={`fa-solid ${icon} text-[10px] ${colorClass}`}></i>
+            <Typography variant="tiny" className={`${colorClass} font-black uppercase tracking-widest text-[9px] flex-1`}>{title}</Typography>
+          </div>
+          {!isCol && <div className="flex flex-col animate-in fade-in slide-in-from-top-1 duration-200">{children}</div>}
+        </div>
+      );
+    };
+
+    return (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 md:p-4 tiktok-blur">
+          <div className="absolute inset-0 bg-slate-900/40" onClick={onHide}></div>
+          <div className="bg-white w-full max-w-xl max-h-[95vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
+            <header className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+               <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-600 flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-gear"></i></div>
+                  <div>
+                    <Typography variant="h2" className="text-xl leading-none mb-1">Опції Системи</Typography>
+                    <Typography variant="tiny" className="text-slate-300 uppercase">Двигун 12TR v.2.5</Typography>
+                  </div>
+               </div>
+               <button onClick={onHide} className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"><i className="fa-solid fa-xmark"></i></button>
+            </header>
+
+            <div className="flex bg-slate-50/50 p-1 m-4 rounded-xl border border-slate-100 shrink-0">
+               <button onClick={() => setActiveTab('main')} className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'main' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Налаштування</button>
+               <button onClick={() => setActiveTab('about')} className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'about' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Про 12TR</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+               {activeTab === 'main' ? (
+                 <div className="flex flex-col">
+                    <CollapsibleSection id="appearance" title="Вигляд та Теми" icon="fa-palette" colorClass="text-orange-500">
+                       <div className="p-4 grid grid-cols-4 gap-2">
+                          {themes.map(t => (
+                            <button 
+                              key={t.id} 
+                              onClick={() => setTheme(t.id)}
+                              className={`h-10 rounded-xl border-2 transition-all flex items-center justify-center ${theme === t.id ? 'border-orange-500 ring-2 ring-orange-100' : 'border-white bg-white shadow-sm'}`}
+                              title={t.label}
+                            >
+                               <div className="w-5 h-5 rounded-full shadow-inner" style={{ backgroundColor: t.color }}></div>
+                            </button>
+                          ))}
+                       </div>
+                       <SettingRow label="Компактний режим" icon="fa-compress">
+                          <button className="w-9 h-5 rounded-full bg-slate-200 relative"><div className="absolute top-1 left-1 w-3 h-3 bg-white rounded-full"></div></button>
+                       </SettingRow>
+                       <SettingRow label="Плавні анімації" icon="fa-wand-magic-sparkles">
+                          <button className="w-9 h-5 rounded-full bg-emerald-500 relative shadow-inner"><div className="absolute top-1 right-1 w-3 h-3 bg-white rounded-full"></div></button>
+                       </SettingRow>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection id="visibility" title="Відображення розділів" icon="fa-eye" colorClass="text-indigo-500">
+                       {allSections.map(item => (
+                         <SettingRow key={item.id} label={item.label} icon={item.icon}>
+                            <button 
+                              onClick={() => updateSidebarSetting(item.id, sidebarSettings[item.id] === false)}
+                              className={`w-9 h-5 rounded-full transition-all relative ${sidebarSettings[item.id] !== false ? 'bg-orange-500 shadow-inner' : 'bg-slate-200'}`}
+                            >
+                               <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sidebarSettings[item.id] !== false ? 'right-1' : 'left-1'}`}></div>
+                            </button>
+                         </SettingRow>
+                       ))}
+                    </CollapsibleSection>
+
+                    <CollapsibleSection id="system" title="Гейміфікація та ШІ" icon="fa-gamepad" colorClass="text-rose-500">
+                       <div className="p-4">
+                          <div className="bg-slate-900 rounded-2xl p-4 text-white flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center"><i className="fa-solid fa-sparkles text-xs"></i></div>
+                                <span className="text-[9px] font-black uppercase tracking-wider">ШІ-Стратег</span>
+                             </div>
+                             <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-10 h-5 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div></button>
+                          </div>
+                       </div>
+                       <SettingRow label="Складність квестів (XP)" icon="fa-trophy" colorClass="text-yellow-500">
+                          <select className="bg-transparent border-none text-[9px] font-black uppercase outline-none text-slate-500"><option>Нормальна</option><option>Хардкор</option></select>
+                       </SettingRow>
+                       <SettingRow label="Показувати золото" icon="fa-coins" colorClass="text-amber-500">
+                          <button className="w-9 h-5 rounded-full bg-emerald-500 relative shadow-inner"><div className="absolute top-1 right-1 w-3 h-3 bg-white rounded-full"></div></button>
+                       </SettingRow>
+                    </CollapsibleSection>
+
+                    <div className="p-8 mt-4 text-center">
+                       <Typography variant="tiny" className="text-slate-200 mb-2">Небезпечна зона</Typography>
+                       <button onClick={() => { if(confirm('Це видалить ВСІ ваші дані без можливості відновлення. Ви впевнені?')) { localStorage.clear(); window.location.reload(); } }} className="text-[8px] font-black text-rose-300 uppercase hover:text-rose-500 tracking-[0.2em] transition-colors">Скинути всю базу даних</button>
+                    </div>
+                 </div>
+               ) : (
+                 <div className="p-8 space-y-6 animate-in fade-in duration-300">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                       <div className="w-20 h-20 rounded-[2.5rem] bg-gradient-to-tr from-orange-400 to-rose-500 flex items-center justify-center text-white text-3xl shadow-2xl">
+                          <i className="fa-solid fa-bolt-lightning"></i>
+                       </div>
+                       <div>
+                          <Typography variant="h2" className="text-2xl font-black">12TR Engine</Typography>
+                          <Typography variant="tiny" className="text-orange-500 font-bold uppercase tracking-[0.3em]">The Gamified Life OS</Typography>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4 text-[12px] font-medium text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                       <p><strong>12TR</strong> — це не просто таск-менеджер. Це ваша персональна стратегічна гра, де ви — головний герой. Ми поєднали три потужні концепції:</p>
+                       <ul className="space-y-2 list-disc pl-4">
+                          <li><span className="font-bold text-slate-800">GTD:</span> Технологія очищення розуму та фокусу на конкретних діях.</li>
+                          <li><span className="font-bold text-slate-800">12 Тижнів:</span> Рік, стиснутий до кварталу для вибухової продуктивності.</li>
+                          <li><span className="font-bold text-slate-800">RPG Гейміфікація:</span> Прогресія персонажа, XP за квести та мапа світу.</li>
+                       </ul>
+                       <p className="mt-4 italic">Перетворюйте хаос вхідних у чіткий план завоювання власного життя.</p>
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all shadow-sm"><i className="fa-brands fa-telegram"></i></a>
+                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-pink-500 transition-all shadow-sm"><i className="fa-brands fa-instagram"></i></a>
+                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shadow-sm"><i className="fa-brands fa-github"></i></a>
+                    </div>
+                 </div>
+               )}
+            </div>
+
+            <footer className="p-6 md:p-8 border-t border-slate-100 bg-slate-50/30 shrink-0">
+               <Button onClick={onHide} variant="primary" className="w-full py-4 rounded-[1.5rem] text-[10px] tracking-[0.2em] font-black uppercase shadow-lg">ГОТОВО</Button>
+            </footer>
+          </div>
+        </div>
+    );
+}
 
 export default Sidebar;
