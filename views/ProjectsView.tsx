@@ -181,12 +181,14 @@ const GoalCard: React.FC<{
   const subProjects = projects.filter(p => p.parentFolderId === goal.id && p.status === 'active');
 
   const visibleGoalActions = useMemo(() => {
+    // Всі прямі завдання цілі (не звички)
     const directTasks = tasks.filter(t => 
       !t.isDeleted && 
       t.projectId === goal.id && 
       t.projectSection !== 'habits'
     );
 
+    // Наступна дія (перша незавершена) з кожного підпроєкту
     const subProjectNextActions = subProjects.map(sp => {
       const spTasks = tasks.filter(t => 
         !t.isDeleted && 

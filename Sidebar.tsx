@@ -32,18 +32,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   ];
 
   const widgetItems = [
-    { id: 'map', icon: 'fa-map-location-dot', label: 'Карта' },
     { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
     { id: 'people', icon: 'fa-user-ninja', label: 'Люди' },
-    { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
-    { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
     { id: 'character', icon: 'fa-user-shield', label: 'Герой' },
     { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
   ];
 
   const bottomItems = [
+    { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
+    { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
     { id: 'completed', icon: 'fa-circle-check', label: 'Готово', acceptDrop: true },
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
