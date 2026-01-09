@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Character, Task, Project, TaskStatus, Person } from "../types";
 
@@ -93,11 +94,12 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
     Проаналізуй дані профілю "${handle}" на платформі "${platform}".
     ${content ? `Ось текст останніх постів або біографія: "${content}"` : 'Проаналізуй наявну інформацію.'}
 
-    Витягни максимум корисної інформації УКРАЇНСЬКОЮ МОВОЮ:
+    Твоє завдання — знайти факти, інтереси та ПЕРЕВІРИТИ ДАТУ НАРОДЖЕННЯ УКРАЇНСЬКОЮ МОВОЮ:
     1. Хобі та інтереси (масив рядків).
     2. Потенційні життєві цілі людини (масив рядків).
-    3. Важливі факти для нотаток (масив рядків).
+    3. Важливі факти для нотаток (масив рядків). НЕ ВИГАДУЙ, використовуй тільки те, що можна знайти в біо або постах.
     4. Короткий висновок про особистість.
+    5. Дата народження у форматі YYYY-MM-DD (якщо знайдеш, інакше NULL).
 
     Відповідай у форматі JSON.
   `;
@@ -113,7 +115,8 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
           hobbies: { type: Type.ARRAY, items: { type: Type.STRING } },
           goals: { type: Type.ARRAY, items: { type: Type.STRING } },
           notes: { type: Type.ARRAY, items: { type: Type.STRING } },
-          summary: { type: Type.STRING }
+          summary: { type: Type.STRING },
+          birthDate: { type: Type.STRING, nullable: true }
         }
       }
     }
