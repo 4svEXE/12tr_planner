@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DiaryEntry, TaskStatus } from '../types';
 import Typography from '../components/ui/Typography';
@@ -11,12 +11,15 @@ import { useResizer } from '../hooks/useResizer';
 
 const DiaryView: React.FC = () => {
   const { diary, tasks, people, deleteDiaryEntry } = useApp();
-  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA')); // YYYY-MM-DD format
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [showReportWizard, setShowReportWizard] = useState(false);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'list' | 'stats'>('list');
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
+
+  const isMobile = window.innerWidth < 1024;
 
   const sortedDiary = useMemo(() => {
     return [...diary].sort((a, b) => {
@@ -38,7 +41,20 @@ const DiaryView: React.FC = () => {
     return groups;
   }, [sortedDiary]);
 
-  const renderCalendar = (isMobile = false) => {
+  const memoriesFromPast = useMemo(() => {
+    const target = new Date(selectedDate);
+    const day = target.getDate();
+    const month = target.getMonth();
+    
+    return diary.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate.getDate() === day && 
+             entryDate.getMonth() === month && 
+             entryDate.getFullYear() < target.getFullYear();
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [diary, selectedDate]);
+
+  const renderCalendar = (isMobileCalendar = false) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
@@ -64,122 +80,47 @@ const DiaryView: React.FC = () => {
       });
     };
 
-    const isMinimized = isMobile && !isCalendarExpanded;
+    const isMinimized = isMobileCalendar && !isCalendarExpanded;
     const daysToRender = isMinimized ? getWeekDays() : getMonthDays();
 
-    const handlePrev = () => {
-      if (isMinimized) {
-        const prevWeek = new Date(currentMonth);
-        prevWeek.setDate(prevWeek.getDate() - 7);
-        setCurrentMonth(prevWeek);
-      } else {
-        setCurrentMonth(new Date(year, month - 1, 1));
-      }
-    };
-
-    const handleNext = () => {
-      if (isMinimized) {
-        const nextWeek = new Date(currentMonth);
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        setCurrentMonth(nextWeek);
-      } else {
-        setCurrentMonth(new Date(year, month + 1, 1));
-      }
-    };
-
     return (
-      <div className={`bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${isMobile ? 'mb-4' : ''}`}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Typography variant="tiny" className="text-slate-900 font-black truncate capitalize text-[10px] tracking-wider">
+      <div className={`bg-white p-4 md:p-5 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${isMobileCalendar ? 'mb-4' : ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            onClick={() => isMobileCalendar && setIsCalendarExpanded(!isCalendarExpanded)}
+            className="flex items-center gap-2 text-left"
+          >
+            <Typography variant="tiny" className="text-slate-900 font-black capitalize text-[10px] tracking-wider">
               {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
             </Typography>
-            {isMobile && (
-              <button 
-                onClick={() => {
-                  setIsCalendarExpanded(!isCalendarExpanded);
-                  if (!isCalendarExpanded) {
-                    setCurrentMonth(new Date(selectedDate));
-                  }
-                }}
-                className="w-6 h-6 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center transition-transform"
-                style={{ transform: isCalendarExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              >
-                <i className="fa-solid fa-chevron-down text-[8px]"></i>
-              </button>
+            {isMobileCalendar && (
+              <i className={`fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform ${isCalendarExpanded ? 'rotate-180' : ''}`}></i>
             )}
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <button onClick={handlePrev} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors">
-              <i className="fa-solid fa-chevron-left text-[9px]"></i>
-            </button>
-            <button onClick={handleNext} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors">
-              <i className="fa-solid fa-chevron-right text-[9px]"></i>
-            </button>
+          </button>
+          <div className="flex gap-1 shrink-0">
+            <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-left text-[9px]"></i></button>
+            <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="w-7 h-7 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-chevron-right text-[9px]"></i></button>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 md:gap-2">
           {['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'].map(w => (
-            <div key={w} className="text-[7px] font-black text-slate-300 text-center uppercase tracking-tighter">{w}</div>
+            <div key={w} className="text-[7px] font-black text-slate-200 text-center uppercase">{w}</div>
           ))}
           {daysToRender.map((date, i) => {
-            if (date === null) return <div key={`empty-${i}`} className="h-8 md:h-9" />;
-            
-            // Fix: Use locale-aware YYYY-MM-DD formatting to avoid UTC off-by-one errors
-            const dY = date.getFullYear();
-            const dM = String(date.getMonth() + 1).padStart(2, '0');
-            const dD = String(date.getDate()).padStart(2, '0');
-            const dateStr = `${dY}-${dM}-${dD}`;
-
-            const m = date.getMonth();
-            const d = date.getDate();
-            const y = date.getFullYear();
+            if (date === null) return <div key={`empty-${i}`} className="h-8" />;
+            const dateStr = date.toISOString().split('T')[0];
             const isSelected = selectedDate === dateStr;
-            const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
-            
-            const hasDiaryEntry = diary.some(e => e.date === dateStr);
-            
-            // Тільки квести-події (isEvent)
-            const hasTaskEvent = tasks.some(t => 
-                !t.isDeleted && 
-                t.isEvent === true && 
-                t.scheduledDate && 
-                new Date(t.scheduledDate).toLocaleDateString('en-CA') === dateStr
-            );
-
-            // Події союзників
-            const hasAllyEvent = people.some(p => {
-               if (p.birthDate && p.birthDateShowInCalendar !== false) {
-                 const bd = new Date(p.birthDate);
-                 if (bd.getMonth() === m && bd.getDate() === d && (p.birthDateRepeatYearly !== false || bd.getFullYear() === y)) return true;
-               }
-               return p.importantDates?.some(idate => {
-                 if (!idate.showInCalendar) return false;
-                 const id = new Date(idate.date);
-                 return id.getMonth() === m && id.getDate() === d && (idate.repeatYearly || id.getFullYear() === y);
-               });
-            });
-
-            // Подія = квест-подія АБО подія союзника (сині крапки)
-            const isBlueDot = hasTaskEvent || hasAllyEvent;
+            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const hasEntry = diary.some(e => e.date === dateStr);
 
             return (
               <button
                 key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
-                className={`h-8 md:h-9 rounded-xl flex items-center justify-center text-[11px] font-bold transition-all relative ${
-                  isSelected 
-                    ? 'bg-orange-600 text-white shadow-lg' 
-                    : isToday 
-                      ? 'text-orange-600 bg-orange-50' 
-                      : 'text-slate-600 hover:bg-slate-50'
-                }`}
+                onClick={() => { setSelectedDate(dateStr); if(isMobileCalendar) setIsCalendarExpanded(false); }}
+                className={`h-8 md:h-9 rounded-xl flex items-center justify-center text-[10px] font-bold transition-all relative ${isSelected ? 'bg-orange-600 text-white shadow-lg' : isToday ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 {date.getDate()}
-                <div className="absolute bottom-1 flex gap-0.5 justify-center w-full">
-                   {isBlueDot && !isSelected && <div className="w-1 h-1 bg-blue-500 rounded-full shadow-[0_0_2px_rgba(59,130,246,0.5)]"></div>}
-                   {hasDiaryEntry && !isSelected && <div className="w-1 h-1 bg-orange-400 rounded-full"></div>}
-                </div>
+                {hasEntry && !isSelected && <div className="absolute bottom-1 w-1 h-1 bg-orange-400 rounded-full"></div>}
               </button>
             );
           })}
@@ -188,58 +129,100 @@ const DiaryView: React.FC = () => {
     );
   };
 
+  const renderStatsPanel = () => (
+    <div className="h-full flex flex-col bg-white overflow-y-auto custom-scrollbar">
+      <header className="p-6 border-b border-slate-50 shrink-0">
+        <Typography variant="tiny" className="text-orange-500 mb-1 block font-black uppercase text-[9px]">Ретроспектива</Typography>
+        <Typography variant="h2" className="text-base">Цей день в історії</Typography>
+      </header>
+      
+      <div className="p-6 space-y-8">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+             <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Спогади минулого</Typography>
+             <i className="fa-solid fa-clock-rotate-left text-orange-200"></i>
+          </div>
+          
+          {memoriesFromPast.length > 0 ? (
+            memoriesFromPast.map(mem => (
+              <Card key={mem.id} padding="sm" className="bg-gradient-to-br from-orange-50/50 to-white border-orange-100 shadow-sm hover:shadow-md transition-all cursor-pointer group" onClick={() => { setEditingEntryId(mem.id); setSelectedDate(mem.date); }}>
+                <div className="flex justify-between items-start mb-2">
+                   <span className="text-[10px] font-black text-orange-600">{new Date(mem.date).getFullYear()} рік</span>
+                   <i className="fa-solid fa-arrow-right text-[8px] text-slate-300 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed italic line-clamp-3">
+                  {mem.content.replace(/<[^>]*>?/gm, '').slice(0, 150)}...
+                </p>
+              </Card>
+            ))
+          ) : (
+            <div className="p-10 border-2 border-dashed border-slate-100 rounded-[2rem] text-center opacity-30">
+              <i className="fa-solid fa-ghost text-2xl mb-2 text-slate-300"></i>
+              <p className="text-[9px] font-black uppercase">Тут поки порожньо</p>
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-4">
+           <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Квести дня</Typography>
+           <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                 <div className="text-lg font-black text-emerald-700">{tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === selectedDate).length}</div>
+                 <div className="text-[7px] font-black text-emerald-600 uppercase">Виконано</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                 <div className="text-lg font-black text-slate-700">{tasks.filter(t => !t.isDeleted && t.scheduledDate && new Date(t.scheduledDate).toLocaleDateString('en-CA') === selectedDate).length}</div>
+                 <div className="text-[7px] font-black text-slate-400 uppercase">Планів</div>
+              </div>
+           </div>
+        </section>
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-screen flex bg-slate-50 overflow-hidden relative">
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <header className="px-6 py-4 bg-white border-b border-slate-100 z-10 flex justify-between items-center shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm">
-               <i className="fa-solid fa-book-open"></i>
+        <header className="px-4 md:px-6 py-3 md:py-4 bg-white border-b border-slate-100 z-10 flex flex-col gap-3 shrink-0">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm">
+                 <i className="fa-solid fa-book-open text-sm"></i>
+              </div>
+              <Typography variant="h1" className="text-lg md:text-xl">Щоденник</Typography>
             </div>
-            <div>
-              <Typography variant="h1" className="text-xl">Щоденник</Typography>
-              <Typography variant="tiny" className="text-orange-500 font-black uppercase tracking-widest text-[8px]">{new Date(selectedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })}</Typography>
+            
+            {/* MOBILE TOGGLE */}
+            <div className="lg:hidden flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+               <button onClick={() => setMobileTab('list')} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${mobileTab === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Записи</button>
+               <button onClick={() => setMobileTab('stats')} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${mobileTab === 'stats' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>Ретро</button>
             </div>
           </div>
         </header>
 
         <div className="flex-1 flex overflow-hidden relative">
+          {/* DESKTOP SIDEBAR */}
           <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-slate-100 bg-white/50 shrink-0 overflow-y-auto custom-scrollbar">
             {renderCalendar()}
-            
             <div className="space-y-3 pt-2">
-              <Button 
-                variant="primary" 
-                className="w-full py-4 rounded-2xl shadow-xl shadow-orange-100 font-black tracking-widest uppercase text-[10px] gap-3" 
-                onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
-              >
-                <i className="fa-solid fa-plus text-xs"></i>
-                НОВИЙ ЗАПИС
+              <Button variant="primary" className="w-full py-4 rounded-2xl shadow-xl shadow-orange-100 font-black tracking-widest uppercase text-[10px] gap-3" onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}>
+                <i className="fa-solid fa-plus text-xs"></i> НОВИЙ ЗАПИС
               </Button>
-              <Button 
-                variant="secondary" 
-                className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 border-orange-100/50" 
-                onClick={() => setShowReportWizard(true)}
-              >
-                <i className="fa-solid fa-chart-line text-xs"></i>
-                ПІДСУМКИ ДНЯ
+              <Button variant="secondary" className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 border-orange-100/50" onClick={() => setShowReportWizard(true)}>
+                <i className="fa-solid fa-chart-line text-xs"></i> ПІДСУМКИ ДНЯ
               </Button>
-            </div>
-
-            <div className="mt-auto pt-6 border-t border-slate-100 opacity-50">
-               <div className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Статистика</div>
-               <div className="flex justify-between items-center text-[10px] font-bold text-slate-600">
-                  <span>Всього записів:</span>
-                  <span className="text-orange-600">{diary.length}</span>
-               </div>
             </div>
           </aside>
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-slate-50/30">
+          {/* MAIN CONTENT AREA */}
+          <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-slate-50/30 ${isMobile && mobileTab === 'stats' ? 'hidden' : 'block'}`}>
             <div className="max-w-3xl mx-auto space-y-5 pb-40">
+              <div className="block lg:hidden">{renderCalendar(true)}</div>
               
-              <div className="block lg:hidden">
-                {renderCalendar(true)}
+              {/* MOBILE QUICK ACTION */}
+              <div className="lg:hidden grid grid-cols-2 gap-3 mb-6">
+                <button onClick={() => setEditingEntryId('new')} className="bg-orange-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase"><i className="fa-solid fa-plus"></i> ЗАПИС</button>
+                <button onClick={() => setShowReportWizard(true)} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase text-slate-600"><i className="fa-solid fa-chart-line"></i> ЗВІТ</button>
               </div>
 
               {(Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, entries]) => (
@@ -254,101 +237,56 @@ const DiaryView: React.FC = () => {
                     try {
                       const blocks = JSON.parse(entry.content);
                       title = blocks.find((b: any) => b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
-                    } catch(e) {
-                      title = entry.content.split('\n')[0].replace('#', '').trim() || 'Без заголовка';
-                    }
+                    } catch(e) { title = entry.content.split('\n')[0].replace('#', '').trim() || 'Без заголовка'; }
 
                     return (
-                      <Card 
-                        key={entry.id} 
-                        padding="none"
-                        hover 
-                        onClick={() => {
-                          setEditingEntryId(entry.id);
-                          setSelectedDate(entry.date);
-                        }}
-                        className={`bg-white border-slate-100 rounded-[1.8rem] cursor-pointer overflow-hidden group/card transition-all ${editingEntryId === entry.id ? 'ring-2 ring-orange-100 border-orange-200 shadow-lg' : 'shadow-sm'}`}
-                      >
-                        <div className="flex items-center gap-4 md:gap-6 p-5">
+                      <Card key={entry.id} padding="none" hover onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
+                        className={`bg-white border-slate-100 rounded-[1.8rem] cursor-pointer overflow-hidden group/card transition-all ${editingEntryId === entry.id ? 'ring-2 ring-orange-100 border-orange-200 shadow-lg' : 'shadow-sm'}`}>
+                        <div className="flex items-center gap-4 md:gap-6 p-4 md:p-5">
                           <div className="w-10 md:w-12 flex flex-col items-center shrink-0 border-r border-slate-50 pr-4 md:pr-5">
                              <span className="text-[7px] md:text-[8px] font-black text-slate-300 uppercase leading-none mb-1.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
                              <span className="text-sm md:text-lg font-black text-slate-800 leading-none">{d.getDate()}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[13px] md:text-[15px] font-black text-slate-700 truncate block uppercase tracking-tight">
-                              {title}
-                            </span>
+                            <span className="text-[13px] md:text-[15px] font-black text-slate-700 truncate block uppercase tracking-tight">{title}</span>
                             <div className="flex items-center gap-3 mt-1">
-                               <p className="text-[8px] text-slate-300 truncate font-black uppercase tracking-widest">
-                                 {entry.date}
-                               </p>
+                               <p className="text-[8px] text-slate-300 truncate font-black uppercase tracking-widest">{entry.date}</p>
                                <div className="w-1 h-1 rounded-full bg-slate-200"></div>
                                <span className="text-[8px] font-black text-orange-400 uppercase">{new Date(entry.createdAt).toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                           </div>
-                          <div className="flex gap-2 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity">
-                             <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити цей запис?')) deleteDiaryEntry(entry.id); }} className="w-9 h-9 rounded-xl text-slate-200 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can text-sm"></i></button>
-                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити цей запис?')) deleteDiaryEntry(entry.id); }} className="w-9 h-9 rounded-xl text-slate-200 hover:text-rose-500 flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can text-sm"></i></button>
                         </div>
                       </Card>
                     );
                   })}
                 </div>
               ))}
-              
-              {diary.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-32 text-center opacity-10">
-                   <i className="fa-solid fa-feather text-7xl mb-6"></i>
-                   <Typography variant="h2">Порожній щоденник</Typography>
-                   <Typography variant="body" className="mt-3">Твоя історія починається з першого запису.</Typography>
-                </div>
-              )}
             </div>
           </main>
+
+          {/* MOBILE STATS VIEW */}
+          {isMobile && mobileTab === 'stats' && (
+            <main className="flex-1 bg-white overflow-hidden">
+               {renderStatsPanel()}
+            </main>
+          )}
         </div>
       </div>
 
-      <div className="lg:hidden fixed bottom-20 left-4 right-4 z-[45] pointer-events-none">
-        <div className="flex items-center justify-center gap-4 pointer-events-auto">
-          <button 
-            onClick={() => setShowReportWizard(true)}
-            className="flex-1 bg-white/95 backdrop-blur-xl border border-slate-200 h-14 rounded-[1.5rem] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-slate-600 group"
-          >
-            <i className="fa-solid fa-chart-line text-xs group-hover:text-orange-500"></i>
-            <span className="text-[10px] font-black uppercase tracking-widest">Новий звіт</span>
-          </button>
-          
-          <button 
-            onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
-            className="w-16 h-14 bg-orange-600 text-white rounded-[1.5rem] shadow-2xl shadow-orange-200 flex items-center justify-center text-2xl active:scale-90 transition-all hover:bg-orange-700"
-          >
-            <i className="fa-solid fa-plus"></i>
-          </button>
-        </div>
-      </div>
-
-      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-slate-100 bg-white z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 lg:translate-x-0 lg:hidden'} flex`}>
+      {/* RIGHT SIDE PANEL (DESKTOP EDITOR OR STATS) */}
+      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-slate-100 bg-white z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0' : 'translate-x-0'} flex ${isMobile && !editingEntryId ? 'hidden' : ''}`}>
          <div onMouseDown={startResizing} className={`hidden lg:block w-[1px] h-full cursor-col-resize hover:bg-orange-500 z-[100] transition-colors ${isResizing ? 'bg-orange-500' : 'bg-slate-100'}`}></div>
-         <div style={{ width: window.innerWidth < 1024 ? '100vw' : detailsWidth }} className="h-full flex flex-col bg-white shadow-2xl lg:shadow-none">
+         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full flex flex-col bg-white shadow-2xl lg:shadow-none overflow-hidden">
             {editingEntryId ? (
-              <DiaryEditor 
-                id={editingEntryId === 'new' ? undefined : editingEntryId}
-                date={selectedDate} 
-                onClose={() => setEditingEntryId(null)} 
-              />
+              <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
             ) : (
-              <div className="hidden lg:flex h-full flex-col items-center justify-center p-12 text-center opacity-5 grayscale pointer-events-none select-none">
-                 <i className="fa-solid fa-book-open text-8xl mb-8"></i>
-                 <Typography variant="tiny" className="text-[14px] font-black uppercase tracking-[0.4em]">Твій Шлях</Typography>
-                 <Typography variant="body" className="mt-4 max-w-[200px] text-xs font-bold leading-relaxed">Оберіть запис ліворуч.</Typography>
-              </div>
+              !isMobile && renderStatsPanel()
             )}
          </div>
       </div>
 
-      {showReportWizard && (
-        <DailyReportWizard onClose={() => setShowReportWizard(false)} />
-      )}
+      {showReportWizard && <DailyReportWizard onClose={() => setShowReportWizard(false)} />}
     </div>
   );
 };

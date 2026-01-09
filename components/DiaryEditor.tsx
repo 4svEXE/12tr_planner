@@ -57,38 +57,16 @@ const EditableBlock: React.FC<{
       <div className="w-5 flex flex-col items-center opacity-0 group-hover/row:opacity-100 transition-opacity pt-1 shrink-0">
          <button onClick={() => onUpdate({ id: 'DELETE_BLOCK' })} className="text-slate-200 hover:text-rose-500 p-1"><i className="fa-solid fa-xmark text-[10px]"></i></button>
       </div>
-
       <div className="flex-1 min-w-0 flex items-start gap-2 md:gap-3">
         {block.type === 'task' && (
-          <button 
-            onClick={() => onUpdate({ checked: !block.checked })} 
-            className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-slate-200 bg-white hover:border-orange-400 shadow-sm'}`}
-          >
+          <button onClick={() => onUpdate({ checked: !block.checked })} 
+            className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-slate-200 bg-white hover:border-orange-400 shadow-sm'}`}>
             {block.checked && <i className="fa-solid fa-check text-[10px]"></i>}
           </button>
         )}
-
-        {block.type === 'bullet' && (
-          <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0 shadow-inner" />
-        )}
-
-        {block.type === 'number' && (
-          <span className="text-[10px] font-black text-orange-400 mt-1 shrink-0 w-4 text-right">
-            {allBlocks.slice(0, index + 1).filter(b => b.type === 'number').length}.
-          </span>
-        )}
-
-        <div
-          ref={contentRef}
-          contentEditable
-          suppressContentEditableWarning
-          // Fixed: Changed 'placeholder' to 'data-placeholder' as div elements don't support placeholder property.
-          // The CSS in the component takes care of displaying it using empty:before:content-[attr(data-placeholder)]
-          data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'}
-          onInput={handleInput}
-          onKeyDown={(e) => onKeyDown(e, contentRef.current?.innerHTML || '')}
-          onFocus={onFocus}
-          onContextMenu={onContextMenu}
+        {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0 shadow-inner" />}
+        {block.type === 'number' && <span className="text-[10px] font-black text-orange-400 mt-1 shrink-0 w-4 text-right">{allBlocks.slice(0, index + 1).filter(b => b.type === 'number').length}.</span>}
+        <div ref={contentRef} contentEditable suppressContentEditableWarning data-placeholder={block.type === 'heading' ? 'Заголовок...' : 'Напишіть щось...'} onInput={handleInput} onKeyDown={(e) => onKeyDown(e, contentRef.current?.innerHTML || '')} onFocus={onFocus} onContextMenu={onContextMenu}
           className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 block-input transition-all ${typeClass}`}
         />
       </div>
@@ -132,13 +110,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
   const handleManualSave = (isAutoSave = false) => {
     const contentStr = JSON.stringify(blocks);
     const hasContent = blocks.some(b => b.content.trim() !== '' && b.content !== '<br>');
-    
-    // ВАЖЛИВО: Якщо це автозбереження і контенту немає, просто нічого не робимо
-    // Раніше тут був виклик onClose(), який закривав порожній новий запис через 3 секунди
-    if (!hasContent && !currentId) {
-        return;
-    }
-    
+    if (!hasContent && !currentId) return;
     const savedId = saveDiaryEntry(localDate, contentStr, currentId);
     if (!currentId) setCurrentId(savedId);
     setIsSaving(false);
@@ -203,25 +175,22 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
     }
   };
 
-  useEffect(() => {
-    const hideMenu = () => setFloatingMenu(p => ({ ...p, visible: false }));
-    window.addEventListener('click', hideMenu);
-    return () => window.removeEventListener('click', hideMenu);
-  }, []);
-
   return (
     <div className="h-full flex flex-col bg-white relative">
-      <header className="p-3 md:p-4 border-b border-slate-50 flex justify-between items-center bg-white/90 backdrop-blur-md shrink-0 sticky top-0 z-30">
-        <div className="flex items-center gap-2 md:gap-3">
+      <header className="p-4 border-b border-slate-50 flex justify-between items-center bg-white/90 backdrop-blur-md shrink-0 sticky top-0 z-30">
+        <div className="flex items-center gap-3">
           <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)} className="bg-transparent border-none text-orange-600 font-black uppercase text-[10px] tracking-widest focus:ring-0 p-0 cursor-pointer" />
           <div className="h-3 w-px bg-slate-100 hidden sm:block"></div>
-          <Typography variant="tiny" className="text-slate-300 font-black uppercase text-[8px] tracking-widest hidden sm:block">Щоденник</Typography>
+          <Typography variant="tiny" className="text-slate-300 font-black uppercase text-[8px] tracking-widest hidden sm:block">Редактор</Typography>
         </div>
-        <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center transition-all hover:text-slate-900 active:scale-95"><i className="fa-solid fa-xmark"></i></button>
+        <div className="flex items-center gap-2">
+           <button onClick={handleSaveAndClose} className="px-5 py-2 bg-orange-600 text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-orange-100 active:scale-95 transition-all">Зберегти</button>
+           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center transition-all hover:text-slate-900 active:scale-95"><i className="fa-solid fa-xmark"></i></button>
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-2 md:px-4 py-1.5 bg-slate-50/50 flex items-center gap-0.5 overflow-x-auto no-scrollbar border-b border-slate-50 shrink-0">
+        <div className="px-2 md:px-4 py-2 bg-slate-50/50 flex items-center gap-1 overflow-x-auto no-scrollbar border-b border-slate-50 shrink-0">
            <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'heading'})} title="Заголовок" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-heading text-xs"></i></button>
            <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'text'})} title="Текст" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-paragraph text-xs"></i></button>
            <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'task'})} title="Завдання" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-square-check text-xs"></i></button>
@@ -230,27 +199,14 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
            <button onClick={() => focusedBlockId && updateBlock(focusedBlockId, {type: 'quote'})} title="Цитата" className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-orange-600 transition-all"><i className="fa-solid fa-quote-left text-xs"></i></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 space-y-1 bg-white">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10 space-y-1 bg-white pb-32">
            {blocks.map((block, idx) => (
-             <EditableBlock 
-               key={block.id}
-               block={block}
-               index={idx}
-               allBlocks={blocks}
-               isFocused={focusedBlockId === block.id}
-               onUpdate={(updates) => updateBlock(block.id, updates)}
-               onKeyDown={(e, content) => handleKeyDown(e, block, content)}
-               onFocus={() => setFocusedBlockId(block.id)}
-               onContextMenu={handleContextMenu}
-             />
+             <EditableBlock key={block.id} block={block} index={idx} allBlocks={blocks} isFocused={focusedBlockId === block.id} onUpdate={(updates) => updateBlock(block.id, updates)} onKeyDown={(e, content) => handleKeyDown(e, block, content)} onFocus={() => setFocusedBlockId(block.id)} onContextMenu={handleContextMenu} />
            ))}
         </div>
 
         {floatingMenu.visible && (
-          <div 
-            className="fixed z-[200] bg-slate-900 text-white p-1 rounded-xl shadow-2xl flex items-center gap-1 tiktok-blur animate-in fade-in zoom-in-95 scale-90"
-            style={{ top: floatingMenu.y - 45, left: floatingMenu.x }}
-          >
+          <div className="fixed z-[200] bg-slate-900 text-white p-1 rounded-xl shadow-2xl flex items-center gap-1 tiktok-blur animate-in fade-in zoom-in-95 scale-90" style={{ top: floatingMenu.y - 45, left: floatingMenu.x }}>
              <button onMouseDown={e => { e.preventDefault(); applyFormat('bold'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors"><i className="fa-solid fa-bold text-xs"></i></button>
              <button onMouseDown={e => { e.preventDefault(); applyFormat('italic'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors"><i className="fa-solid fa-italic text-xs"></i></button>
              <button onMouseDown={e => { e.preventDefault(); applyFormat('underline'); }} className="w-8 h-8 rounded-lg hover:bg-white/10 transition-colors text-orange-400"><i className="fa-solid fa-underline text-xs"></i></button>
@@ -258,13 +214,13 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose }) => {
           </div>
         )}
 
-        <footer className="p-3 md:p-4 border-t border-slate-50 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0 mb-safe">
+        <footer className="p-4 border-t border-slate-50 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0 pb-safe">
           <div className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-orange-400 animate-pulse' : 'bg-emerald-400'}`}></div>
             <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{isSaving ? 'Збереження' : 'Збережено'}</span>
           </div>
           <div className="flex gap-2">
-            <Button variant="primary" size="sm" className="text-[9px] rounded-xl px-4 md:px-6 shadow-orange-100" onClick={handleSaveAndClose}>ЗБЕРЕГТИ ТА ЗАКРИТИ</Button>
+            <Button variant="primary" size="sm" className="hidden md:flex text-[9px] rounded-xl px-4 md:px-6 shadow-orange-100" onClick={handleSaveAndClose}>ЗБЕРЕГТИ ТА ЗАКРИТИ</Button>
           </div>
         </footer>
       </div>

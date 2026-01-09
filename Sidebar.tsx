@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus, ThemeType } from '../types';
@@ -33,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'map', icon: 'fa-map-location-dot', label: 'Карта' },
     { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
-    { id: 'people', icon: 'fa-users-between-lines', label: 'Люди' },
+    { id: 'people', icon: 'fa-user-ninja', label: 'Люди' },
     { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
     { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
@@ -241,7 +242,7 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
                                 <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center"><i className="fa-solid fa-sparkles text-xs"></i></div>
                                 <span className="text-[9px] font-black uppercase tracking-wider">ШІ-Стратег</span>
                              </div>
-                             <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-10 h-5 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div></button>
+                             <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-10 h-5 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div></button>
                           </div>
                        </div>
                        <SettingRow label="Складність квестів (XP)" icon="fa-trophy" colorClass="text-yellow-500">
