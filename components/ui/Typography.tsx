@@ -7,9 +7,11 @@ interface TypographyProps {
   className?: string;
   italic?: boolean;
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>;
+  // Added onClick prop to Typography component
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
-const Typography: React.FC<TypographyProps> = ({ variant, children, className = '', italic = false, onDoubleClick }) => {
+const Typography: React.FC<TypographyProps> = ({ variant, children, className = '', italic = false, onDoubleClick, onClick }) => {
   const baseClasses = italic ? 'italic' : '';
   
   const variants = {
@@ -27,6 +29,7 @@ const Typography: React.FC<TypographyProps> = ({ variant, children, className = 
       className={`${variants[variant]} ${baseClasses} ${className}`}
       style={{ color: 'var(--text-main)' }}
       onDoubleClick={onDoubleClick}
+      onClick={onClick}
     >
       {children}
     </div>

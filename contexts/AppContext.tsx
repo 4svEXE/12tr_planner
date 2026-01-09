@@ -245,7 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     renameHobby: (o: string, n: string) => setHobbies(p => p.map(h => h.name === o ? { ...h, name: n } : h)),
     deleteHobby: (n: string) => setHobbies(p => p.filter(h => h.name !== n)),
     saveDiaryEntry, deleteDiaryEntry: (id: string) => setDiary(p => p.filter(e => e.id !== id)),
-    addInboxCategory: (t: string, scope: any, color: any) => setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2,9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]),
+    addInboxCategory: (t: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2,9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]),
     updateInboxCategory: (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)),
     deleteInboxCategory: (id: string) => setInboxCategories(p => p.filter(c => c.id !== id)),
     addTimeBlock: (b: any) => setTimeBlocks(p => [...p, { ...b, id: Math.random().toString(36).substr(2,9) }]),

@@ -19,6 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   } = useApp();
   
   const [showSettings, setShowSettings] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const primaryItems = [
     { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
@@ -39,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
     { id: 'character', icon: 'fa-user-shield', label: 'Герой' },
+    { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
   ];
 
   const bottomItems = [
@@ -46,11 +48,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
 
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const allNavItems = useMemo(() => [...primaryItems, ...widgetItems, ...bottomItems], []);
 
   const handleGlobalDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    setDropTargetId(null);
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
     const task = tasks.find(t => t.id === taskId);
@@ -71,8 +72,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     const isActive = activeTab === item.id;
     
     return (
-      <div key={item.id} onDragOver={(e) => { e.preventDefault(); item.acceptDrop && setDropTargetId(item.id); }} onDragLeave={() => setDropTargetId(null)} onDrop={(e) => handleGlobalDrop(e, item.id)} className={`relative group px-1 ${dropTargetId === item.id ? 'scale-105 z-20' : ''}`}>
-        <button onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm' : dropTargetId === item.id ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>
+      <div key={item.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleGlobalDrop(e, item.id)} className="relative group px-1">
+        <button onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-orange-50 text-orange-700 border border-orange-100 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
           <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-orange-600' : ''}`}><i className={`fa-solid ${item.icon}`}></i></span>
           {!isSidebarCollapsed && (
             <><span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
@@ -106,24 +107,81 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-lg border-t border-slate-100 z-50 flex items-center justify-around px-2">
-         {[primaryItems[0], primaryItems[2], widgetItems[1], widgetItems[2], widgetItems[3]].map(item => (
+      {/* Mobile Bottom Navigation - Restored Fixed Layout */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50 flex items-center justify-around px-4 pb-safe">
+         {[
+           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
+           { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
+           { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні' },
+           { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
+           { id: 'menu', icon: 'fa-grid-2', label: 'Модулі', isMenuTrigger: true }
+         ].map(item => (
            <button 
             key={item.id} 
-            onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${activeTab === item.id ? 'text-orange-600 bg-orange-50' : 'text-slate-400'}`}
+            onClick={() => item.isMenuTrigger ? setShowMobileMenu(true) : setActiveTab(item.id)}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${!item.isMenuTrigger && activeTab === item.id ? 'text-orange-600 bg-orange-50 shadow-inner' : 'text-slate-400'}`}
            >
-             <i className={`fa-solid ${item.icon} text-sm mb-0.5`}></i>
+             <i className={`fa-solid ${item.isMenuTrigger ? 'fa-table-cells-large' : item.icon} text-lg mb-0.5`}></i>
              <span className="text-[6px] font-black uppercase tracking-tighter">{item.label}</span>
            </button>
          ))}
-         <button onClick={() => setShowSettings(true)} className="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-slate-400"><i className="fa-solid fa-ellipsis text-sm"></i><span className="text-[6px] font-black uppercase">Більше</span></button>
       </div>
+
+      {/* Mobile Full Screen Menu */}
+      {showMobileMenu && (
+        <div className="fixed inset-0 z-[200] bg-white md:hidden animate-in fade-in slide-in-from-bottom duration-300 flex flex-col">
+           <header className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-2xl bg-orange-600 flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-table-cells-large"></i></div>
+                 <Typography variant="h2" className="text-xl">Системні Модулі</Typography>
+              </div>
+              <button onClick={() => setShowMobileMenu(false)} className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400"><i className="fa-solid fa-xmark"></i></button>
+           </header>
+           
+           <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
+              <div className="grid grid-cols-3 gap-4 pb-20">
+                 {allNavItems.map(item => {
+                   if (sidebarSettings[item.id] === false) return null;
+                   const isActive = activeTab === item.id;
+                   // Не дублюємо те, що вже є в основному таббарі для чистоти меню
+                   const isStatic = ['today', 'inbox', 'next_actions', 'calendar'].includes(item.id);
+                   
+                   return (
+                     <button 
+                      key={item.id} 
+                      onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
+                      className={`flex flex-col items-center justify-center p-4 rounded-3xl border transition-all ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-xl shadow-orange-100' : 'bg-white border-slate-100 text-slate-500 shadow-sm'} ${isStatic ? 'opacity-50' : ''}`}
+                     >
+                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-2 ${isActive ? 'bg-white/10' : 'bg-slate-50'}`}>
+                          <i className={`fa-solid ${item.icon} text-lg`}></i>
+                       </div>
+                       <span className="text-[8px] font-black uppercase text-center leading-tight">{item.label}</span>
+                       {counts[item.id] > 0 && <span className={`mt-1 text-[7px] font-black ${isActive ? 'text-white/60' : 'text-slate-300'}`}>({counts[item.id]})</span>}
+                     </button>
+                   );
+                 })}
+                 
+                 <button 
+                  onClick={() => { setShowSettings(true); setShowMobileMenu(false); }}
+                  className="flex flex-col items-center justify-center p-4 rounded-3xl bg-indigo-50 border-indigo-100 text-indigo-600 shadow-sm"
+                 >
+                   <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-2 bg-white">
+                      <i className="fa-solid fa-gear text-lg"></i>
+                   </div>
+                   <span className="text-[8px] font-black uppercase text-center leading-tight">Опції</span>
+                 </button>
+              </div>
+           </div>
+           
+           <footer className="p-6 border-t border-slate-50 bg-slate-50/50 text-center">
+              <Typography variant="tiny" className="text-slate-300 uppercase tracking-[0.2em] text-[8px]">12TR Life Engine Control Hub</Typography>
+           </footer>
+        </div>
+      )}
 
       {showSettings && <SettingsModal 
         onHide={() => setShowSettings(false)} 
-        allSections={[...primaryItems, ...widgetItems, ...bottomItems]}
+        allSections={allNavItems}
       />}
     </>
   );
@@ -141,13 +199,11 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
     const themes: {id: ThemeType, label: string, color: string}[] = [
       { id: 'classic', label: 'Classic', color: '#f97316' },
       { id: 'midnight', label: 'Midnight', color: '#10b981' },
-      // Fixed: Change "nordic" to "nordic-dark" to match ThemeType
+      { id: 'obsidian', label: 'Obsidian', color: '#8b5cf6' },
       { id: 'nordic-dark', label: 'Nordic', color: '#6366f1' },
       { id: 'sakura', label: 'Sakura', color: '#ec4899' },
       { id: 'forest', label: 'Forest', color: '#059669' },
-      // Fixed: Change "amethyst" to "lavender" to match ThemeType
       { id: 'lavender', label: 'Lavender', color: '#a855f7' },
-      // Fixed: Change "volcano" to "mars" to match ThemeType
       { id: 'mars', label: 'Volcano', color: '#ef4444' },
       { id: 'slate', label: 'Slate', color: '#475569' },
     ];
@@ -182,7 +238,7 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
     };
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 md:p-4 tiktok-blur">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 md:p-4 tiktok-blur">
           <div className="absolute inset-0 bg-slate-900/40" onClick={onHide}></div>
           <div className="bg-white w-full max-w-xl max-h-[95vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
             <header className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -248,12 +304,6 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
                              <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-10 h-5 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all ${aiEnabled ? 'right-1' : 'left-1'}`}></div></button>
                           </div>
                        </div>
-                       <SettingRow label="Складність квестів (XP)" icon="fa-trophy" colorClass="text-yellow-500">
-                          <select className="bg-transparent border-none text-[9px] font-black uppercase outline-none text-slate-500"><option>Нормальна</option><option>Хардкор</option></select>
-                       </SettingRow>
-                       <SettingRow label="Показувати золото" icon="fa-coins" colorClass="text-amber-500">
-                          <button className="w-9 h-5 rounded-full bg-emerald-500 relative shadow-inner"><div className="absolute top-1 right-1 w-3 h-3 bg-white rounded-full"></div></button>
-                       </SettingRow>
                     </CollapsibleSection>
 
                     <div className="p-8 mt-4 text-center">
@@ -281,12 +331,6 @@ const SettingsModal: React.FC<{ onHide: () => void, allSections: any[] }> = ({ o
                           <li><span className="font-bold text-slate-800">RPG Гейміфікація:</span> Прогресія персонажа, XP за квести та мапа світу.</li>
                        </ul>
                        <p className="mt-4 italic">Перетворюйте хаос вхідних у чіткий план завоювання власного життя.</p>
-                    </div>
-
-                    <div className="flex justify-center gap-4">
-                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all shadow-sm"><i className="fa-brands fa-telegram"></i></a>
-                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-pink-500 transition-all shadow-sm"><i className="fa-brands fa-instagram"></i></a>
-                       <a href="#" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shadow-sm"><i className="fa-brands fa-github"></i></a>
                     </div>
                  </div>
                )}
