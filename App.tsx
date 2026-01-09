@@ -30,8 +30,7 @@ const MainLayout: React.FC = () => {
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [notifications, setNotifications] = useState<{id: string, task: Task}[]>([]);
-  const hasApiKey = !!localStorage.getItem('GEMINI_API_KEY');
-
+  
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
