@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Person, Task, TaskStatus, Interaction } from '../../types';
 import Typography from '../ui/Typography';
@@ -19,9 +19,10 @@ import AiStrategyTab from './AiStrategyTab';
 interface PersonProfileProps {
   personId: string;
   onClose: () => void;
+  initialTab?: 'dossier' | 'dates' | 'skills' | 'vcard' | 'timeline' | 'tasks' | 'ai';
 }
 
-const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
+const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose, initialTab = 'dossier' }) => {
   const { 
     people, updatePerson, character, 
     aiEnabled, tasks, addTask, toggleTaskStatus,
@@ -29,8 +30,12 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
   } = useApp();
   
   const person = people.find(p => p.id === personId);
-  const [activeTab, setActiveTab] = useState<'dossier' | 'dates' | 'skills' | 'vcard' | 'timeline' | 'tasks' | 'ai'>('dossier');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   if (!person) return null;
 
@@ -47,38 +52,11 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
     handleUpdate({ rating: Math.max(0, Math.min(100, currentRating + ratingImpact)) });
   };
 
-  /**
-   * Універсальний метод для отримання аватара.
-   * Використовує unavatar.io для автоматичного визначення або специфічних провайдерів.
-   */
   const handleFetchSocialAvatar = (handle?: string, provider?: string) => {
-    let targetHandle = handle;
-    if (!targetHandle) {
-      targetHandle = prompt("Введіть нікнейм або email (напр. user123 або mail@example.com):") || undefined;
-    }
-    
+    let targetHandle = handle || prompt("Введіть нікнейм або email:");
     if (targetHandle) {
       const cleanHandle = targetHandle.replace('@', '').trim();
-      let newAvatar = '';
-      
-      if (provider === 'telegram') {
-        // Telegram через unavatar часто потребує префіксу або працює через twitter/github якщо ніки збігаються.
-        // unavatar підтримує прямий запит telegram через /telegram/username
-        newAvatar = `https://unavatar.io/telegram/${cleanHandle}`;
-      } else if (provider === 'instagram') {
-        newAvatar = `https://unavatar.io/instagram/${cleanHandle}`;
-      } else if (provider === 'linkedin') {
-        newAvatar = `https://unavatar.io/linkedin/${cleanHandle}`;
-      } else if (provider === 'github') {
-        newAvatar = `https://unavatar.io/github/${cleanHandle}`;
-      } else if (cleanHandle.includes('.')) {
-        // Спроба підтягнути за доменом або email
-        newAvatar = `https://unavatar.io/${cleanHandle}`;
-      } else {
-        // Універсальний пошук
-        newAvatar = `https://unavatar.io/${cleanHandle}?fallback=https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanHandle}`;
-      }
-      
+      const newAvatar = `https://unavatar.io/${cleanHandle}?fallback=https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanHandle}`;
       handleUpdate({ avatar: newAvatar });
     }
   };
@@ -98,88 +76,48 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
   };
 
   return (
-    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-white border-l border-slate-100 z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
-       <header className="p-5 md:p-8 border-b border-slate-50 flex justify-between items-start shrink-0">
-          <div className="flex items-center gap-4 md:gap-5 min-w-0">
-             <div className="w-16 h-16 md:w-20 md:h-20 rounded-[2rem] bg-slate-50 ring-4 ring-orange-50 overflow-hidden shadow-xl relative group shrink-0">
+    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-white border-l border-slate-100 z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+       <header className="p-3 md:p-8 border-b border-slate-50 flex justify-between items-start shrink-0">
+          <div className="flex items-center gap-3 md:gap-5 min-w-0">
+             <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-[2rem] bg-slate-50 ring-2 md:ring-4 ring-orange-50 overflow-hidden shadow-lg shrink-0 group relative">
                 <img 
-                  key={person.avatar} // Force re-render if avatar URL changes
                   src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                  alt={person.name}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`;
-                  }}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-110" 
                 />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => handleFetchSocialAvatar()}>
-                   <i className="fa-solid fa-sync text-white text-base animate-pulse"></i>
-                </div>
+                <button onClick={() => handleFetchSocialAvatar()} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i className="fa-solid fa-sync text-white text-xs"></i></button>
              </div>
              <div className="flex-1 min-w-0">
-                <input className="text-lg md:text-xl font-black text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full mb-1 truncate" value={person.name} onChange={e => handleUpdate({ name: e.target.value })} />
-                <div className="flex items-center gap-2">
-                   <Badge variant="orange" className="text-[8px] uppercase">{person.status}</Badge>
-                   <Badge variant="yellow" className="text-[8px] uppercase">Karma {person.rating || 0}</Badge>
-                   <button onClick={() => handleFetchSocialAvatar()} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:text-orange-600 transition-colors shadow-sm border border-slate-100"><i className="fa-solid fa-link text-[8px]"></i></button>
+                <input className="text-base md:text-xl font-black text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full mb-0.5 md:mb-1 truncate" value={person.name} onChange={e => handleUpdate({ name: e.target.value })} />
+                <div className="flex items-center gap-1 md:gap-2">
+                   <Badge variant="orange" className="text-[6px] md:text-[8px] uppercase">{person.status}</Badge>
+                   <Badge variant="yellow" className="text-[6px] md:text-[8px] uppercase">Karma {person.rating || 0}</Badge>
                 </div>
              </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-all shrink-0"><i className="fa-solid fa-xmark"></i></button>
+          <button onClick={onClose} className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-all shrink-0"><i className="fa-solid fa-xmark text-xs md:text-sm"></i></button>
        </header>
 
-       <div className="flex border-b border-slate-50 px-2 md:px-4 shrink-0 overflow-x-auto no-scrollbar bg-white sticky top-0 z-30">
+       <div className="flex border-b border-slate-50 px-1 md:px-4 shrink-0 overflow-x-auto no-scrollbar bg-white sticky top-0 z-30">
           {(['dossier', 'dates', 'skills', 'vcard', 'timeline', 'tasks', 'ai'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 min-w-[80px] py-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-orange-600' : 'text-slate-400'}`}>
-              {tab === 'dossier' ? 'Досьє' : tab === 'dates' ? 'Дати' : tab === 'skills' ? 'Деталі' : tab === 'vcard' ? 'Профілі' : tab === 'timeline' ? 'Лог' : tab === 'tasks' ? 'Справи' : 'ШІ'}
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-none md:flex-1 min-w-[65px] md:min-w-[80px] px-3 py-3 md:py-4 text-[7px] md:text-[9px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-orange-600' : 'text-slate-400'}`}>
+              {tab === 'dossier' ? 'Досьє' : tab === 'dates' ? 'Дати' : tab === 'skills' ? 'Деталі' : tab === 'vcard' ? 'Профілі' : tab === 'timeline' ? 'Лог' : tab === 'tasks' ? 'Квести' : 'ШІ'}
               {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600"></div>}
             </button>
           ))}
        </div>
 
-       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8 bg-white">
-          {activeTab === 'dossier' && (
-            <DossierTab person={person} onUpdate={handleUpdate} onAddInteraction={handleAddKarmaLog} />
-          )}
-          
-          {activeTab === 'dates' && (
-            <DatesTab person={person} onUpdate={handleUpdate} />
-          )}
-
-          {activeTab === 'skills' && (
-            <InfoTab 
-              person={person} 
-              onUpdate={handleUpdate} 
-              onAddHobby={h => handleUpdate({ hobbies: [...person.hobbies, h.trim()] })} 
-              onAddSkill={s => handleUpdate({ tags: [...person.tags, s.trim()] })}
-              relationshipTypes={relationshipTypes}
-              onAddRelType={addRelationshipType}
-            />
-          )}
-
-          {activeTab === 'vcard' && (
-            <SocialsTab person={person} onUpdate={handleUpdate} onFetchAvatar={handleFetchSocialAvatar} />
-          )}
-
-          {activeTab === 'timeline' && (
-            <TimelineTab person={person} onAddInteraction={handleAddKarmaLog} onDeleteInteraction={id => deleteInteraction(person.id, id)} />
-          )}
-
-          {activeTab === 'tasks' && (
-            <TasksTab 
-              person={person} 
-              tasks={tasks} 
-              onAddTask={(title, date) => addTask(title, 'tasks', undefined, 'actions', true, date, person.id, TaskStatus.NEXT_ACTION)} 
-              onToggleTask={toggleTaskStatus} 
-            />
-          )}
-
-          {activeTab === 'ai' && (
-            <AiStrategyTab person={person} aiEnabled={aiEnabled} isAnalyzing={isAnalyzing} onAnalyze={handleGenerateAI} />
-          )}
+       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-white">
+          {activeTab === 'dossier' && <DossierTab person={person} onUpdate={handleUpdate} onAddInteraction={handleAddKarmaLog} />}
+          {activeTab === 'dates' && <DatesTab person={person} onUpdate={handleUpdate} />}
+          {activeTab === 'skills' && <InfoTab person={person} onUpdate={handleUpdate} onAddHobby={h => handleUpdate({ hobbies: [...person.hobbies, h] })} onAddSkill={s => handleUpdate({ tags: [...person.tags, s] })} relationshipTypes={relationshipTypes} onAddRelType={addRelationshipType} />}
+          {activeTab === 'vcard' && <SocialsTab person={person} onUpdate={handleUpdate} onFetchAvatar={handleFetchSocialAvatar} />}
+          {activeTab === 'timeline' && <TimelineTab person={person} onAddInteraction={handleAddKarmaLog} onDeleteInteraction={id => deleteInteraction(person.id, id)} />}
+          {activeTab === 'tasks' && <TasksTab person={person} tasks={tasks} onAddTask={(title, date) => addTask(title, 'tasks', undefined, 'actions', true, date, person.id, TaskStatus.NEXT_ACTION)} onToggleTask={toggleTaskStatus} />}
+          {activeTab === 'ai' && <AiStrategyTab person={person} aiEnabled={aiEnabled} isAnalyzing={isAnalyzing} onAnalyze={handleGenerateAI} />}
        </div>
 
-       <footer className="p-5 md:p-8 border-t border-slate-50 bg-slate-50/30 flex gap-4 shrink-0 mb-safe">
-          <Button variant="white" onClick={onClose} className="flex-1 rounded-2xl py-3.5 font-black uppercase text-[10px] tracking-widest shadow-sm">ПОВЕРНУТИСЬ</Button>
+       <footer className="p-4 md:p-6 border-t border-slate-50 bg-slate-50/30 flex gap-3 md:gap-4 shrink-0 mb-safe">
+          <Button variant="white" onClick={onClose} className="flex-1 rounded-xl md:rounded-2xl py-2.5 md:py-4 font-black uppercase text-[7px] md:text-[10px] tracking-widest shadow-sm">ЗАКРИТИ</Button>
        </footer>
     </div>
   );
