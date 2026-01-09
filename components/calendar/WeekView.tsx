@@ -56,6 +56,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                const dayTs = date.getTime();
                const m = date.getMonth();
                const d = date.getDate();
+               const y = date.getFullYear();
 
                const dayTasks = tasks.filter(t => {
                  if (t.isDeleted) return false;
@@ -67,16 +68,22 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
 
                const personEvents = [];
                people.forEach(p => {
-                 if (p.birthDate) {
+                 if (p.birthDate && p.birthDateShowInCalendar !== false) {
                    const bd = new Date(p.birthDate);
-                   if (bd.getMonth() === m && bd.getDate() === d) {
+                   const matchesMD = bd.getMonth() === m && bd.getDate() === d;
+                   const matchesY = bd.getFullYear() === y;
+                   if (matchesMD && (p.birthDateRepeatYearly !== false || matchesY)) {
                      personEvents.push({ id: `bd-${p.id}`, title: `🎂 ДН: ${p.name}`, type: 'birthday' });
                    }
                  }
                  p.importantDates?.forEach(idate => {
-                   const id = new Date(idate.date);
-                   if (id.getMonth() === m && id.getDate() === d) {
-                     personEvents.push({ id: `id-${idate.id}`, title: `🔔 ${idate.label}: ${p.name}`, type: 'important' });
+                   if (idate.showInCalendar) {
+                     const id = new Date(idate.date);
+                     const matchesMD = id.getMonth() === m && id.getDate() === d;
+                     const matchesY = id.getFullYear() === y;
+                     if (matchesMD && (idate.repeatYearly || matchesY)) {
+                       personEvents.push({ id: `id-${idate.id}`, title: `🔔 ${idate.label}: ${p.name}`, type: 'important' });
+                     }
                    }
                  });
                });
@@ -93,7 +100,6 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                     {Array.from({ length: 24 }, (_, i) => <div key={i} className="h-[60px] border-b border-slate-50/50"></div>)}
                     
                     <div className="absolute inset-0 p-1.5 space-y-1.5">
-                       {/* Дати союзників зверху */}
                        {personEvents.map(pe => (
                           <div key={pe.id} className={`p-1.5 rounded-lg border text-[9px] font-black shadow-sm ${pe.type === 'birthday' ? 'bg-amber-100 border-amber-200 text-amber-800' : 'bg-indigo-100 border-indigo-200 text-indigo-800'}`}>
                              <div className="truncate">{pe.title}</div>

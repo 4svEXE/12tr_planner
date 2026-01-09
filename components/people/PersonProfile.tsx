@@ -9,7 +9,8 @@ import { analyzePersonPortrait } from '../../services/geminiService';
 
 // Tabs
 import DossierTab from './DossierTab';
-import InfoTab from './InfoTab';
+import InfoTab from './InfoTab'; // Тепер це вкладка Деталі (Скіли/Хобі/Біо)
+import DatesTab from './DatesTab'; // Нова вкладка тільки для дат
 import SocialsTab from './SocialsTab';
 import TimelineTab from './TimelineTab';
 import TasksTab from './TasksTab';
@@ -28,7 +29,7 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
   } = useApp();
   
   const person = people.find(p => p.id === personId);
-  const [activeTab, setActiveTab] = useState<'dossier' | 'info' | 'vcard' | 'timeline' | 'tasks' | 'ai'>('dossier');
+  const [activeTab, setActiveTab] = useState<'dossier' | 'dates' | 'skills' | 'vcard' | 'timeline' | 'tasks' | 'ai'>('dossier');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   if (!person) return null;
@@ -94,9 +95,9 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
        </header>
 
        <div className="flex border-b border-slate-50 px-2 md:px-4 shrink-0 overflow-x-auto no-scrollbar bg-white sticky top-0 z-30">
-          {(['dossier', 'info', 'vcard', 'timeline', 'tasks', 'ai'] as const).map(tab => (
+          {(['dossier', 'dates', 'skills', 'vcard', 'timeline', 'tasks', 'ai'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 min-w-[80px] py-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-orange-600' : 'text-slate-400'}`}>
-              {tab === 'dossier' ? 'Досьє' : tab === 'info' ? 'Дані' : tab === 'vcard' ? 'Профілі' : tab === 'timeline' ? 'Лог' : tab === 'tasks' ? 'Справи' : 'ШІ'}
+              {tab === 'dossier' ? 'Досьє' : tab === 'dates' ? 'Дати' : tab === 'skills' ? 'Деталі' : tab === 'vcard' ? 'Профілі' : tab === 'timeline' ? 'Лог' : tab === 'tasks' ? 'Справи' : 'ШІ'}
               {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600"></div>}
             </button>
           ))}
@@ -107,7 +108,11 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose }) => {
             <DossierTab person={person} onUpdate={handleUpdate} onAddInteraction={handleAddKarmaLog} />
           )}
           
-          {activeTab === 'info' && (
+          {activeTab === 'dates' && (
+            <DatesTab person={person} onUpdate={handleUpdate} />
+          )}
+
+          {activeTab === 'skills' && (
             <InfoTab 
               person={person} 
               onUpdate={handleUpdate} 

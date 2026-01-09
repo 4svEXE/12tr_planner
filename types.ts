@@ -141,6 +141,8 @@ export interface ImportantDate {
   id: string;
   label: string;
   date: string;
+  showInCalendar: boolean;
+  repeatYearly: boolean;
 }
 
 export type RelationshipLoop = 'week' | 'month' | 'quarter' | 'year' | 'none';
@@ -152,6 +154,8 @@ export interface Person {
   status: PersonStatus;
   rating: number;
   birthDate?: string;
+  birthDateShowInCalendar?: boolean;
+  birthDateRepeatYearly?: boolean;
   location?: string;
   description?: string;
   tags: string[];

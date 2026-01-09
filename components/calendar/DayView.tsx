@@ -118,24 +118,31 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
 
   const m = currentDate.getMonth();
   const d = currentDate.getDate();
+  const y = currentDate.getFullYear();
   const personEvents = useMemo(() => {
     const events: any[] = [];
     people.forEach(p => {
-      if (p.birthDate) {
+      if (p.birthDate && p.birthDateShowInCalendar !== false) {
         const bd = new Date(p.birthDate);
-        if (bd.getMonth() === m && bd.getDate() === d) {
+        const matchesMD = bd.getMonth() === m && bd.getDate() === d;
+        const matchesY = bd.getFullYear() === y;
+        if (matchesMD && (p.birthDateRepeatYearly !== false || matchesY)) {
           events.push({ id: `bd-${p.id}`, title: `ДН: ${p.name}`, type: 'birthday' });
         }
       }
       p.importantDates?.forEach(idate => {
-        const id = new Date(idate.date);
-        if (id.getMonth() === m && id.getDate() === d) {
-          events.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+        if (idate.showInCalendar) {
+          const id = new Date(idate.date);
+          const matchesMD = id.getMonth() === m && id.getDate() === d;
+          const matchesY = id.getFullYear() === y;
+          if (matchesMD && (idate.repeatYearly || matchesY)) {
+            events.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+          }
         }
       });
     });
     return events;
-  }, [people, m, d]);
+  }, [people, m, d, y]);
 
   const dayOfWeek = currentDate.getDay();
   const relevantBlocks = useMemo(() => timeBlocks.filter(b => b.dayOfWeek === dayOfWeek), [timeBlocks, dayOfWeek]);

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DiaryEntry, TaskStatus } from '../types';
@@ -9,8 +10,8 @@ import DailyReportWizard from '../components/DailyReportWizard';
 import { useResizer } from '../hooks/useResizer';
 
 const DiaryView: React.FC = () => {
-  const { diary, tasks, deleteDiaryEntry } = useApp();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const { diary, tasks, people, deleteDiaryEntry } = useApp();
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA')); // YYYY-MM-DD format
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [showReportWizard, setShowReportWizard] = useState(false);
@@ -27,7 +28,8 @@ const DiaryView: React.FC = () => {
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, DiaryEntry[]> = {};
     sortedDiary.forEach(entry => {
-      const dateObj = new Date(entry.date);
+      const dateParts = entry.date.split('-').map(Number);
+      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
       if (isNaN(dateObj.getTime())) return;
       const monthStr = dateObj.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
       if (!groups[monthStr]) groups[monthStr] = [];
@@ -40,7 +42,6 @@ const DiaryView: React.FC = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
-    // Logic for Full Month Grid
     const getMonthDays = () => {
       const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -51,11 +52,10 @@ const DiaryView: React.FC = () => {
       return days;
     };
 
-    // Logic for Single Week (Minimized)
     const getWeekDays = () => {
       const start = new Date(currentMonth);
       const day = start.getDay();
-      const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const diff = start.getDate() - day + (day === 0 ? -6 : 1); 
       const monday = new Date(start.setDate(diff));
       return Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday);
@@ -125,20 +125,43 @@ const DiaryView: React.FC = () => {
           {daysToRender.map((date, i) => {
             if (date === null) return <div key={`empty-${i}`} className="h-8 md:h-9" />;
             
-            const dateStr = date.toISOString().split('T')[0];
+            // Fix: Use locale-aware YYYY-MM-DD formatting to avoid UTC off-by-one errors
+            const dY = date.getFullYear();
+            const dM = String(date.getMonth() + 1).padStart(2, '0');
+            const dD = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${dY}-${dM}-${dD}`;
+
+            const m = date.getMonth();
+            const d = date.getDate();
+            const y = date.getFullYear();
             const isSelected = selectedDate === dateStr;
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
             
-            // Check for Diary Entries
             const hasDiaryEntry = diary.some(e => e.date === dateStr);
-            // Check for Calendar Events (ONLY Tasks marked as isEvent)
-            const hasCalendarEvent = tasks.some(t => 
+            
+            // Тільки квести-події (isEvent)
+            const hasTaskEvent = tasks.some(t => 
                 !t.isDeleted && 
-                t.status !== TaskStatus.DONE && 
-                t.isEvent === true && // Тільки Події
+                t.isEvent === true && 
                 t.scheduledDate && 
-                new Date(t.scheduledDate).toISOString().split('T')[0] === dateStr
+                new Date(t.scheduledDate).toLocaleDateString('en-CA') === dateStr
             );
+
+            // Події союзників
+            const hasAllyEvent = people.some(p => {
+               if (p.birthDate && p.birthDateShowInCalendar !== false) {
+                 const bd = new Date(p.birthDate);
+                 if (bd.getMonth() === m && bd.getDate() === d && (p.birthDateRepeatYearly !== false || bd.getFullYear() === y)) return true;
+               }
+               return p.importantDates?.some(idate => {
+                 if (!idate.showInCalendar) return false;
+                 const id = new Date(idate.date);
+                 return id.getMonth() === m && id.getDate() === d && (idate.repeatYearly || id.getFullYear() === y);
+               });
+            });
+
+            // Подія = квест-подія АБО подія союзника (сині крапки)
+            const isBlueDot = hasTaskEvent || hasAllyEvent;
 
             return (
               <button
@@ -153,9 +176,9 @@ const DiaryView: React.FC = () => {
                 }`}
               >
                 {date.getDate()}
-                <div className="absolute bottom-1 flex gap-0.5">
+                <div className="absolute bottom-1 flex gap-0.5 justify-center w-full">
+                   {isBlueDot && !isSelected && <div className="w-1 h-1 bg-blue-500 rounded-full shadow-[0_0_2px_rgba(59,130,246,0.5)]"></div>}
                    {hasDiaryEntry && !isSelected && <div className="w-1 h-1 bg-orange-400 rounded-full"></div>}
-                   {hasCalendarEvent && !isSelected && <div className="w-1 h-1 bg-pink-400 rounded-full"></div>}
                 </div>
               </button>
             );
@@ -181,7 +204,6 @@ const DiaryView: React.FC = () => {
         </header>
 
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Desktop Sidebar - Visible from lg (1024px) */}
           <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-slate-100 bg-white/50 shrink-0 overflow-y-auto custom-scrollbar">
             {renderCalendar()}
             
@@ -189,7 +211,7 @@ const DiaryView: React.FC = () => {
               <Button 
                 variant="primary" 
                 className="w-full py-4 rounded-2xl shadow-xl shadow-orange-100 font-black tracking-widest uppercase text-[10px] gap-3" 
-                onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toISOString().split('T')[0]); }}
+                onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
               >
                 <i className="fa-solid fa-plus text-xs"></i>
                 НОВИЙ ЗАПИС
@@ -216,7 +238,6 @@ const DiaryView: React.FC = () => {
           <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-slate-50/30">
             <div className="max-w-3xl mx-auto space-y-5 pb-40">
               
-              {/* Mobile/Tablet Calendar - Visible below lg */}
               <div className="block lg:hidden">
                 {renderCalendar(true)}
               </div>
@@ -227,7 +248,8 @@ const DiaryView: React.FC = () => {
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{month}</span>
                   </div>
                   {entries.map(entry => {
-                    const d = new Date(entry.date);
+                    const dateParts = entry.date.split('-').map(Number);
+                    const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
                     let title = 'Без заголовка';
                     try {
                       const blocks = JSON.parse(entry.content);
@@ -286,7 +308,6 @@ const DiaryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile/Tablet Action Panel (Fixed Bottom) - Hidden on lg */}
       <div className="lg:hidden fixed bottom-20 left-4 right-4 z-[45] pointer-events-none">
         <div className="flex items-center justify-center gap-4 pointer-events-auto">
           <button 
@@ -298,7 +319,7 @@ const DiaryView: React.FC = () => {
           </button>
           
           <button 
-            onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toISOString().split('T')[0]); }}
+            onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
             className="w-16 h-14 bg-orange-600 text-white rounded-[1.5rem] shadow-2xl shadow-orange-200 flex items-center justify-center text-2xl active:scale-90 transition-all hover:bg-orange-700"
           >
             <i className="fa-solid fa-plus"></i>
@@ -306,7 +327,6 @@ const DiaryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Editor Panel - Slide-in */}
       <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-slate-100 bg-white z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 lg:translate-x-0 lg:hidden'} flex`}>
          <div onMouseDown={startResizing} className={`hidden lg:block w-[1px] h-full cursor-col-resize hover:bg-orange-500 z-[100] transition-colors ${isResizing ? 'bg-orange-500' : 'bg-slate-100'}`}></div>
          <div style={{ width: window.innerWidth < 1024 ? '100vw' : detailsWidth }} className="h-full flex flex-col bg-white shadow-2xl lg:shadow-none">

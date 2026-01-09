@@ -36,6 +36,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
         
         const m = date.getMonth();
         const d = date.getDate();
+        const y = date.getFullYear();
 
         const dayTasksList = tasks.filter(t => {
           if (t.isDeleted) return false;
@@ -45,19 +46,27 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
           return ts >= startTs && ts <= (endTs || startTs);
         });
 
-        // Знаходимо події людей
+        // Знаходимо події людей з урахуванням нових налаштувань
         const personEvents = [];
         people.forEach(p => {
-          if (p.birthDate) {
+          // День народження
+          if (p.birthDate && p.birthDateShowInCalendar !== false) {
             const bd = new Date(p.birthDate);
-            if (bd.getMonth() === m && bd.getDate() === d) {
+            const matchesMD = bd.getMonth() === m && bd.getDate() === d;
+            const matchesY = bd.getFullYear() === y;
+            if (matchesMD && (p.birthDateRepeatYearly !== false || matchesY)) {
               personEvents.push({ id: `bd-${p.id}`, title: `ДН: ${p.name}`, type: 'birthday' });
             }
           }
+          // Важливі дати
           p.importantDates?.forEach(idate => {
-            const id = new Date(idate.date);
-            if (id.getMonth() === m && id.getDate() === d) {
-              personEvents.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+            if (idate.showInCalendar) {
+              const id = new Date(idate.date);
+              const matchesMD = id.getMonth() === m && id.getDate() === d;
+              const matchesY = id.getFullYear() === y;
+              if (matchesMD && (idate.repeatYearly || matchesY)) {
+                personEvents.push({ id: `id-${idate.id}`, title: `${idate.label}: ${p.name}`, type: 'important' });
+              }
             }
           });
         });
@@ -70,7 +79,6 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
               <button onClick={(e) => { e.stopPropagation(); onAddQuickEvent(ts); }} className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-xl bg-slate-900 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"><i className="fa-solid fa-plus text-[10px]"></i></button>
             </div>
             <div className="flex-1 space-y-1 mt-1 overflow-hidden">
-              {/* Події людей */}
               {personEvents.map(pe => (
                 <div key={pe.id} className={`text-[9px] font-black truncate px-2 py-1 rounded-lg border flex items-center gap-1.5 ${pe.type === 'birthday' ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
                    <i className={`fa-solid ${pe.type === 'birthday' ? 'fa-cake-candles' : 'fa-bell'} text-[7px]`}></i>
