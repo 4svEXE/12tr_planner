@@ -17,15 +17,14 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props 
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-black transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
+  const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-black transition-none active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
   
   const variants = {
-    // Використовуємо --primary для фону та тіней
-    primary: 'bg-[var(--primary)] text-white shadow-lg hover:brightness-110',
-    secondary: 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 hover:bg-[var(--primary)]/20',
+    primary: 'bg-[var(--primary)] text-white shadow-lg',
+    secondary: 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20',
     ghost: 'text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)]',
-    danger: 'bg-rose-500 text-white hover:bg-rose-600',
-    white: 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-sm hover:bg-[var(--bg-main)]'
+    danger: 'bg-rose-500 text-white',
+    white: 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-sm'
   };
 
   const sizes = {

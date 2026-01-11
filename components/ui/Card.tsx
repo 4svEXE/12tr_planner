@@ -8,7 +8,6 @@ interface CardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
-  // Added draggable and onDragStart props to Card component
   draggable?: boolean;
   onDragStart?: React.DragEventHandler<HTMLDivElement>;
 }
@@ -23,8 +22,7 @@ const Card: React.FC<CardProps> = ({
   draggable,
   onDragStart
 }) => {
-  // Використовуємо змінні теми замість жорстких кольорів Tailwind
-  const baseClasses = 'border transition-all duration-300';
+  const baseClasses = 'border transition-none';
   const themeClasses = blur 
     ? 'backdrop-blur-xl bg-[var(--bg-card)]/80' 
     : 'bg-[var(--bg-card)]';

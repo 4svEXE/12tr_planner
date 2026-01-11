@@ -1,5 +1,5 @@
 
-import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority } from '../types';
+import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock } from '../types';
 
 export const generateSeedData = () => {
   const today = new Date().setHours(0, 0, 0, 0);
@@ -45,7 +45,20 @@ export const generateSeedData = () => {
     { id: 'p5', name: 'Денис Клієнт', status: 'acquaintance', rating: 20, tags: ['продажі'], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'none', createdAt: Date.now() }
   ];
 
-  // 4. Tasks (All types: Inbox, Next, Scheduled, Habits, Notes)
+  // 4. TimeBlocks (Розпорядок)
+  const timeBlocks: TimeBlock[] = [];
+  const days = [0, 1, 2, 3, 4, 5, 6];
+  days.forEach(day => {
+    timeBlocks.push(
+      { id: `tb-${day}-1`, title: 'Ранкова рутина', startHour: 7, endHour: 9, type: 'routine', dayOfWeek: day, color: '#10b981' },
+      { id: `tb-${day}-2`, title: 'Глибока робота', startHour: 10, endHour: 13, type: 'work', dayOfWeek: day, color: '#f97316' },
+      { id: `tb-${day}-3`, title: 'Обід та відпочинок', startHour: 13, endHour: 14, type: 'rest', dayOfWeek: day, color: '#06b6d4' },
+      { id: `tb-${day}-4`, title: 'Навчання/Проєкти', startHour: 15, endHour: 18, type: 'study', dayOfWeek: day, color: '#6366f1' },
+      { id: `tb-${day}-5`, title: 'Вечірній огляд', startHour: 21, endHour: 22, type: 'routine', dayOfWeek: day, color: '#ec4899' }
+    );
+  });
+
+  // 5. Tasks (All types)
   const insightNotes: Task[] = [
     "Дисципліна — це свобода.", "Ваш мозок для ідей, а не для їх зберігання.", 
     "Сьогодні — це все, що у вас є.", "Маленькі кроки ведуть до великих змін.",
@@ -55,6 +68,12 @@ export const generateSeedData = () => {
   }));
 
   const coreTasks: Task[] = [
+    // Завдання в підпроєктах
+    { id: 'subt-1', title: 'Вивчити useMemo та useCallback', status: TaskStatus.NEXT_ACTION, priority: Priority.UI, difficulty: 2, xp: 100, tags: ['навчання'], createdAt: Date.now(), projectId: 'sub_1' },
+    { id: 'subt-2', title: 'Реалізувати custom hook для API', status: TaskStatus.INBOX, priority: Priority.UNI, difficulty: 3, xp: 150, tags: ['навчання'], createdAt: Date.now(), projectId: 'sub_1' },
+    { id: 'subt-3', title: 'Вибрати кросівки для бігу', status: TaskStatus.NEXT_ACTION, priority: Priority.NUI, difficulty: 1, xp: 40, tags: ['спорт'], createdAt: Date.now(), projectId: 'sub_2' },
+    { id: 'subt-4', title: 'Замовити спортивний годинник', status: TaskStatus.INBOX, priority: Priority.NUNI, difficulty: 1, xp: 30, tags: ['спорт'], createdAt: Date.now(), projectId: 'sub_2' },
+
     // Вхідні (5)
     { id: 'in-1', title: 'Купити нову лампу', status: TaskStatus.INBOX, priority: Priority.NUNI, difficulty: 1, xp: 20, tags: [], createdAt: Date.now(), category: 'unsorted' },
     { id: 'in-2', title: 'Подивитись вебінар по GPT-5', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 2, xp: 50, tags: ['навчання'], createdAt: Date.now(), category: 'unsorted' },
@@ -81,7 +100,7 @@ export const generateSeedData = () => {
     { id: 'hab-5', title: 'English 15m', status: TaskStatus.INBOX, priority: Priority.NUI, difficulty: 1, xp: 50, tags: ['habit'], createdAt: Date.now(), projectSection: 'habits' }
   ];
 
-  // 5. Diary Entries (5)
+  // 6. Diary Entries (5)
   const diary: DiaryEntry[] = [
     { id: 'd-1', date: dateStr, content: JSON.stringify([{id:'b1', type:'heading', content:'Старт нового циклу'}, {id:'b2', type:'text', content:'Сьогодні запустив систему 12TR. Відчуття контролю повертається.'}]), createdAt: Date.now(), updatedAt: Date.now() },
     { id: 'd-2', date: new Date(today - 86400000).toISOString().split('T')[0], content: JSON.stringify([{id:'b3', type:'text', content:'День був насичений, але фокус тримаю.'}]), createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 },
@@ -91,6 +110,6 @@ export const generateSeedData = () => {
   ];
 
   return {
-    tags, hobbies, projects, people, tasks: [...coreTasks, ...insightNotes], diary
+    tags, hobbies, projects, people, tasks: [...coreTasks, ...insightNotes], diary, timeBlocks
   };
 };
