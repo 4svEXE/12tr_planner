@@ -3,8 +3,17 @@
 <html lang="uk" data-theme="classic">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>12TR: Ігровий Двигун Життя</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="12TR">
+  <meta name="theme-color" content="#f97316">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,7 +60,7 @@
     [data-theme="clay"] { --primary: #e67e22; --bg-main: #fdf2e9; --bg-sidebar: #fae5d3; --bg-card: #f5cba7; --text-main: #6e2c00; --text-muted: #a04000; --border-color: #edbb99; }
     [data-theme="olive"] { --primary: #808000; --bg-main: #f5f5dc; --bg-sidebar: #edeade; --bg-card: #d2b48c; --text-main: #556b2f; --text-muted: #808000; --border-color: #bdb76b; }
 
-    body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; transition: background-color 0.3s ease, color 0.3s ease; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
     
@@ -63,6 +72,10 @@
     .bg-sidebar { background-color: var(--bg-sidebar); }
     .border-theme { border-color: var(--border-color); }
     .text-muted { color: var(--text-muted); }
+
+    /* Hide scrollbar for PWA feel */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 <script type="importmap">
 {
