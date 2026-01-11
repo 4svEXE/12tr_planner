@@ -11,7 +11,6 @@ import HobbiesView from './views/HobbiesView';
 import DeepFocus from './views/DeepFocus';
 import ProjectsView from './views/ProjectsView';
 import HabitsView from './views/HabitsView';
-import TodayView from './views/TodayView';
 import NotesView from './views/NotesView';
 import DiaryView from './views/DiaryView';
 import TrashView from './views/TrashView';
@@ -23,35 +22,18 @@ import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
   const { 
-    activeTab, setActiveTab, tasks, pendingUndo, undoLastAction, character, projects,
+    activeTab, setActiveTab, tasks, character, projects,
     aiEnabled, theme
   } = useApp();
   
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
-  const [notifications, setNotifications] = useState<{id: string, task: Task}[]>([]);
   
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
-
-  // Notification logic
-  useEffect(() => {
-    const checkSchedule = () => {
-      const now = Date.now();
-      const oneMinuteAgo = now - 60000;
-      const dueTasks = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && t.scheduledDate && t.scheduledDate <= now && t.scheduledDate > oneMinuteAgo);
-      if (dueTasks.length > 0) {
-        dueTasks.forEach(task => setNotifications(prev => [{ id: Math.random().toString(), task }, ...prev]));
-      }
-    };
-    const interval = setInterval(checkSchedule, 60000);
-    return () => clearInterval(interval);
-  }, [tasks]);
-
-  const removeNotification = (id: string) => setNotifications(prev => prev.filter(n => n.id !== id));
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)).length,
@@ -64,8 +46,8 @@ const MainLayout: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'today': return <TodayView />;
-      case 'dashboard': return <Dashboard character={character} tasks={tasks.filter(t => !t.isDeleted)} projects={projects} />;
+      case 'dashboard':
+      case 'today': return <Dashboard />; // Об'єднано
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;
@@ -91,7 +73,7 @@ const MainLayout: React.FC = () => {
           <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl">УВІЙТИ В ПОТІК</button>
         </div>
       );
-      default: return null;
+      default: return <Dashboard />;
     }
   };
 

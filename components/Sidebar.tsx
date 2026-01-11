@@ -21,8 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const primaryItems = [
-    { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
-    { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
+    { id: 'dashboard', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true }, // Тепер це головна
     { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні', acceptDrop: true },
     { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні', acceptDrop: true },
     { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
@@ -57,6 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     if (!task) return;
 
     switch (targetId) {
+      case 'dashboard':
       case 'today': scheduleTask(taskId, new Date().setHours(0,0,0,0)); break;
       case 'inbox': 
         updateTask({ ...task, status: TaskStatus.INBOX, scheduledDate: undefined, projectId: undefined, category: 'unsorted', isDeleted: false }); 
@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   const renderMenuItem = (item: any) => {
     if (sidebarSettings[item.id] === false) return null;
-    const isActive = activeTab === item.id;
+    const isActive = activeTab === item.id || (item.id === 'dashboard' && activeTab === 'today');
     
     return (
       <div key={item.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleGlobalDrop(e, item.id)} className="relative group px-1">
@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50 flex items-center justify-around px-4 pb-safe">
          {[
-           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
+           { id: 'dashboard', icon: 'fa-star', label: 'Сьогодні' },
            { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
            { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні' },
            { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
            <button 
             key={item.id} 
             onClick={() => item.isMenuTrigger ? setShowMobileMenu(true) : setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${!item.isMenuTrigger && activeTab === item.id ? 'text-orange-600 bg-orange-50 shadow-inner' : 'text-slate-400'}`}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${!item.isMenuTrigger && (activeTab === item.id || (item.id === 'dashboard' && activeTab === 'today')) ? 'text-orange-600 bg-orange-50 shadow-inner' : 'text-slate-400'}`}
            >
              <i className={`fa-solid ${item.isMenuTrigger ? 'fa-table-cells-large' : item.icon} text-lg mb-0.5`}></i>
              <span className="text-[6px] font-black uppercase tracking-tighter">{item.label}</span>
@@ -147,13 +147,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
               <div className="grid grid-cols-3 gap-4 pb-20">
                  {allNavItems.map(item => {
                    if (sidebarSettings[item.id] === false) return null;
-                   const isActive = activeTab === item.id;
-                   const isStatic = ['today', 'inbox', 'next_actions', 'calendar'].includes(item.id);
+                   const isActive = activeTab === item.id || (item.id === 'dashboard' && activeTab === 'today');
                    return (
                      <button 
                       key={item.id} 
                       onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
-                      className={`flex flex-col items-center justify-center p-4 rounded-3xl border transition-all ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-xl shadow-orange-100' : 'bg-white border-slate-100 text-slate-500 shadow-sm'} ${isStatic ? 'opacity-50' : ''}`}
+                      className={`flex flex-col items-center justify-center p-4 rounded-3xl border transition-all ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-xl shadow-orange-100' : 'bg-white border-slate-100 text-slate-500 shadow-sm'}`}
                      >
                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-2 ${isActive ? 'bg-white/10' : 'bg-slate-50'}`}>
                           <i className={`fa-solid ${item.icon} text-lg`}></i>
@@ -174,10 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                  </button>
               </div>
            </div>
-           <footer className="p-6 border-t border-slate-100 bg-slate-50/50 text-center">
-              <Typography variant="tiny" className="text-slate-300 uppercase tracking-[0.2em] text-[8px]">12TR Life Engine Control Hub</Typography>
-           </footer>
-        </div>
+        </nav>
       )}
     </>
   );

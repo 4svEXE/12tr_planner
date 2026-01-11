@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction } from '../types';
 import { saveState, loadState } from '../store';
+import { generateSeedData } from '../services/seedService';
 
 export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
 
@@ -99,42 +100,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// SEED DATA GENERATOR FOR PEOPLE
-const generateSeedPeople = (): Person[] => {
-  const categories = ['friend', 'colleague', 'family', 'mentor', 'acquaintance'];
-  const names: Record<string, string[]> = {
-    friend: ['Макс Кава', 'Олена Спорт', 'Дмитро Гік', 'Іра Арт', 'Саша Тревел'],
-    colleague: ['Артем Проджект', 'Вікторія HR', 'Ігор Розробка', 'Наталя Маркетинг', 'Сергій Аналітик'],
-    family: ['Мама', 'Тато', 'Брат Олег', 'Сестра Анна', 'Дядько Петро'],
-    mentor: ['Богдан Стратег', 'Марина Коуч', 'Професор Коваль', 'Інвестор Марк', 'Майстер Йода'],
-    acquaintance: ['Сусід з 5го', 'Бармен Алекс', 'Юрій Ремонт', 'Світлана Стоматолог', 'Курєр Нової Пошти']
-  };
-
-  const results: Person[] = [];
-  categories.forEach(cat => {
-    names[cat].forEach((name, idx) => {
-      const lastInt = Date.now() - (Math.random() * 1000 * 60 * 60 * 24 * 40); // random contact in last 40 days
-      results.push({
-        id: `seed-${cat}-${idx}`,
-        name,
-        status: cat,
-        rating: 40 + Math.floor(Math.random() * 50),
-        loop: cat === 'friend' ? 'week' : cat === 'family' ? 'month' : 'quarter',
-        hobbies: ['Спорт', 'Технології', 'Книги'].slice(0, 1 + Math.floor(Math.random() * 2)),
-        tags: [cat.toUpperCase()],
-        socials: { telegram: name.split(' ')[0].toLowerCase() },
-        notes: [{ id: `n-${idx}`, text: 'Важливий контакт з початкової бази.', date: new Date().toISOString() }],
-        memories: [],
-        interactions: [],
-        importantDates: [{ id: `d-${idx}`, label: 'Річниця', date: '2024-06-15', showInCalendar: true, repeatYearly: true }],
-        lastInteractionAt: lastInt,
-        createdAt: Date.now() - 1000000
-      });
-    });
-  });
-  return results;
-};
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const savedState = loadState();
 
@@ -151,26 +116,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0 });
 
   const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
-  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary && savedState.diary.length > 0 ? savedState.diary : []);
+  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
+  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
+  const [people, setPeople] = useState<Person[]>(savedState?.people || []);
+  const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
+  const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
+  const [shoppingStores, setShoppingStores] = useState<ShoppingStore[]>(savedState?.shoppingStores || []);
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(savedState?.shoppingItems || []);
+  
   const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || [
     { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
     { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
     { id: 'tasks', title: 'Завдання', icon: 'fa-bolt', isPinned: false, scope: 'actions' },
     { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
   ]);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
-  const [people, setPeople] = useState<Person[]>(savedState?.people?.length ? savedState.people : generateSeedPeople());
-  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags?.length ? savedState.tags : []);
-  const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
   const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
   const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
-  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate && savedState.reportTemplate.length > 0 ? savedState.reportTemplate : []);
+  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate || []);
+  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']);
   
-  const [shoppingStores, setShoppingStores] = useState<ShoppingStore[]>(savedState?.shoppingStores || []);
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(savedState?.shoppingItems || []);
-
   const [character, setCharacter] = useState<Character>(savedState?.character || {
     name: 'Гравець', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
     bio: 'Герой на початку шляху.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hero', 
@@ -178,6 +143,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     preferences: { focusBlockers: [] },
     skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
   });
+
+  // SEED TRIGGER
+  useEffect(() => {
+    const isFirstRun = tasks.length === 0 && projects.length === 0 && people.length === 0;
+    if (isFirstRun) {
+      const data = generateSeedData();
+      setTasks(data.tasks);
+      setProjects(data.projects);
+      setPeople(data.people);
+      setTags(data.tags);
+      setHobbies(data.hobbies);
+      setDiary(data.diary);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
