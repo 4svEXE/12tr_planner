@@ -19,7 +19,7 @@ const SettingsView: React.FC = () => {
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
-  const { isResizing, startResizing, detailsWidth } = useResizer(400, 700);
+  const { detailsWidth, startResizing, isResizing } = useResizer(400, 700);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
@@ -57,12 +57,33 @@ const SettingsView: React.FC = () => {
     { id: 'classic', label: 'Classic', main: '#ffffff', accent: '#f97316' },
     { id: 'midnight', label: 'Midnight', main: '#020617', accent: '#10b981' },
     { id: 'obsidian', label: 'Obsidian', main: '#000000', accent: '#8b5cf6' },
-    { id: 'sakura', label: 'Sakura', main: '#fff1f2', accent: '#ec4899' },
+    { id: 'cyberpunk', label: 'Cyberpunk', main: '#09090b', accent: '#fef08a' },
+    { id: 'dracula', label: 'Dracula', main: '#282a36', accent: '#ff79c6' },
     { id: 'nordic-dark', label: 'Nordic', main: '#2e3440', accent: '#88c0d0' },
+    { id: 'sakura', label: 'Sakura', main: '#fff1f2', accent: '#ec4899' },
+    { id: 'ocean', label: 'Ocean', main: '#f0f9ff', accent: '#0ea5e9' },
     { id: 'forest', label: 'Forest', main: '#f0fdf4', accent: '#166534' },
     { id: 'lavender', label: 'Lavender', main: '#faf5ff', accent: '#8b5cf6' },
+    { id: 'desert', label: 'Desert', main: '#fffbeb', accent: '#d97706' },
     { id: 'mars', label: 'Mars', main: '#450a0a', accent: '#ef4444' },
     { id: 'slate', label: 'Slate', main: '#f8fafc', accent: '#475569' },
+    { id: 'coffee', label: 'Coffee', main: '#fffaf0', accent: '#92400e' },
+    { id: 'gold', label: 'Luxury', main: '#1e1b4b', accent: '#fbbf24' },
+    { id: 'matrix', label: 'Matrix', main: '#000000', accent: '#00ff41' },
+    { id: 'glass', label: 'Glass', main: '#6366f1', accent: '#ffffff' },
+    { id: 'toxic', label: 'Toxic', main: '#1a1a1a', accent: '#ccff00' },
+    { id: 'sepia', label: 'Sepia', main: '#f4ecd8', accent: '#704214' },
+    { id: 'paper', label: 'Paper', main: '#f5f5f5', accent: '#3b82f6' },
+    { id: 'blueprint', label: 'Blueprint', main: '#1e3a8a', accent: '#ffffff' },
+    { id: 'gameboy', label: 'Gameboy', main: '#9bbc0f', accent: '#306230' },
+    { id: 'spotify', label: 'Spotify', main: '#121212', accent: '#1db954' },
+    { id: 'slack', label: 'Slack', main: '#ffffff', accent: '#4a154b' },
+    { id: 'uber', label: 'Uber', main: '#000000', accent: '#ffffff' },
+    { id: 'apple', label: 'Apple', main: '#f5f5f7', accent: '#007aff' },
+    { id: 'stripe', label: 'Stripe', main: '#f6f9fc', accent: '#635bff' },
+    { id: 'github', label: 'Github', main: '#0d1117', accent: '#2ea44f' },
+    { id: 'clay', label: 'Clay', main: '#fdf2e9', accent: '#e67e22' },
+    { id: 'olive', label: 'Olive', main: '#f5f5dc', accent: '#808000' }
   ];
 
   const renderContent = () => {

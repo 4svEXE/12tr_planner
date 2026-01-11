@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
@@ -21,6 +22,14 @@ const Calendar: React.FC = () => {
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
+  const [showBacklogMobile, setShowBacklogMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const currentDate = useMemo(() => new Date(calendarDate), [calendarDate]);
 
@@ -46,9 +55,8 @@ const Calendar: React.FC = () => {
   };
 
   const handleCreateRequest = (timestamp: number) => {
-    // МИТТЄВО СТВОРЮЄМО ПОРОЖНІЙ ТАСК І ВІДКРИВАЄМО ДЕТАЛІ
     const newId = addTask(
-      "", // Пустий заголовок для заповнення користувачем
+      "", 
       'unsorted', 
       undefined, 
       'actions', 
@@ -73,10 +81,21 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden relative">
-      <BacklogSidebar onSelectTask={handleSelectTask} />
+    <div className="flex h-screen bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
+      {/* Backlog Sidebar - Adaptive */}
+      <div className={`${isMobile ? (showBacklogMobile ? 'fixed inset-0 z-[150] w-full translate-x-0' : 'fixed inset-0 z-[150] w-full -translate-x-full') : 'relative'} transition-transform duration-300 h-full`}>
+        <BacklogSidebar onSelectTask={handleSelectTask} />
+        {isMobile && showBacklogMobile && (
+          <button 
+            onClick={() => setShowBacklogMobile(false)}
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[160]"
+          >
+            <i className="fa-solid fa-calendar-days text-xl"></i>
+          </button>
+        )}
+      </div>
 
-      <main className="flex-1 flex flex-col min-w-0 h-full relative z-10 bg-slate-50/30">
+      <main className="flex-1 flex flex-col min-w-0 h-full relative z-10">
         <CalendarHeader 
           currentDate={currentDate} 
           viewMode={calendarViewMode} 
@@ -85,25 +104,41 @@ const Calendar: React.FC = () => {
           onSetViewMode={setCalendarViewMode} 
         />
 
-        <div className="flex-1 overflow-auto p-4 md:p-6 custom-scrollbar">
+        <div className="flex-1 overflow-auto p-2 md:p-6 custom-scrollbar bg-[var(--bg-main)]">
           {renderMainView()}
         </div>
+
+        {isMobile && !showBacklogMobile && (
+          <button 
+            onClick={() => setShowBacklogMobile(true)}
+            className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--primary)] shadow-xl flex items-center justify-center z-40"
+          >
+            <i className="fa-solid fa-inbox text-xl"></i>
+            {tasks.filter(t => !t.isDeleted && !t.scheduledDate).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-card)]">
+                {tasks.filter(t => !t.isDeleted && !t.scheduledDate).length}
+              </span>
+            )}
+          </button>
+        )}
       </main>
 
-      {/* FIXED SIDEBAR CONTAINER FOR STABLE LAYOUT */}
+      {/* Task Details Panel */}
       <div 
-        className={`h-full border-l border-slate-100 bg-white transition-all duration-300 ease-in-out shrink-0 relative z-40 ${
-          selectedTaskId ? 'translate-x-0' : 'translate-x-full hidden lg:block opacity-0'
+        className={`h-full border-l border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 ease-in-out shrink-0 relative z-[200] ${
+          selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'
         }`}
-        style={{ width: selectedTaskId ? (window.innerWidth < 1024 ? '100vw' : detailsWidth) : 0 }}
+        style={{ width: selectedTaskId ? (isMobile ? '100vw' : detailsWidth) : 0 }}
       >
         {selectedTaskId && (
            <>
-              <div 
-                onMouseDown={startResizing} 
-                className={`hidden lg:block absolute left-0 top-0 bottom-0 w-[1.5px] cursor-col-resize hover:bg-orange-500 z-[50] transition-colors ${isResizing ? 'bg-orange-500' : 'bg-transparent'}`}
-              ></div>
-              <div className="h-full w-full overflow-hidden shadow-2xl lg:shadow-none">
+              {!isMobile && (
+                <div 
+                  onMouseDown={startResizing} 
+                  className={`absolute left-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[var(--primary)] z-[50] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent'}`}
+                ></div>
+              )}
+              <div className="h-full w-full overflow-hidden">
                 <TaskDetails 
                   task={tasks.find(t => t.id === selectedTaskId)!} 
                   onClose={() => setSelectedTaskId(null)} 

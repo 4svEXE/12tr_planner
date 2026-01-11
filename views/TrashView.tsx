@@ -1,10 +1,9 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Task, TaskStatus } from '../types';
 import Typography from '../components/ui/Typography';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 const TrashView: React.FC = () => {
   const { tasks, restoreTask, deleteTask } = useApp();
@@ -20,52 +19,54 @@ const TrashView: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
-      <header className="p-8 bg-white border-b border-slate-100 flex justify-between items-end">
+    <div className="h-screen flex flex-col bg-main overflow-hidden">
+      <header className="p-6 md:p-10 bg-card border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div>
-          <Typography variant="caption" className="text-rose-500 mb-1">Очищення простору</Typography>
-          <Typography variant="h1" className="text-slate-900">Корзина</Typography>
+          <Typography variant="h1" className="text-2xl md:text-3xl">Корзина</Typography>
+          <Typography variant="tiny" className="text-muted mt-1">Очищення простору та ресурсів</Typography>
         </div>
         {deletedTasks.length > 0 && (
           <Button variant="danger" icon="fa-trash-arrow-up" size="sm" onClick={handleEmptyTrash}>ОЧИСТИТИ ВСЕ</Button>
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-        <div className="max-w-4xl mx-auto space-y-4 pb-20">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-3 pb-32">
           {deletedTasks.length > 0 ? deletedTasks.map(task => (
-            <div key={task.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:shadow-lg transition-all">
+            <Card key={task.id} className="bg-card border-theme p-4 flex items-center justify-between group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300">
+                <div className="w-10 h-10 bg-main rounded-xl flex items-center justify-center text-muted">
                   <i className="fa-solid fa-trash-can text-sm"></i>
                 </div>
                 <div>
-                  <div className="text-sm font-black text-slate-800">{task.title}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Видалено {new Date(task.createdAt).toLocaleDateString('uk-UA')}</div>
+                  <div className="text-sm font-black text-main">{task.title}</div>
+                  <div className="text-[9px] font-black text-muted uppercase tracking-widest mt-0.5 opacity-60">
+                    Видалено {new Date(task.createdAt).toLocaleDateString('uk-UA')}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button 
                   onClick={() => restoreTask(task.id)}
-                  className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-all"
+                  className="w-9 h-9 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white flex items-center justify-center transition-all shadow-sm"
                   title="Відновити"
                 >
                   <i className="fa-solid fa-rotate-left"></i>
                 </button>
                 <button 
-                  onClick={() => deleteTask(task.id, true)}
-                  className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all"
+                  onClick={() => confirm('Видалити назавжди?') && deleteTask(task.id, true)}
+                  className="w-9 h-9 rounded-xl bg-main text-muted hover:text-rose-500 flex items-center justify-center transition-all"
                   title="Видалити назавжди"
                 >
                   <i className="fa-solid fa-xmark"></i>
                 </button>
               </div>
-            </div>
+            </Card>
           )) : (
-            <div className="flex flex-col items-center justify-center py-32 text-center opacity-20">
-               <i className="fa-solid fa-trash-can text-8xl mb-8"></i>
-               <Typography variant="h2">Корзина порожня</Typography>
-               <Typography variant="body" className="mt-4">Ваш простір ідеально чистий.</Typography>
+            <div className="flex flex-col items-center justify-center py-32 text-center opacity-10">
+               <i className="fa-solid fa-trash-can text-9xl mb-8"></i>
+               <Typography variant="h2" className="uppercase tracking-[0.2em]">Порожньо</Typography>
+               <Typography variant="body" className="mt-2 text-xs font-bold">Ваш простір ідеально чистий</Typography>
             </div>
           )}
         </div>

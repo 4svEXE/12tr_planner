@@ -32,24 +32,24 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
   }, [currentDate]);
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
-       <div className="flex border-b border-slate-100 bg-slate-50/50">
-          <div className="w-12 border-r border-slate-100"></div>
+    <div className="flex flex-col h-full bg-[var(--bg-card)] rounded-xl md:rounded-3xl overflow-hidden shadow-xl border border-[var(--border-color)]">
+       <div className="flex border-b border-[var(--border-color)] bg-[var(--bg-main)]/30 overflow-x-auto no-scrollbar">
+          <div className="w-10 md:w-16 border-r border-[var(--border-color)] shrink-0 bg-[var(--bg-card)] sticky left-0 z-30"></div>
           {weekDays.map((d, i) => {
             const isToday = d.toDateString() === new Date().toDateString();
             return (
-              <div key={i} className="flex-1 p-2 text-center border-r border-slate-100 last:border-r-0">
-                 <div className="text-[8px] font-black uppercase text-slate-400 mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</div>
-                 <div className={`mx-auto w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black ${isToday ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-800'}`}>{d.getDate()}</div>
+              <div key={i} className="flex-1 min-w-[70px] md:min-w-[120px] p-1.5 md:p-3 text-center border-r border-[var(--border-color)] last:border-r-0">
+                 <div className="text-[7px] md:text-[9px] font-black uppercase text-[var(--text-muted)] mb-0.5 md:mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</div>
+                 <div className={`mx-auto w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-[9px] md:text-[12px] font-black ${isToday ? 'bg-[var(--primary)] text-white shadow-lg' : 'text-[var(--text-main)]'}`}>{d.getDate()}</div>
               </div>
             );
           })}
        </div>
        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-          <div className="flex" style={{ height: 24 * HOUR_HEIGHT }}>
-             <div className="w-12 border-r border-slate-100 bg-slate-50/20 sticky left-0 z-20">
+          <div className="flex min-w-max" style={{ height: 24 * HOUR_HEIGHT }}>
+             <div className="w-10 md:w-16 border-r border-[var(--border-color)] bg-[var(--bg-card)] sticky left-0 z-20">
                 {Array.from({ length: 24 }, (_, i) => (
-                  <div key={i} className="h-[60px] text-[8px] font-black text-slate-300 text-right pr-2 pt-2 border-b border-slate-50">{i}:00</div>
+                  <div key={i} className="h-[60px] text-[7px] md:text-[9px] font-black text-[var(--text-muted)] text-right pr-2 md:pr-4 pt-1 border-b border-[var(--border-color)]/20 opacity-50 tabular-nums">{i}:00</div>
                 ))}
              </div>
              {weekDays.map((date, dayIdx) => {
@@ -66,26 +66,15 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                  return dayTs >= start && dayTs <= (end || start);
                });
 
-               const personEvents = [];
+               const personEvents: any[] = [];
                people.forEach(p => {
                  if (p.birthDate && p.birthDateShowInCalendar !== false) {
                    const bd = new Date(p.birthDate);
                    const matchesMD = bd.getMonth() === m && bd.getDate() === d;
-                   const matchesY = bd.getFullYear() === y;
-                   if (matchesMD && (p.birthDateRepeatYearly !== false || matchesY)) {
-                     personEvents.push({ id: `bd-${p.id}`, title: `🎂 ДН: ${p.name}`, type: 'birthday' });
+                   if (matchesMD && (p.birthDateRepeatYearly !== false || bd.getFullYear() === y)) {
+                     personEvents.push({ id: `bd-${p.id}`, title: `🎂 ${p.name}`, type: 'birthday' });
                    }
                  }
-                 p.importantDates?.forEach(idate => {
-                   if (idate.showInCalendar) {
-                     const id = new Date(idate.date);
-                     const matchesMD = id.getMonth() === m && id.getDate() === d;
-                     const matchesY = id.getFullYear() === y;
-                     if (matchesMD && (idate.repeatYearly || matchesY)) {
-                       personEvents.push({ id: `id-${idate.id}`, title: `🔔 ${idate.label}: ${p.name}`, type: 'important' });
-                     }
-                   }
-                 });
                });
 
                return (
@@ -95,13 +84,13 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                    onDragLeave={onDragLeave}
                    onDrop={(e) => onDrop(e, dayTs)}
                    onClick={() => onAddQuickEvent(dayTs)}
-                   className={`flex-1 border-r border-slate-100 last:border-r-0 relative group cursor-pointer transition-colors ${dragOverDay === dayTs ? 'bg-orange-50/30 ring-inset ring-2 ring-orange-200' : 'hover:bg-slate-50/50'}`}
+                   className={`flex-1 min-w-[70px] md:min-w-[120px] border-r border-[var(--border-color)] last:border-r-0 relative group cursor-pointer transition-colors ${dragOverDay === dayTs ? 'bg-[var(--primary)]/5 ring-inset ring-2 ring-[var(--primary)]/20' : 'hover:bg-[var(--bg-main)]/10'}`}
                  >
-                    {Array.from({ length: 24 }, (_, i) => <div key={i} className="h-[60px] border-b border-slate-50/50"></div>)}
+                    {Array.from({ length: 24 }, (_, i) => <div key={i} className="h-[60px] border-b border-[var(--border-color)]/20"></div>)}
                     
-                    <div className="absolute inset-0 p-1.5 space-y-1.5">
+                    <div className="absolute inset-0 p-0.5 md:p-2 space-y-1">
                        {personEvents.map(pe => (
-                          <div key={pe.id} className={`p-1.5 rounded-lg border text-[9px] font-black shadow-sm ${pe.type === 'birthday' ? 'bg-amber-100 border-amber-200 text-amber-800' : 'bg-indigo-100 border-indigo-200 text-indigo-800'}`}>
+                          <div key={pe.id} className={`p-1 rounded-md border text-[7px] md:text-[10px] font-black shadow-sm bg-amber-500/10 border-amber-500/20 text-amber-600`}>
                              <div className="truncate">{pe.title}</div>
                           </div>
                        ))}
@@ -112,12 +101,12 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, dragOverDay, onDrop, o
                            draggable
                            onDragStart={(e) => e.dataTransfer.setData('taskId', t.id)}
                            onClick={(e) => { e.stopPropagation(); onSelectTask(t.id); }} 
-                           className={`p-2 rounded-xl border text-[10px] font-bold shadow-sm transition-all hover:scale-[1.02] cursor-grab active:cursor-grabbing ${t.isEvent ? 'bg-pink-500 text-white border-pink-600' : 'bg-white border-slate-100 text-slate-700 hover:border-orange-200'}`}
+                           className={`p-1.5 md:p-2.5 rounded-lg md:rounded-2xl border text-[8px] md:text-[11px] font-bold shadow-sm transition-all hover:scale-[1.02] cursor-grab active:cursor-grabbing ${t.isEvent ? 'bg-[var(--primary)] text-white border-transparent' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--primary)]/50'}`}
                          >
                             <div className="truncate mb-0.5">{t.title}</div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[7px] opacity-70 uppercase font-black">{t.isEvent ? 'Подія' : 'Завдання'}</span>
-                              {t.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[8px]"></i>}
+                            <div className="flex justify-between items-center opacity-60">
+                              <span className="text-[6px] md:text-[8px] uppercase font-black">{t.isEvent ? 'E' : 'Q'}</span>
+                              {t.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[6px] md:text-[9px]"></i>}
                             </div>
                          </div>
                        ))}

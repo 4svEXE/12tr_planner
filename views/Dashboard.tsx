@@ -8,6 +8,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
+import MiniCalendar from '../components/sidebar/MiniCalendar';
 
 const Dashboard: React.FC = () => {
   const { 
@@ -18,7 +19,7 @@ const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [mainTab, setMainTab] = useState<'tasks' | 'progress'>('tasks');
-  const [taskFilter, setTaskFilter] = useState<'all' | 'projects'>('all');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'projects' | 'calendar'>('all');
   const [progressPeriod, setProgressPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
@@ -61,17 +62,23 @@ const Dashboard: React.FC = () => {
   }, [tasks, projects, currentTime]);
 
   const filteredQuests = useMemo(() => {
-    const active = tasks.filter(t => 
-      !t.isDeleted && t.status !== TaskStatus.DONE && 
-      (t.scheduledDate === todayTimestamp || t.status === TaskStatus.NEXT_ACTION) &&
-      t.projectSection !== 'habits' && t.category !== 'note'
-    );
+    const active = tasks.filter(t => {
+      if (t.isDeleted || t.status === TaskStatus.DONE) return false;
+      if (t.projectSection === 'habits' || t.category === 'note') return false;
+      
+      const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp;
+      
+      if (taskFilter === 'calendar') return isScheduledForToday;
+      if (taskFilter === 'projects') return !!t.projectId;
+      
+      return isScheduledForToday || t.status === TaskStatus.NEXT_ACTION || (t.status === TaskStatus.INBOX && !t.scheduledDate && !t.projectId);
+    });
 
-    const result = taskFilter === 'projects' 
-      ? active.filter(t => !!t.projectId)
-      : active;
-
-    return result.sort((a, b) => {
+    return active.sort((a, b) => {
+        // Якщо у вкладці календар, сортуємо за часом
+        if (taskFilter === 'calendar') {
+          return (a.scheduledDate || 0) - (b.scheduledDate || 0);
+        }
         const pWeight = { [Priority.UI]: 4, [Priority.UNI]: 3, [Priority.NUI]: 2, [Priority.NUNI]: 1 };
         return (pWeight[b.priority] || 0) - (pWeight[a.priority] || 0);
     });
@@ -129,29 +136,41 @@ const Dashboard: React.FC = () => {
     setIsAiAnalyzing(false);
   };
 
+  const formatTaskTime = (timestamp?: number) => {
+    if (!timestamp) return null;
+    const date = new Date(timestamp);
+    if (date.getHours() === 0 && date.getMinutes() === 0) return null;
+    return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
-    <div className="h-screen flex bg-slate-50 overflow-hidden relative text-slate-900 transition-none">
+    <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)] transition-none">
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        <header className="p-3 md:p-4 bg-white border-b border-slate-100 shrink-0">
-          <div className="max-w-6xl mx-auto flex flex-col gap-2">
+        <header className="p-3 md:p-4 bg-[var(--bg-card)] border-b border-[var(--border-color)] shrink-0">
+          <div className="max-w-6xl mx-auto flex flex-col gap-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <Typography variant="h1" className="text-xl font-black">Сьогодні</Typography>
-                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest pt-1">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+                <Typography variant="h1" className="text-xl font-black text-[var(--text-main)]">Сьогодні</Typography>
+                <div className="text-[10px] font-black text-[var(--text-muted)] opacity-50 uppercase tracking-widest pt-1">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
               </div>
-              <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                 <button onClick={() => setMainTab('tasks')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${mainTab === 'tasks' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Завдання</button>
-                 <button onClick={() => setMainTab('progress')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${mainTab === 'progress' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Прогрес</button>
+              <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
+                 <button onClick={() => setMainTab('tasks')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
+                 <button onClick={() => setMainTab('progress')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 bg-slate-50/80 px-2 py-1 rounded-lg border border-slate-100 overflow-hidden">
-               <button onClick={() => setShowInsight(!showInsight)} className={`shrink-0 text-[10px] ${showInsight ? 'text-orange-500' : 'text-slate-300'}`}>
+            {/* Mobile Calendar Integration */}
+            <div className="md:hidden">
+               <MiniCalendar />
+            </div>
+
+            <div className="flex items-center gap-2 bg-black/5 px-2 py-1 rounded-lg border border-theme overflow-hidden">
+               <button onClick={() => setShowInsight(!showInsight)} className={`shrink-0 text-[10px] ${showInsight ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
                  <i className={`fa-solid ${showInsight ? 'fa-eye' : 'fa-eye-slash'}`}></i>
                </button>
                <div className="flex-1 overflow-hidden">
-                 <p className={`text-[9px] font-bold text-slate-500 uppercase tracking-tight truncate ${showInsight ? '' : 'hidden'}`}>
-                    <span className="text-orange-400 mr-2">●</span> {randomInsight}
+                 <p className={`text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-tight truncate ${showInsight ? '' : 'hidden'}`}>
+                    <span className="text-[var(--primary)] mr-2">●</span> {randomInsight}
                  </p>
                </div>
             </div>
@@ -162,21 +181,21 @@ const Dashboard: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-4 pb-32">
             
             <div className="grid grid-cols-1">
-              <Card padding="none" className="bg-white border-slate-100 p-2.5 rounded-xl shadow-sm flex items-center gap-3 relative group border-l-4 border-l-orange-500 transition-none">
+              <Card padding="none" className="bg-[var(--bg-card)] border-[var(--border-color)] p-2.5 rounded-xl shadow-sm flex items-center gap-3 relative group border-l-4 border-l-[var(--primary)] transition-none">
                 <div className="min-w-0 flex-1 pl-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-orange-500">ПОТОЧНИЙ БЛОК:</span>
-                    <span className="text-[11px] font-black text-slate-800 truncate uppercase">{currentBlock?.title || 'Вільний час'}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">ПОТОЧНИЙ БЛОК:</span>
+                    <span className="text-[11px] font-black text-[var(--text-main)] truncate uppercase">{currentBlock?.title || 'Вільний час'}</span>
                   </div>
                   {nextBlock && (
-                    <div className="text-[7px] font-black text-slate-300 uppercase tracking-tighter mt-0.5">
+                    <div className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-tighter mt-0.5 opacity-60">
                       НАСТУПНИЙ: {nextBlock.title} @ {nextBlock.startHour}:00
                     </div>
                   )}
                 </div>
                 <button 
                   onClick={() => { setCalendarViewMode('day'); setActiveTab('calendar'); }}
-                  className="w-7 h-7 rounded-lg bg-slate-50 text-slate-300 hover:bg-orange-600 hover:text-white flex items-center justify-center shrink-0 transition-none"
+                  className="w-7 h-7 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] hover:bg-[var(--primary)] hover:text-white flex items-center justify-center shrink-0 transition-none"
                 >
                   <i className="fa-solid fa-calendar-day text-[10px]"></i>
                 </button>
@@ -188,40 +207,49 @@ const Dashboard: React.FC = () => {
                  <div className="lg:col-span-8 space-y-6">
                     <section className="space-y-2">
                        <div className="flex justify-between items-center px-1">
-                          <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-slate-400">Активні квести</Typography>
-                          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                             <button onClick={() => setTaskFilter('all')} className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-none ${taskFilter === 'all' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Усі</button>
-                             <button onClick={() => setTaskFilter('projects')} className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-none ${taskFilter === 'projects' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Проєкти</button>
+                          <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Активні квести</Typography>
+                          <div className="flex bg-black/5 p-0.5 rounded-lg border border-theme">
+                             <button onClick={() => setTaskFilter('all')} className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-none ${taskFilter === 'all' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Усі</button>
+                             <button onClick={() => setTaskFilter('projects')} className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-none ${taskFilter === 'projects' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Проєкти</button>
+                             <button onClick={() => setTaskFilter('calendar')} className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-none ${taskFilter === 'calendar' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Календар</button>
                           </div>
                        </div>
                        <div className="grid grid-cols-1 gap-1">
                           {filteredQuests.map(task => {
                             const projectName = getTaskProjectHierarchy(task.projectId);
+                            const taskTime = formatTaskTime(task.scheduledDate);
                             return (
-                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white border-slate-100 hover:border-orange-100 transition-none cursor-pointer shadow-sm rounded-lg">
+                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-none cursor-pointer shadow-sm rounded-lg group">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} 
-                                  className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 ${task.status === TaskStatus.DONE ? 'bg-emerald-50 border-emerald-500 text-white' : 'border-slate-100 bg-slate-50 text-transparent'}`}
+                                  className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent group-hover:border-[var(--primary)]'}`}
                                 >
                                   <i className="fa-solid fa-check text-[7px]"></i>
                                 </button>
                                 <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                                   <div className={`text-[11px] font-bold truncate leading-tight ${task.status === TaskStatus.DONE ? 'text-slate-300 line-through' : 'text-slate-700'}`}>
+                                   <div className={`text-[11px] font-bold truncate leading-tight ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] opacity-40 line-through' : 'text-[var(--text-main)]'}`}>
                                      {task.title}
                                    </div>
-                                   {projectName && (
-                                     <span className="text-[6px] font-black uppercase text-orange-400 opacity-60 bg-orange-50 px-1.5 py-0.5 rounded shrink-0">
-                                       {projectName}
-                                     </span>
-                                   )}
+                                   <div className="flex items-center gap-2 shrink-0">
+                                      {taskTime && (
+                                        <span className="text-[7px] font-black text-[var(--primary)] bg-[var(--primary)]/5 px-1.5 py-0.5 rounded border border-[var(--primary)]/10">
+                                          {taskTime}
+                                        </span>
+                                      )}
+                                      {projectName && (
+                                        <span className="text-[6px] font-black uppercase text-[var(--text-muted)] opacity-40 bg-black/5 px-1.5 py-0.5 rounded">
+                                          {projectName}
+                                        </span>
+                                      )}
+                                   </div>
                                 </div>
                               </Card>
                             );
                           })}
                           {filteredQuests.length === 0 && (
                             <div className="py-12 text-center opacity-20 flex flex-col items-center">
-                               <i className="fa-solid fa-mountain-sun text-2xl mb-2"></i>
-                               <p className="text-[8px] font-black uppercase tracking-widest">Квести не знайдено</p>
+                               <i className="fa-solid fa-mountain-sun text-2xl mb-2 text-[var(--text-muted)]"></i>
+                               <p className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Квести не знайдено</p>
                             </div>
                           )}
                        </div>
@@ -230,12 +258,12 @@ const Dashboard: React.FC = () => {
                     <section className="space-y-2">
                        <div className="flex justify-between items-center px-1">
                           <div className="flex items-center gap-2">
-                            <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-slate-400">Дисципліна</Typography>
-                            <Badge variant={habitCompletionRate === 100 ? "emerald" : "orange"} className="text-[7px] font-black py-0 px-1">{habitCompletionRate}%</Badge>
+                            <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Дисципліна</Typography>
+                            <div className={`text-[7px] font-black py-0 px-1 rounded bg-[var(--primary)]/10 text-[var(--primary)]`}>{habitCompletionRate}%</div>
                           </div>
                           <button 
                             onClick={() => setActiveTab('habits')}
-                            className="text-[7px] font-black text-orange-500 uppercase tracking-widest hover:bg-orange-50 px-2 py-1 rounded transition-none"
+                            className="text-[7px] font-black text-[var(--primary)] uppercase tracking-widest hover:bg-black/5 px-2 py-1 rounded transition-none"
                           >
                             Трекер <i className="fa-solid fa-arrow-right ml-1 text-[6px]"></i>
                           </button>
@@ -245,8 +273,8 @@ const Dashboard: React.FC = () => {
                              const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                              return (
                                <button key={habit.id} onClick={() => toggleHabitStatus(habit.id, dateStr, isDone ? 'none' : 'completed')}
-                                className={`shrink-0 w-24 p-2 rounded-xl border transition-none flex flex-col items-center gap-1.5 snap-start ${isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-700 shadow-inner' : 'bg-white border-slate-100 text-slate-400'}`}>
-                                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] ${isDone ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-50 border border-slate-100'}`}>
+                                className={`shrink-0 w-24 p-2 rounded-xl border transition-none flex flex-col items-center gap-1.5 snap-start ${isDone ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-inner' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] opacity-60 hover:opacity-100 hover:border-[var(--primary)]/30'}`}>
+                                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] ${isDone ? 'bg-emerald-500 text-white shadow-sm' : 'bg-black/5 border border-theme'}`}>
                                     <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
                                  </div>
                                  <span className="text-[6px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
@@ -260,20 +288,20 @@ const Dashboard: React.FC = () => {
                  <div className="lg:col-span-4 space-y-6 transition-none">
                     <section className="space-y-2">
                        <div className="flex justify-between items-center px-1">
-                          <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] flex items-center gap-2 text-slate-400">
-                             <i className="fa-solid fa-radar text-orange-500"></i> Радар подій
+                          <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] flex items-center gap-2 text-[var(--text-muted)] opacity-70">
+                             <i className="fa-solid fa-radar text-[var(--primary)]"></i> Радар подій
                           </Typography>
-                          <button onClick={() => setActiveTab('calendar')} className="text-[7px] font-black text-orange-500 uppercase tracking-widest px-2 py-1 transition-none hover:bg-orange-50 rounded">Календар</button>
+                          <button onClick={() => setActiveTab('calendar')} className="text-[7px] font-black text-[var(--primary)] uppercase tracking-widest px-2 py-1 transition-none hover:bg-black/5 rounded">Календар</button>
                        </div>
                        <div className="space-y-1">
                           {upcomingEvents.map(ev => (
-                            <div key={ev.id} className="p-2 bg-white border border-slate-100 rounded-lg flex items-center gap-2.5 shadow-sm transition-none text-left">
-                               <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${ev.type === 'birthday' ? 'bg-amber-50 text-amber-500' : 'bg-pink-50 text-pink-500'}`}>
+                            <div key={ev.id} className="p-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg flex items-center gap-2.5 shadow-sm transition-none text-left">
+                               <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${ev.type === 'birthday' ? 'bg-amber-500/10 text-amber-500' : 'bg-pink-500/10 text-pink-500'}`}>
                                   <i className={`fa-solid ${ev.type === 'birthday' ? 'fa-cake-candles' : 'fa-calendar-star'} text-[8px]`}></i>
                                </div>
                                <div className="min-w-0 flex-1">
-                                  <div className="text-[9px] font-black text-slate-700 truncate uppercase">{ev.title}</div>
-                                  <div className="text-[7px] font-bold text-slate-300 uppercase">{new Date(ev.date).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
+                                  <div className="text-[9px] font-black text-[var(--text-main)] truncate uppercase">{ev.title}</div>
+                                  <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.date).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
                                </div>
                             </div>
                           ))}
@@ -282,16 +310,16 @@ const Dashboard: React.FC = () => {
 
                     <section className="space-y-2">
                        <div className="flex justify-between items-center px-1">
-                          <Typography variant="tiny" className="font-black uppercase text-[8px] px-1 tracking-[0.2em] flex items-center gap-2 text-slate-400">
+                          <Typography variant="tiny" className="font-black uppercase text-[8px] px-1 tracking-[0.2em] flex items-center gap-2 text-[var(--text-muted)] opacity-70">
                              <i className="fa-solid fa-user-group text-indigo-500"></i> Союзники
                           </Typography>
-                          <button onClick={() => setActiveTab('people')} className="text-[7px] font-black text-orange-500 uppercase tracking-widest px-2 py-1 transition-none hover:bg-orange-50 rounded">Люди</button>
+                          <button onClick={() => setActiveTab('people')} className="text-[7px] font-black text-[var(--primary)] uppercase tracking-widest px-2 py-1 transition-none hover:bg-black/5 rounded">Люди</button>
                        </div>
                        <div className="grid grid-cols-2 gap-2">
                           {people.slice(0, 4).map(p => (
-                            <Card key={p.id} padding="none" className="p-2 bg-white border-slate-100 rounded-xl flex flex-col items-center text-center cursor-pointer transition-none" onClick={() => { setActiveTab('people'); }}>
-                               <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-7 h-7 rounded-full mb-1.5 bg-slate-50 border border-slate-100 p-0.5" />
-                               <span className="text-[7px] font-black text-slate-700 uppercase truncate w-full">{p.name}</span>
+                            <Card key={p.id} padding="none" className="p-2 bg-[var(--bg-card)] border-[var(--border-color)] rounded-xl flex flex-col items-center text-center cursor-pointer transition-none hover:border-[var(--primary)]/30" onClick={() => { setActiveTab('people'); }}>
+                               <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-7 h-7 rounded-full mb-1.5 bg-black/5 border border-theme p-0.5" />
+                               <span className="text-[7px] font-black text-[var(--text-main)] uppercase truncate w-full">{p.name}</span>
                             </Card>
                           ))}
                        </div>
@@ -300,17 +328,17 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4 transition-none">
-                 <Card className="bg-white border-slate-100 p-6 shadow-sm rounded-2xl transition-none">
+                 <Card className="bg-[var(--bg-card)] border-[var(--border-color)] p-6 shadow-sm rounded-2xl transition-none">
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                      {spheres.map(sphere => {
                        const val = (character.stats as any)[sphere.key] || 0;
                        return (
                          <div key={sphere.key} className="space-y-2">
                            <div className="flex justify-between items-end">
-                             <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">{sphere.label}</span>
-                             <span className="text-sm font-black text-slate-800">{val}%</span>
+                             <span className="text-[8px] font-black uppercase text-[var(--text-muted)] tracking-widest opacity-60">{sphere.label}</span>
+                             <span className="text-sm font-black text-[var(--text-main)]">{val}%</span>
                            </div>
-                           <div className="h-1 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                           <div className="h-1 bg-black/5 rounded-full overflow-hidden border border-theme">
                              <div className={`h-full ${
                                sphere.color === 'rose' ? 'bg-rose-500' :
                                sphere.color === 'indigo' ? 'bg-indigo-500' :
@@ -322,17 +350,18 @@ const Dashboard: React.FC = () => {
                      })}
                    </div>
                    
-                   <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                   <div className="mt-8 pt-6 border-t border-theme flex flex-col md:flex-row justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 text-base font-black">{cycle.globalExecutionScore}%</div>
-                         <Typography variant="tiny" className="text-slate-400 font-black text-[8px] uppercase tracking-widest">Глобальний KPI Циклу</Typography>
+                         <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] text-base font-black">{cycle.globalExecutionScore}%</div>
+                         <Typography variant="tiny" className="text-[var(--text-muted)] font-black text-[8px] uppercase tracking-widest opacity-60">Глобальний KPI Циклу</Typography>
                       </div>
                       <button 
                         onClick={handleAiAnalysis}
                         disabled={isAiAnalyzing}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-none shadow-lg disabled:opacity-50"
+                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-main)] px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-none shadow-lg disabled:opacity-50"
+                        style={{ backgroundColor: 'var(--text-main)', color: 'var(--bg-main)' }}
                       >
-                        {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-sparkles text-orange-400"></i>}
+                        {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-sparkles text-[var(--primary)]"></i>}
                         ШІ Аналіз Прогресу
                       </button>
                    </div>
@@ -343,10 +372,10 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className={`flex h-full border-l border-slate-100 z-[110] bg-white shrink-0 transition-none ${selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'}`} style={{ width: selectedTaskId ? detailsWidth : 0 }}>
+      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-none ${selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'}`} style={{ width: selectedTaskId ? detailsWidth : 0 }}>
         {selectedTaskId && (
           <>
-            <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-orange-500 z-[100] transition-none ${isResizing ? 'bg-orange-500' : 'bg-slate-100'}`}></div>
+            <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] z-[100] transition-none ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
             <div className="h-full w-full">
               <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
             </div>
