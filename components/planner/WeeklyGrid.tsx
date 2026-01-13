@@ -41,12 +41,10 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
       if (!t.recurrence || t.recurrence === 'none' || t.isDeleted) return false;
       if (projectId && t.projectId !== projectId) return false;
       
-      // Перевірка активності по днях тижня (daysOfWeek)
       if (t.daysOfWeek && t.daysOfWeek.length > 0) {
         return t.daysOfWeek.includes(dayIndex);
       }
       
-      // Legacy fallback
       if (t.recurrence === 'weekdays' && dayIndex > 4) return false;
       return true; 
     });
@@ -60,7 +58,6 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
     const allItems = [...quests];
     if (focus) allItems.push(focus);
     
-    // Рахуємо виконання
     let totalPlanned = allItems.length + recurrents.length;
     if (totalPlanned === 0) return 0;
 
@@ -75,7 +72,6 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
       setActiveInput(null);
       return;
     }
-    // Для нових повторюваних активуємо всі дні за замовчуванням
     onAddTask(dayIdx, inputValue.trim(), type === 'focus', type === 'recurrent' ? 'daily' : 'none');
     setInputValue('');
     setActiveInput(null);
@@ -134,7 +130,6 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
               </div>
 
               <div className="p-3 space-y-4 flex-1 overflow-y-auto no-scrollbar transition-none">
-                {/* Focus Area */}
                 <div className="min-h-[70px] transition-none">
                    {activeInput?.day === idx && activeInput.type === 'focus' ? (
                      <div className="bg-orange-50 border border-orange-200 p-2 rounded-xl transition-none" style={{ borderColor: projectColor + '40', backgroundColor: projectColor + '08' }}>
@@ -175,7 +170,6 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
                    )}
                 </div>
 
-                {/* Recurrent Section */}
                 <div className="space-y-1.5 transition-none">
                    <div className="flex items-center justify-between px-1 transition-none">
                       <span className="text-[7px] font-black uppercase text-indigo-400 tracking-widest">Recurrent</span>
@@ -218,7 +212,6 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
                    )}
                 </div>
 
-                {/* Day Specific Quests */}
                 <div className="space-y-1.5 transition-none">
                    <div className="flex items-center justify-between px-1 transition-none">
                       <span className="text-[7px] font-black uppercase text-slate-300 tracking-widest">Quests</span>
@@ -253,14 +246,12 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
                    )}
                 </div>
 
-                {/* Routine Section */}
                 {dailies.length > 0 && (
                    <div className="pt-4 mt-auto border-t border-slate-50 space-y-2 transition-none">
                       <span className="text-[7px] font-black uppercase text-slate-300 tracking-[0.2em] px-1">Global Routine</span>
                       <div className="space-y-1 transition-none">
                         {dailies.map(h => {
                           const isDone = h.habitHistory?.[dateStr]?.status === 'completed';
-                          // Перевірка активності звички по днях тижня
                           const isDayActive = !h.daysOfWeek || h.daysOfWeek.length === 0 || h.daysOfWeek.includes(idx);
                           if (!isDayActive) return null;
 
@@ -285,21 +276,22 @@ const WeeklyGrid: React.FC<WeeklyGridProps> = ({ weekNum, tasks, dailies, projec
               </div>
             </Card>
           </div>
-        ))}
+        );
+      })}
 
-        {selectedRecurrent && (
-          <div className="fixed inset-0 z-[200] flex justify-end">
-            <div className="absolute inset-0 bg-black/20" onClick={() => setSelectedRecurrentId(null)}></div>
-            <div className="w-[340px] h-full bg-white shadow-2xl relative animate-in slide-in-from-right duration-300">
-               <HabitStatsSidebar 
-                 habit={selectedRecurrent} 
-                 onClose={() => setSelectedRecurrentId(null)}
-                 onUpdate={(updates) => updateTask({ ...selectedRecurrent, ...updates })}
-                 onToggleStatus={toggleHabitStatus}
-               />
-            </div>
+      {selectedRecurrent && (
+        <div className="fixed inset-0 z-[200] flex justify-end">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setSelectedRecurrentId(null)}></div>
+          <div className="w-[340px] h-full bg-white shadow-2xl relative animate-in slide-in-from-right duration-300">
+              <HabitStatsSidebar 
+                habit={selectedRecurrent} 
+                onClose={() => setSelectedRecurrentId(null)}
+                onUpdate={(updates) => updateTask({ ...selectedRecurrent, ...updates })}
+                onToggleStatus={toggleHabitStatus}
+              />
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };
