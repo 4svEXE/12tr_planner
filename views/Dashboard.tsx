@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
-  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer to match its definition
+  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer as required by the hook definition
   const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {
@@ -214,7 +214,7 @@ const Dashboard: React.FC = () => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                                return (
                                  <button key={habit.id} onClick={() => toggleHabitStatus(habit.id, dateStr, isDone ? 'none' : 'completed')}
-                                  className={`shrink-0 w-24 p-2 rounded-xl border transition-none flex flex-col items-center gap-1.5 ${isDone ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-inner' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] opacity-60'}`}>
+                                  className={`shrink-0 w-24 p-2 rounded-xl border transition-none flex flex-col items-center gap-1.5 ${isDone ? 'bg-emerald-50/10 border-emerald-500/20 text-emerald-500 shadow-inner' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] opacity-60'}`}>
                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] ${isDone ? 'bg-emerald-500 text-white shadow-sm' : 'bg-black/5 border border-theme'}`}>
                                       <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
                                    </div>
@@ -265,7 +265,7 @@ const Dashboard: React.FC = () => {
                        { key: 'finance', label: 'Фінанси', color: 'emerald' },
                        { key: 'rest', label: 'Відпочинок', color: 'cyan' },
                      ].map(sphere => {
-                       const data = stats.spheres[sphere.key as keyof typeof stats.spheres];
+                       const data = stats.spheres[sphere.key as keyof typeof spheres];
                        const percent = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
                        return (
                          <div key={sphere.key} className="space-y-2">
@@ -293,7 +293,7 @@ const Dashboard: React.FC = () => {
                          </div>
                          <div>
                             <Typography variant="tiny" className="text-[var(--text-muted)] font-black text-[8px] uppercase tracking-widest opacity-60">Ефективність циклу</Typography>
-                            <div className="text-[10px] font-black text-[var(--text-main)] uppercase">Виконано {stats.doneCount} з {stats.totalCount} дій</div>
+                            <div className="text-10px font-black text-[var(--text-main)] uppercase">Виконано {stats.doneCount} з {stats.totalCount} дій</div>
                          </div>
                       </div>
                       <button 
@@ -325,7 +325,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-none ${selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'}`} style={{ width: selectedTaskId ? detailsWidth : 0 }}>
+      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'}`} style={{ width: selectedTaskId ? detailsWidth : 0 }}>
         {selectedTaskId && (
           <div className="h-full w-full relative">
             <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-[1px] cursor-col-resize hover:bg-[var(--primary)] z-[100] ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Task, HabitDayData } from '../types';
+import { Task, HabitDayData, RecurrenceType } from '../types';
 import Typography from './ui/Typography';
 import Button from './ui/Button';
 import Card from './ui/Card';
@@ -18,6 +18,7 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
   const [selectedColor, setSelectedColor] = useState(habit.color || '#f97316');
 
   const colorOptions = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#06b6d4', '#facc15', '#a855f7', '#475569'];
+  const weekDaysShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 
   const periodStats = useMemo(() => {
     const history = habit.habitHistory || {};
@@ -44,6 +45,29 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
       notes: allEntries.filter(([_, data]) => data.note).sort((a,b) => b[0].localeCompare(a[0]))
     };
   }, [habit.habitHistory, activeView]);
+
+  const toggleDayOfWeek = (idx: number) => {
+    const currentDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
+    let nextDays: number[];
+    if (currentDays.includes(idx)) {
+      nextDays = currentDays.filter(d => d !== idx);
+    } else {
+      nextDays = [...currentDays, idx].sort();
+    }
+    
+    // Автоматично виставляємо тип рекурентності
+    let nextRecurrence: RecurrenceType = 'custom';
+    if (nextDays.length === 7) nextRecurrence = 'daily';
+    else if (nextDays.length === 5 && !nextDays.includes(5) && !nextDays.includes(6)) nextRecurrence = 'weekdays';
+
+    onUpdate({ daysOfWeek: nextDays, recurrence: nextRecurrence });
+  };
+
+  const setRecurrencePreset = (type: RecurrenceType) => {
+    let nextDays = [0, 1, 2, 3, 4, 5, 6];
+    if (type === 'weekdays') nextDays = [0, 1, 2, 3, 4];
+    onUpdate({ recurrence: type, daysOfWeek: nextDays });
+  };
 
   const renderPeriodGrid = () => {
     const today = new Date();
@@ -136,7 +160,7 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                    onBlur={() => onUpdate({ title: editingTitle })}
                    className="text-sm font-black text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full"
                  />
-                 <Typography variant="tiny" className="text-slate-400 text-[8px]">Аналітика дисципліни</Typography>
+                 <Typography variant="tiny" className="text-slate-400 text-[8px]">Налаштування та статистика</Typography>
               </div>
             </div>
             <button onClick={onClose} className="w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-300 flex items-center justify-center transition-all shrink-0"><i className="fa-solid fa-xmark text-xs"></i></button>
@@ -150,6 +174,31 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
        </header>
 
        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+          {/* СЕКЦІЯ ПЛАНУВАННЯ */}
+          <section className="space-y-3">
+             <Typography variant="tiny" className="text-slate-900 font-black uppercase text-[8px] px-1">Дні активності</Typography>
+             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div className="flex justify-between gap-1 mb-3">
+                   {weekDaysShort.map((day, idx) => {
+                     const isSelected = (habit.daysOfWeek || [0,1,2,3,4,5,6]).includes(idx);
+                     return (
+                       <button 
+                        key={idx}
+                        onClick={() => toggleDayOfWeek(idx)}
+                        className={`w-8 h-8 rounded-lg text-[9px] font-black transition-all border ${isSelected ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-orange-200'}`}
+                       >
+                         {day}
+                       </button>
+                     );
+                   })}
+                </div>
+                <div className="flex gap-1.5">
+                   <button onClick={() => setRecurrencePreset('daily')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'daily' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}`}>Щодня</button>
+                   <button onClick={() => setRecurrencePreset('weekdays')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'weekdays' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}`}>Будні</button>
+                </div>
+             </div>
+          </section>
+
           <div className="grid grid-cols-2 gap-3">
              <Card padding="sm" className="bg-orange-50/50 border-orange-100 flex flex-col items-center justify-center text-center py-3">
                 <div className="text-xl font-black text-orange-600 leading-none mb-1">{periodStats.percent}%</div>

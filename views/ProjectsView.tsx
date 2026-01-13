@@ -11,6 +11,7 @@ import HabitStatsSidebar from '../components/HabitStatsSidebar';
 import { useResizer } from '../hooks/useResizer';
 import { planProjectStrategically } from '../services/geminiService';
 import StructureView from './StructureView';
+import PlannerView from './PlannerView';
 
 // --- SUB-COMPONENT: Goal Modal ---
 const GoalModal: React.FC<{ 
@@ -159,10 +160,11 @@ const GoalCard: React.FC<{
   onTaskClick: (id: string) => void,
   onHabitClick: (id: string) => void,
   onSubProjectClick: (id: string) => void,
+  onPlannerClick: (id: string) => void,
   onEdit: (goal: Project) => void,
   selectedTaskId: string | null,
   selectedHabitId: string | null
-}> = ({ goal, isExpanded, onToggle, onTaskClick, onHabitClick, onSubProjectClick, onEdit, selectedTaskId, selectedHabitId }) => {
+}> = ({ goal, isExpanded, onToggle, onTaskClick, onHabitClick, onSubProjectClick, onPlannerClick, onEdit, selectedTaskId, selectedHabitId }) => {
   const { tasks, projects, addProject, addTask, deleteProject, toggleTaskStatus } = useApp();
   const [activeTab, setActiveTab] = useState<'actions' | 'subprojects' | 'habits'>('actions');
   const [inlineInputValue, setInlineInputValue] = useState('');
@@ -214,7 +216,12 @@ const GoalCard: React.FC<{
              </div>
              <div className="text-[7px] font-black text-muted uppercase tracking-widest">{goal.sphere || 'General'}</div>
           </div>
-          <i className={`fa-solid fa-chevron-right text-[8px] text-muted transition-transform ${isExpanded ? 'rotate-90 text-primary' : ''}`}></i>
+          <div className="flex gap-2">
+            <button onClick={(e) => { e.stopPropagation(); onPlannerClick(goal.id); }} className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm" title="Планувальник проєкту">
+              <i className="fa-solid fa-calendar-check text-[11px]"></i>
+            </button>
+            <i className={`fa-solid fa-chevron-right text-[8px] text-muted transition-transform self-center ${isExpanded ? 'rotate-90 text-primary' : ''}`}></i>
+          </div>
         </div>
       </div>
 
@@ -294,11 +301,12 @@ const ProjectsView: React.FC = () => {
   const { projects, tasks, cycle, addProject, updateProject, toggleHabitStatus, toggleTaskStatus, updateTask, updateCycle, character, addTask, aiEnabled, deleteProject } = useApp();
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 700);
   
-  const [activeMode, setActiveMode] = useState<'strategy' | 'execution' | 'structure'>('strategy');
+  const [activeMode, setActiveMode] = useState<'strategy' | 'execution' | 'structure' | 'project_planner'>('strategy');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [selectedSubProjectId, setSelectedSubProjectId] = useState<string | null>(null);
+  const [selectedProjectPlannerId, setSelectedProjectPlannerId] = useState<string | null>(null);
   const [modalState, setModalState] = useState<{ open: boolean, editing?: Project }>({ open: false });
   const [isPlanning, setIsPlanning] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -336,6 +344,18 @@ const ProjectsView: React.FC = () => {
   };
 
   const selectedHabit = useMemo(() => tasks.find(h => h.id === selectedHabitId), [tasks, selectedHabitId]);
+
+  if (activeMode === 'project_planner' && selectedProjectPlannerId) {
+    return (
+      <PlannerView 
+        projectId={selectedProjectPlannerId} 
+        onExitProjectMode={() => {
+          setActiveMode('strategy');
+          setSelectedProjectPlannerId(null);
+        }} 
+      />
+    );
+  }
 
   return (
     <div className="h-screen flex bg-main overflow-hidden relative">
@@ -418,7 +438,19 @@ const ProjectsView: React.FC = () => {
           ) : (
             <div className="max-w-3xl mx-auto space-y-3">
               {filteredGoals.map(goal => (
-                <GoalCard key={goal.id} goal={goal} isExpanded={expandedId === goal.id} onToggle={() => setExpandedId(expandedId === goal.id ? null : goal.id)} onTaskClick={(id) => { setSelectedTaskId(id); setSelectedHabitId(null); setSelectedSubProjectId(null); }} onHabitClick={(id) => { setSelectedHabitId(id); setSelectedTaskId(null); setSelectedSubProjectId(null); }} onSubProjectClick={(id) => { setSelectedSubProjectId(id); setSelectedTaskId(null); setSelectedHabitId(null); }} onEdit={(g) => setModalState({ open: true, editing: g })} selectedTaskId={selectedTaskId} selectedHabitId={selectedHabitId} />
+                <GoalCard 
+                  key={goal.id} 
+                  goal={goal} 
+                  isExpanded={expandedId === goal.id} 
+                  onToggle={() => setExpandedId(expandedId === goal.id ? null : goal.id)} 
+                  onTaskClick={(id) => { setSelectedTaskId(id); setSelectedHabitId(null); setSelectedSubProjectId(null); }} 
+                  onHabitClick={(id) => { setSelectedHabitId(id); setSelectedTaskId(null); setSelectedSubProjectId(null); }} 
+                  onSubProjectClick={(id) => { setSelectedSubProjectId(id); setSelectedTaskId(null); setSelectedHabitId(null); }} 
+                  onPlannerClick={(id) => { setSelectedProjectPlannerId(id); setActiveMode('project_planner'); }}
+                  onEdit={(g) => setModalState({ open: true, editing: g })} 
+                  selectedTaskId={selectedTaskId} 
+                  selectedHabitId={selectedHabitId} 
+                />
               ))}
               {filteredGoals.length === 0 && (
                 <div className="py-20 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">

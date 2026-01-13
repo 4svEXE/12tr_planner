@@ -212,6 +212,7 @@ export interface Task {
   isDeleted?: boolean;
   color?: string; 
   recurrence?: RecurrenceType;
+  daysOfWeek?: number[]; // 0-6 (Mon-Sun)
   habitHistory?: Record<string, HabitDayData>;
   completedAt?: number;
   plannerWeek?: number;
