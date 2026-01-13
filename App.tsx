@@ -44,8 +44,9 @@ const MainLayout: React.FC = () => {
     notes: tasks.filter(t => !t.isDeleted && t.category === 'note' && t.status !== TaskStatus.DONE).length,
     calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
     planner: tasks.filter(t => !t.isDeleted && t.projectSection === 'planner' && t.status !== TaskStatus.DONE).length,
+    projects: projects.filter(p => p.type === 'goal' && p.status === 'active').length,
     trash: tasks.filter(t => t.isDeleted).length
-  }), [tasks, todayTimestamp]);
+  }), [tasks, projects, todayTimestamp]);
 
   const renderContent = () => {
     switch (activeTab) {

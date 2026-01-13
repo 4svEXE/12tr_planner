@@ -265,7 +265,7 @@ const Dashboard: React.FC = () => {
                        { key: 'finance', label: 'Фінанси', color: 'emerald' },
                        { key: 'rest', label: 'Відпочинок', color: 'cyan' },
                      ].map(sphere => {
-                       const data = stats.spheres[sphere.key as keyof typeof spheres];
+                       const data = stats.spheres[sphere.key as keyof typeof stats.spheres];
                        const percent = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
                        return (
                          <div key={sphere.key} className="space-y-2">
