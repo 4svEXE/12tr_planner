@@ -1,15 +1,10 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Character, Task, Project, TaskStatus, Person } from "../types";
 
 // Функція для отримання актуального ключа
 const getAiClient = () => {
-  // Use named parameter { apiKey } as per guidelines
-  const apiKey = localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found. Please set it in Settings.");
-  }
-  return new GoogleGenAI({ apiKey });
+  // Use named parameter { apiKey } and exclusively process.env.API_KEY as per guidelines
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const getCharacterDailyBriefing = async (character: Character, tasks: Task[], projects: Project[]) => {

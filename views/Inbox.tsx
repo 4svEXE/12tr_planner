@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Task, TaskStatus, InboxCategory } from '../types';
 import TaskDetails from '../components/TaskDetails';
@@ -18,7 +17,8 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
     addInboxCategory, character, aiEnabled, people 
   } = useApp();
   
-  const { isResizing, startResizing, detailsWidth } = useResizer();
+  // FIX: useResizer hook expects two arguments (minWidth, maxWidth).
+  const { isResizing, startResizing, detailsWidth } = useResizer(300, 800);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
   const [isAddingSection, setIsAddingSection] = useState(false);
@@ -74,7 +74,6 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId);
     if (task) {
-      // Знаходимо цільову категорію, щоб визначити статус
       const targetCat = inboxCategories.find(c => c.id === categoryId);
       const newScope = targetCat?.scope || currentScope;
       const newStatus = newScope === 'actions' ? TaskStatus.NEXT_ACTION : TaskStatus.INBOX;
@@ -147,7 +146,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
             </form>
           </header>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-8 pb-32">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 md:space-y-8 pb-32">
              {filteredCategories.map(category => {
                const categoryTasks = tasks.filter(t => 
                  !t.isDeleted && 
@@ -166,30 +165,30 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                   onDragOver={(e) => { e.preventDefault(); setDragOverSectionId(category.id); }}
                   onDragLeave={() => setDragOverSectionId(null)}
                   onDrop={(e) => onDropOnSection(e, category.id)}
-                  className={`space-y-3 rounded-[2rem] transition-all duration-200 ${isOver ? 'bg-[var(--primary)]/5 ring-4 ring-[var(--primary)]/10 p-3 -m-3' : ''}`}
+                  className={`space-y-2 md:space-y-3 rounded-[2rem] transition-all duration-200 ${isOver ? 'bg-[var(--primary)]/5 ring-4 ring-[var(--primary)]/10 p-3 -m-3' : ''}`}
                  >
                    <div className="flex items-center justify-between px-2">
                      <div className="flex items-center gap-2 group/title flex-1">
-                        <div className={`w-1.5 h-4 rounded-full bg-[var(--primary)] ${categoryTasks.length > 0 ? 'opacity-100' : 'opacity-20'}`}></div>
+                        <div className={`w-1 h-3 md:w-1.5 md:h-4 rounded-full bg-[var(--primary)] ${categoryTasks.length > 0 ? 'opacity-100' : 'opacity-20'}`}></div>
                         {isEditing ? (
-                          <input autoFocus value={editSectionTitle} onChange={e => setEditSectionTitle(e.target.value)} onBlur={() => handleRenameSection(category.id)} onKeyDown={e => e.key === 'Enter' && handleRenameSection(category.id)} className="bg-transparent border-b-2 border-[var(--primary)] outline-none text-[9px] font-black uppercase tracking-widest text-slate-900" />
+                          <input autoFocus value={editSectionTitle} onChange={e => setEditSectionTitle(e.target.value)} onBlur={() => handleRenameSection(category.id)} onKeyDown={e => e.key === 'Enter' && handleRenameSection(category.id)} className="bg-transparent border-b-2 border-[var(--primary)] outline-none text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-900" />
                         ) : (
-                          <Typography variant="tiny" onClick={() => !isSystem && (setEditingSectionId(category.id), setEditSectionTitle(category.title))} className={`text-[var(--text-main)] font-black uppercase text-[9px] tracking-[0.2em] ${!isSystem ? 'cursor-edit hover:text-[var(--primary)]' : ''}`}>
+                          <Typography variant="tiny" onClick={() => !isSystem && (setEditingSectionId(category.id), setEditSectionTitle(category.title))} className={`text-[var(--text-main)] font-black uppercase text-[8px] md:text-[9px] tracking-[0.2em] ${!isSystem ? 'cursor-edit hover:text-[var(--primary)]' : ''}`}>
                             {category.title}
                           </Typography>
                         )}
                      </div>
                      <div className="flex items-center gap-2">
-                        <span className="text-[8px] font-black text-slate-300">{categoryTasks.length}</span>
+                        <span className="text-[7px] md:text-[8px] font-black text-slate-300">{categoryTasks.length}</span>
                         {!isSystem && (
                           <button onClick={() => deleteInboxCategory(category.id)} className="text-slate-200 hover:text-rose-500 transition-colors p-1">
-                            <i className="fa-solid fa-trash-can text-[10px]"></i>
+                            <i className="fa-solid fa-trash-can text-[9px]"></i>
                           </button>
                         )}
                      </div>
                    </div>
                    
-                   <div className="space-y-2">
+                   <div className="space-y-1.5 md:space-y-2">
                      {categoryTasks.map(task => (
                        <Card 
                         key={task.id} 
@@ -197,19 +196,19 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                         draggable
                         onDragStart={(e) => onDragStart(e, task.id)}
                         onClick={() => setSelectedTaskId(task.id)} 
-                        className="flex items-center gap-4 p-4 cursor-grab active:cursor-grabbing hover:border-[var(--primary)]/50 bg-[var(--bg-card)] group shadow-sm hover:shadow-md transition-all rounded-2xl border-transparent"
+                        className="flex items-center gap-3 md:gap-4 p-3 md:p-4 cursor-grab active:cursor-grabbing hover:border-[var(--primary)]/50 bg-[var(--bg-card)] group shadow-sm hover:shadow-md transition-all rounded-xl md:rounded-2xl border-transparent"
                        >
-                          <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-6 h-6 rounded-xl border-2 transition-all flex items-center justify-center shrink-0 ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-white'}`}>
-                             {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[10px]"></i>}
+                          <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-5 h-5 md:w-6 md:h-6 rounded-lg md:rounded-xl border-2 transition-all flex items-center justify-center shrink-0 ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-white'}`}>
+                             {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[8px] md:text-[10px]"></i>}
                           </button>
-                          <span className={`text-[13px] md:text-sm font-bold flex-1 truncate ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{task.title}</span>
-                          <i className="fa-solid fa-grip-vertical text-slate-100 group-hover:text-slate-300 transition-colors text-[10px]"></i>
+                          <span className={`text-[13px] md:text-sm font-bold flex-1 truncate ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through opacity-50' : 'text-[var(--text-main)]'}`}>{task.title}</span>
+                          <i className="fa-solid fa-grip-vertical text-slate-100 group-hover:text-slate-300 transition-colors text-[9px] md:text-[10px]"></i>
                        </Card>
                      ))}
                      {categoryTasks.length === 0 && (
-                       <div className="py-8 border-2 border-dashed border-slate-100/50 rounded-2xl flex flex-col items-center justify-center grayscale opacity-10">
-                          <i className="fa-solid fa-folder-open text-xl mb-1"></i>
-                          <span className="text-[7px] font-black uppercase tracking-widest">Перетягніть сюди</span>
+                       <div className="py-6 md:py-8 border-2 border-dashed border-slate-100/50 rounded-xl md:rounded-2xl flex flex-col items-center justify-center grayscale opacity-10">
+                          <i className="fa-solid fa-folder-open text-lg md:text-xl mb-1"></i>
+                          <span className="text-[6px] md:text-[7px] font-black uppercase tracking-widest">Перетягніть сюди</span>
                        </div>
                      )}
                    </div>
@@ -233,7 +232,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
             {selectedTaskId ? ( 
               <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} /> 
             ) : ( 
-              !isMobile && <div className="h-full flex flex-col items-center justify-center p-8 text-center opacity-5 grayscale pointer-events-none"> <i className="fa-solid fa-inbox text-9xl mb-8"></i> </div> 
+              !isMobile && <div className="h-full flex flex-col items-center justify-center p-8 text-center opacity-5 grayscale pointer-events-none select-none"> <i className="fa-solid fa-inbox text-9xl mb-8"></i> </div> 
             )}
           </div>
         </div>

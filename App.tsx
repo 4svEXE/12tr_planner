@@ -18,6 +18,7 @@ import PeopleView from './views/PeopleView';
 import CharacterProfile from './views/CharacterProfile';
 import SettingsView from './views/SettingsView';
 import ShoppingView from './views/ShoppingView';
+import PlannerView from './views/PlannerView';
 import AiChat from './components/AiChat';
 import { TaskStatus, Task } from './types';
 
@@ -42,6 +43,7 @@ const MainLayout: React.FC = () => {
     next_actions: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.NEXT_ACTION).length,
     notes: tasks.filter(t => !t.isDeleted && t.category === 'note' && t.status !== TaskStatus.DONE).length,
     calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
+    planner: tasks.filter(t => !t.isDeleted && t.projectSection === 'planner' && t.status !== TaskStatus.DONE).length,
     trash: tasks.filter(t => t.isDeleted).length
   }), [tasks, todayTimestamp]);
 
@@ -49,6 +51,7 @@ const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
       case 'today': return <Dashboard />;
+      case 'planner': return <PlannerView />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;

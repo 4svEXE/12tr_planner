@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, Project, TaskStatus, Priority } from '../types';
@@ -24,8 +23,7 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
-  // FIX: useResizer hook in hooks/useResizer.ts expects two arguments (minWidth, maxWidth).
-  // Providing explicitly 300 and 800 to match its default definition and fix the argument mismatch error.
+  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer to match its definition
   const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {

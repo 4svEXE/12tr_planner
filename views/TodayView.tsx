@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus, Task, Priority } from '../types';
@@ -13,6 +12,7 @@ const TodayView: React.FC = () => {
     tasks, projects, timeBlocks, toggleTaskStatus, toggleHabitStatus, 
     character, cycle, people, setActiveTab
   } = useApp();
+  // FIX: useResizer hook expects two arguments (minWidth, maxWidth).
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 700);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());

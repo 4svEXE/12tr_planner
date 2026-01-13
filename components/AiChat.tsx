@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { GoogleGenAI } from "@google/genai";
@@ -39,8 +38,8 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
     setIsTyping(true);
 
     try {
-      // Use named parameter { apiKey } as per guidelines
-      const ai = new GoogleGenAI({ apiKey: localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY || '' });
+      // Use named parameter { apiKey } and process.env.API_KEY exclusively as per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const systemContext = `
         Ти — Стратегічне Ядро системи 12TR. Твоя мета — допомагати Гравцю бути продуктивним через GTD та гейміфікацію.
@@ -67,7 +66,7 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
       const aiText = response.text || "Магічний зв'язок перервано. Спробуй ще раз.";
       setMessages(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'model', text: "Помилка зв'язку з Ядром. Перевірте API-ключ у налаштуваннях." }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Помилка зв'язку з Ядром. Перевірте API-ключ." }]);
     } finally {
       setIsTyping(false);
     }

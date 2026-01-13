@@ -1,5 +1,5 @@
 {
-  "name": "Copy of 12TR: Gamified Life Engine",
+  "name": "12TR: Gamified Life Engine",
   "description": "A high-performance life management system blending GTD, gamification, and AI. Features a strategy-game map, AI character mentors, project management, and automated life analysis.",
   "requestFramePermissions": [
     "microphone"

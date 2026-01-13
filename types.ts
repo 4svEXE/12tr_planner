@@ -214,6 +214,9 @@ export interface Task {
   recurrence?: RecurrenceType;
   habitHistory?: Record<string, HabitDayData>;
   completedAt?: number;
+  plannerWeek?: number;
+  plannerDay?: number; // 0-6 (Mon-Sun)
+  plannerComment?: string;
 }
 
 export interface Project {
@@ -227,6 +230,9 @@ export interface Project {
   type?: 'goal' | 'subproject' | 'folder';
   isStrategic: boolean;
   sphere?: 'health' | 'career' | 'finance' | 'education' | 'relationships' | 'rest';
+  monthlyGoal?: string;
+  monthlyKpi?: number;
+  monthlyKpiCurrent?: number;
 }
 
 export interface TwelveWeekYear {
@@ -236,7 +242,7 @@ export interface TwelveWeekYear {
   currentWeek: number;
   globalExecutionScore: number;
   manualDailyStatus?: Record<string, boolean>;
-  weeklyScores?: Record<number, number>;
+  weeklyScores?: Record<number, { score: number; comment: string }>;
 }
 
 export interface Skill {
