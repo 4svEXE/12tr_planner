@@ -18,6 +18,7 @@ import PeopleView from './views/PeopleView';
 import CharacterProfile from './views/CharacterProfile';
 import SettingsView from './views/SettingsView';
 import ShoppingView from './views/ShoppingView';
+import AiChat from './components/AiChat';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
@@ -47,7 +48,7 @@ const MainLayout: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-      case 'today': return <Dashboard />; // Об'єднано
+      case 'today': return <Dashboard />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;
@@ -84,22 +85,13 @@ const MainLayout: React.FC = () => {
         {renderContent()}
         {showFocusMode && <DeepFocus taskTitle={tasks.find(t => !t.isDeleted)?.title || "Робота над проектом"} onExit={() => setShowFocusMode(false)} />}
         {aiEnabled && !isAiOpen && (
-          <button onClick={() => setIsAiOpen(true)} className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-40">
+          <button onClick={() => setIsAiOpen(true)} className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[150] hover:scale-110 active:scale-95 transition-all">
             <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
           </button>
         )}
       </main>
-      <div className={`fixed top-0 right-0 h-screen bg-[var(--bg-card)]/90 border-l border-[var(--border-color)] flex flex-col backdrop-blur-xl transition-all duration-300 z-[100] ${isAiOpen ? 'w-80 translate-x-0' : 'w-0 translate-x-full invisible'}`}>
-        <div className="flex items-center justify-between p-6 border-b border-[var(--border-color)]">
-          <h3 className="font-black text-lg flex items-center gap-3"><i className="fa-solid fa-wand-magic-sparkles text-[var(--primary)]"></i> Асистент</h3>
-          <button onClick={() => setIsAiOpen(false)} className="text-[var(--text-muted)]"><i className="fa-solid fa-chevron-right text-xs"></i></button>
-        </div>
-        <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-          <div className="bg-[var(--primary)]/5 p-4 rounded-2xl border border-[var(--primary)]/10 text-sm font-medium leading-relaxed">
-            Привіт! Я твій стратегічний асистент. Чим можу допомогти?
-          </div>
-        </div>
-      </div>
+      
+      <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Character, Task, Project, TaskStatus, Person } from "../types";
 
 // Функція для отримання актуального ключа
 const getAiClient = () => {
+  // Use named parameter { apiKey } as per guidelines
   const apiKey = localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY;
   if (!apiKey) {
     throw new Error("API Key not found. Please set it in Settings.");
@@ -48,7 +49,8 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '{}');
 };
 
 export const analyzePersonPortrait = async (person: Person, userCharacter: Character) => {
@@ -59,7 +61,7 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
   const prompt = `
     Проаналізуй контакт у соціальній мережі користувача.
     Користувач (Герой): ${userCharacter.name}, роль: ${userCharacter.role}, архетип: ${userCharacter.archetype}.
-    Контакт: ${person.name}, статус: ${person.status}, інтереси: ${person.hobbies.join(', ')}.
+    Контакт: ${person.name}, status: ${person.status}, інтереси: ${person.hobbies.join(', ')}.
     
     Історія спогадів:
     ${memoriesStr}
@@ -94,7 +96,8 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '{}');
 };
 
 export const analyzeSocialPresence = async (platform: string, handle: string, content?: string) => {
@@ -132,7 +135,8 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '{}');
 };
 
 export const analyzeDailyReport = async (reportContent: string, character: Character) => {
@@ -157,6 +161,7 @@ export const analyzeDailyReport = async (reportContent: string, character: Chara
   `;
 
   const response = await ai.models.generateContent({
+    // Use correct complex task model
     model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
@@ -177,7 +182,8 @@ export const analyzeDailyReport = async (reportContent: string, character: Chara
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '[]');
 };
 
 export const planProjectStrategically = async (
@@ -235,7 +241,8 @@ export const planProjectStrategically = async (
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '{}');
 };
 
 export const processInboxWithAi = async (tasks: {id: string, title: string, content?: string}[], characterContext: Character, existingPeople: string[]) => {
@@ -302,5 +309,6 @@ export const processInboxWithAi = async (tasks: {id: string, title: string, cont
     }
   });
 
-  return JSON.parse(response.text);
+  // Use .text property directly
+  return JSON.parse(response.text || '[]');
 };

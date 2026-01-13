@@ -23,7 +23,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   const primaryItems = [
     { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
-    { id: 'dashboard', icon: 'fa-house', label: 'Головна' },
     { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні', acceptDrop: true },
     { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні', acceptDrop: true },
     { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },

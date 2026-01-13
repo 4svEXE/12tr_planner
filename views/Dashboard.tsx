@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, Project, TaskStatus, Priority } from '../types';
@@ -23,8 +24,9 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
-  // Fix: Ensure useResizer is called with exactly 2 arguments as expected by the environment's current type interpretation
-  const { detailsWidth, startResizing, isResizing } = useResizer(400, 700);
+  // FIX: useResizer hook in hooks/useResizer.ts expects two arguments (minWidth, maxWidth).
+  // Providing explicitly 300 and 800 to match its default definition and fix the argument mismatch error.
+  const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -164,7 +166,7 @@ const Dashboard: React.FC = () => {
                   <div className="min-w-0 flex-1 pl-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">ЗАРАЗ:</span>
-                      <span className="text-[11px] font-black text-[var(--text-main)] truncate uppercase">
+                      <span className="text-11px font-black text-[var(--text-main)] truncate uppercase">
                         {timeBlocks.find(b => b.dayOfWeek === currentTime.getDay() && currentTime.getHours() >= b.startHour && currentTime.getHours() < b.endHour)?.title || 'Вільний час'}
                       </span>
                     </div>
