@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, Project, TaskStatus, Priority } from '../types';
@@ -23,7 +24,7 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
-  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer as required by the hook definition
+  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer
   const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {
@@ -37,8 +38,6 @@ const Dashboard: React.FC = () => {
   // --- ANALYTICS LOGIC ---
   const stats = useMemo(() => {
     const activeTasks = tasks.filter(t => !t.isDeleted && t.projectSection !== 'habits');
-    
-    // Фільтрація за періодом
     const getPeriodLimit = () => {
       const now = new Date();
       if (progressPeriod === 'day') return new Date().setHours(0,0,0,0);
@@ -46,20 +45,11 @@ const Dashboard: React.FC = () => {
       return now.setMonth(now.getMonth() - 1);
     };
     const limit = getPeriodLimit();
-
     const periodTasks = activeTasks.filter(t => (t.completedAt || t.createdAt) >= limit);
     const doneTasks = periodTasks.filter(t => t.status === TaskStatus.DONE);
-    
     const kpi = periodTasks.length > 0 ? Math.round((doneTasks.length / periodTasks.length) * 100) : 0;
     
-    // Прогрес за сферами (на основі проектів)
-    const spheres = {
-      health: { done: 0, total: 0 },
-      career: { done: 0, total: 0 },
-      finance: { done: 0, total: 0 },
-      rest: { done: 0, total: 0 },
-    };
-
+    const spheres = { health: { done: 0, total: 0 }, career: { done: 0, total: 0 }, finance: { done: 0, total: 0 }, rest: { done: 0, total: 0 } };
     tasks.forEach(t => {
       if (t.isDeleted) return;
       const proj = projects.find(p => p.id === t.projectId);
@@ -68,7 +58,6 @@ const Dashboard: React.FC = () => {
         if (t.status === TaskStatus.DONE) spheres[proj.sphere as keyof typeof spheres].done++;
       }
     });
-
     return { kpi, doneCount: doneTasks.length, totalCount: periodTasks.length, spheres };
   }, [tasks, projects, progressPeriod]);
 
@@ -79,20 +68,15 @@ const Dashboard: React.FC = () => {
     return Math.round((completedCount / dailyHabits.length) * 100);
   }, [tasks, dateStr]);
 
-  // --- UI LOGIC ---
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
       if (t.isDeleted || t.status === TaskStatus.DONE) return false;
       if (t.projectSection === 'habits' || t.category === 'note') return false;
-      
       const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp;
-      
       if (taskFilter === 'calendar') return isScheduledForToday;
       if (taskFilter === 'projects') return !!t.projectId;
-      
       return isScheduledForToday || t.status === TaskStatus.NEXT_ACTION || (t.status === TaskStatus.INBOX && !t.scheduledDate && !t.projectId);
     });
-
     return active.sort((a, b) => {
         if (taskFilter === 'calendar') return (a.scheduledDate || 0) - (b.scheduledDate || 0);
         const pWeight = { [Priority.UI]: 4, [Priority.UNI]: 3, [Priority.NUI]: 2, [Priority.NUNI]: 1 };
@@ -109,22 +93,14 @@ const Dashboard: React.FC = () => {
   const handleAiAnalysis = async () => {
     if (!aiEnabled) return alert("Увімкніть ШІ в налаштуваннях");
     setIsAiAnalyzing(true);
-    // Тут можна викликати реальний сервіс Gemini, передаючи stats
     await new Promise(r => setTimeout(r, 1500));
     alert(`ШІ аналіз: Твій KPI складає ${stats.kpi}%. Найбільший фокус зараз на сфері ${Object.entries(stats.spheres).sort((a,b) => b[1].total - a[1].total)[0][0]}. Продовжуй в тому ж дусі!`);
     setIsAiAnalyzing(false);
   };
 
-  const formatTaskTime = (timestamp?: number) => {
-    if (!timestamp) return null;
-    const date = new Date(timestamp);
-    if (date.getHours() === 0 && date.getMinutes() === 0) return null;
-    return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)] transition-none">
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 ${window.innerWidth < 1024 && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
         <header className="p-3 md:p-4 bg-[var(--bg-card)] border-b border-[var(--border-color)] shrink-0">
           <div className="max-w-6xl mx-auto flex flex-col gap-3">
             <div className="flex justify-between items-center">
@@ -137,11 +113,7 @@ const Dashboard: React.FC = () => {
                  <button onClick={() => setMainTab('progress')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
               </div>
             </div>
-            
-            <div className="md:hidden">
-               <MiniCalendar />
-            </div>
-
+            <div className="md:hidden"><MiniCalendar /></div>
             <div className="flex items-center gap-2 bg-black/5 px-2 py-1 rounded-lg border border-theme overflow-hidden">
                <button onClick={() => setShowInsight(!showInsight)} className={`shrink-0 text-[10px] ${showInsight ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
                  <i className={`fa-solid ${showInsight ? 'fa-eye' : 'fa-eye-slash'}`}></i>
@@ -157,10 +129,9 @@ const Dashboard: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 transition-none">
           <div className="max-w-6xl mx-auto space-y-4 pb-32">
-            
             {mainTab === 'tasks' ? (
               <>
-                <Card padding="none" className="bg-[var(--bg-card)] border-[var(--border-color)] p-2.5 rounded-xl shadow-sm flex items-center gap-3 relative group border-l-4 border-l-[var(--primary)] transition-none">
+                <Card padding="none" className="bg-[var(--bg-card)] border-[var(--border-color)] p-2.5 rounded-xl shadow-sm flex items-center gap-3 relative border-l-4 border-l-[var(--primary)] transition-none">
                   <div className="min-w-0 flex-1 pl-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">ЗАРАЗ:</span>
@@ -189,13 +160,13 @@ const Dashboard: React.FC = () => {
                          </div>
                          <div className="grid grid-cols-1 gap-1">
                             {filteredQuests.map(task => (
-                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-none cursor-pointer shadow-sm rounded-lg group">
+                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className={`flex items-center gap-2.5 px-2.5 py-1.5 transition-none cursor-pointer shadow-sm rounded-lg group border ${selectedTaskId === task.id ? 'bg-blue-50/50 border-blue-200 shadow-md' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}>
                                 <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
                                   <i className="fa-solid fa-check text-[7px]"></i>
                                 </button>
                                 <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
                                    <div className={`text-[11px] font-bold truncate leading-tight ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] opacity-40 line-through' : 'text-[var(--text-main)]'}`}>{task.title}</div>
-                                   {formatTaskTime(task.scheduledDate) && <span className="text-[7px] font-black text-[var(--primary)] bg-[var(--primary)]/5 px-1.5 py-0.5 rounded">{formatTaskTime(task.scheduledDate)}</span>}
+                                   {task.content && task.content !== '[]' && <i className="fa-regular fa-file-lines text-slate-300 text-[9px]"></i>}
                                 </div>
                               </Card>
                             ))}
@@ -203,12 +174,7 @@ const Dashboard: React.FC = () => {
                       </section>
 
                       <section className="space-y-2">
-                         <div className="flex justify-between items-center px-1">
-                            <div className="flex items-center gap-2">
-                              <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Дисципліна</Typography>
-                              <div className={`text-[7px] font-black py-0 px-1 rounded bg-[var(--primary)]/10 text-[var(--primary)]`}>{habitCompletionRate}%</div>
-                            </div>
-                         </div>
+                         <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70 px-1">Дисципліна ({habitCompletionRate}%)</Typography>
                          <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
                             {tasks.filter(t => !t.isDeleted && t.projectSection === 'habits').map(habit => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
@@ -225,7 +191,6 @@ const Dashboard: React.FC = () => {
                          </div>
                       </section>
                    </div>
-
                    <div className="lg:col-span-4 space-y-6">
                       <section className="space-y-2">
                          <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70 px-1">Радар подій</Typography>
@@ -246,17 +211,6 @@ const Dashboard: React.FC = () => {
               </>
             ) : (
               <div className="space-y-6 animate-in fade-in duration-500">
-                 <div className="flex justify-between items-center">
-                    <div className="flex bg-[var(--bg-card)] p-0.5 rounded-lg border border-[var(--border-color)]">
-                       {(['day', 'week', 'month'] as const).map(p => (
-                         <button key={p} onClick={() => setProgressPeriod(p)} className={`px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${progressPeriod === p ? 'bg-[var(--bg-main)] text-[var(--primary)] shadow-inner' : 'text-[var(--text-muted)]'}`}>
-                           {p === 'day' ? 'Сьогодні' : p === 'week' ? 'Тиждень' : 'Місяць'}
-                         </button>
-                       ))}
-                    </div>
-                    <Badge variant="orange" className="text-[9px] font-black">KPI: {stats.kpi}%</Badge>
-                 </div>
-
                  <Card className="bg-[var(--bg-card)] border-[var(--border-color)] p-6 shadow-sm rounded-2xl">
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                      {[
@@ -274,61 +228,35 @@ const Dashboard: React.FC = () => {
                              <span className="text-sm font-black text-[var(--text-main)]">{percent}%</span>
                            </div>
                            <div className="h-1.5 bg-black/5 rounded-full overflow-hidden border border-theme">
-                             <div className={`h-full ${
-                               sphere.color === 'rose' ? 'bg-rose-500' :
-                               sphere.color === 'indigo' ? 'bg-indigo-500' :
-                               sphere.color === 'emerald' ? 'bg-emerald-500' : 'bg-cyan-500'
-                             }`} style={{ width: `${percent}%` }}></div>
+                             <div className={`h-full ${sphere.color === 'rose' ? 'bg-rose-500' : sphere.color === 'indigo' ? 'bg-indigo-500' : sphere.color === 'emerald' ? 'bg-emerald-500' : 'bg-cyan-500'}`} style={{ width: `${percent}%` }}></div>
                            </div>
-                           <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-40 uppercase">{data.done}/{data.total} КВЕСТІВ</div>
                          </div>
                        );
                      })}
                    </div>
-                   
                    <div className="mt-8 pt-6 border-t border-theme flex flex-col md:flex-row justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                         <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] text-xl font-black shadow-inner">
-                           {stats.kpi}%
-                         </div>
+                         <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] text-xl font-black shadow-inner">{stats.kpi}%</div>
                          <div>
                             <Typography variant="tiny" className="text-[var(--text-muted)] font-black text-[8px] uppercase tracking-widest opacity-60">Ефективність циклу</Typography>
-                            <div className="text-10px font-black text-[var(--text-main)] uppercase">Виконано {stats.doneCount} з {stats.totalCount} дій</div>
+                            <div className="text-10px font-black text-[var(--text-main)] uppercase">Виконано {stats.doneCount} квестів</div>
                          </div>
                       </div>
-                      <button 
-                        onClick={handleAiAnalysis}
-                        disabled={isAiAnalyzing}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-main)] px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-                      >
-                        {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-sparkles text-[var(--primary)]"></i>}
-                        ШІ Стратегічний Аналіз
+                      <button onClick={handleAiAnalysis} disabled={isAiAnalyzing} className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-main)] px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] disabled:opacity-50">
+                        {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-sparkles text-[var(--primary)]"></i>} ШІ Аналіз
                       </button>
                    </div>
                  </Card>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card padding="md" className="border-emerald-100 bg-emerald-50/20">
-                       <Typography variant="tiny" className="text-emerald-600 font-black mb-1 uppercase text-[7px]">Дисципліна дня</Typography>
-                       <div className="text-2xl font-black text-emerald-700">{habitCompletionRate}%</div>
-                       <p className="text-[9px] text-emerald-600/60 font-bold uppercase mt-1">Звички сьогодні</p>
-                    </Card>
-                    <Card padding="md" className="border-orange-100 bg-orange-50/20">
-                       <Typography variant="tiny" className="text-orange-600 font-black mb-1 uppercase text-[7px]">Досвід Героя</Typography>
-                       <div className="text-2xl font-black text-orange-700">+{stats.doneCount * 50} XP</div>
-                       <p className="text-[9px] text-orange-600/60 font-bold uppercase mt-1">За період {progressPeriod}</p>
-                    </Card>
-                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'}`} style={{ width: selectedTaskId ? detailsWidth : 0 }}>
+      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${window.innerWidth < 1024 ? (selectedTaskId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : (selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute')}`} style={{ width: selectedTaskId ? (window.innerWidth < 1024 ? '100vw' : detailsWidth) : 0 }}>
         {selectedTaskId && (
           <div className="h-full w-full relative">
-            <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-[1px] cursor-col-resize hover:bg-[var(--primary)] z-[100] ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
+            {window.innerWidth >= 1024 && <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-[1px] cursor-col-resize hover:bg-[var(--primary)] z-[100] ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>}
             <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
           </div>
         )}

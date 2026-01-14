@@ -169,7 +169,7 @@ const SettingsView: React.FC = () => {
         ];
         return (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest ml-2 mb-2">Видимість модулів навігації</Typography>
+             <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest ml-2 mb-2">видимість модулів навігації</Typography>
              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2rem] overflow-hidden shadow-sm divide-y divide-[var(--border-color)]">
                 {navItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-4 hover:bg-[var(--bg-main)] transition-colors">
