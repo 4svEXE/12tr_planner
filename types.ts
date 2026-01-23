@@ -17,6 +17,9 @@ export enum Priority {
 
 export type ProjectSection = 'actions' | 'bosses' | 'goals' | 'habits' | 'planner';
 
+/* Added missing CalendarViewMode type */
+export type CalendarViewMode = 'day' | 'week' | 'month' | 'year';
+
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'custom';
 
 export type ThemeType = 

@@ -33,7 +33,8 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const todayTimestamp = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
-  const dateStr = useMemo(() => new Date().toISOString().split('T')[0]);
+  /* Fixed useMemo call by adding missing dependency array */
+  const dateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   // --- ANALYTICS LOGIC ---
   const stats = useMemo(() => {

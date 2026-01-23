@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://4svEXE.github.io/12tr_planner",
+  "homepage": "https://one2tr.onrender.com",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

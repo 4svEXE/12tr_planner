@@ -1,36 +1,10 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction } from '../types';
-import { saveState, loadState } from '../store';
+import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction, StoreState, CalendarViewMode } from '../types';
 import { generateSeedData } from '../services/seedService';
+import { db, doc, getDoc, setDoc, onSnapshot } from '../services/firebase';
 
-export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'agenda';
-
-interface AppContextType {
-  tasks: Task[];
-  projects: Project[];
-  people: Person[];
-  relationshipTypes: string[];
-  cycle: TwelveWeekYear;
-  character: Character;
-  tags: Tag[];
-  hobbies: Hobby[];
-  diary: DiaryEntry[];
-  inboxCategories: InboxCategory[];
-  timeBlocks: TimeBlock[];
-  blockHistory: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
-  routinePresets: RoutinePreset[];
-  activeTab: string;
-  theme: ThemeType;
-  detailsWidth: number;
-  sidebarSettings: Record<string, boolean>;
-  isSidebarCollapsed: boolean;
-  aiEnabled: boolean;
-  calendarDate: number;
-  calendarViewMode: CalendarViewMode;
-  reportTemplate: ReportQuestion[];
-  shoppingStores: ShoppingStore[];
-  shoppingItems: ShoppingItem[];
+interface AppContextType extends StoreState {
   setCalendarDate: (date: number) => void;
   setCalendarViewMode: (mode: CalendarViewMode) => void;
   setDetailsWidth: (width: number) => void;
@@ -96,165 +70,156 @@ interface AppContextType {
   updateShoppingItem: (item: ShoppingItem) => void;
   toggleShoppingItem: (id: string) => void;
   deleteShoppingItem: (id: string) => void;
+  calendarDate: number;
+  calendarViewMode: CalendarViewMode;
+  isSidebarCollapsed: boolean;
+  detailsWidth: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const savedState = loadState();
-
-  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'dashboard');
-  const [theme, setTheme] = useState<ThemeType>(savedState?.theme || 'classic');
-  const [detailsWidth, setDetailsWidth] = useState(savedState?.detailsWidth || 450);
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(savedState?.isSidebarCollapsed || false);
-  const [sidebarSettings, setSidebarSettings] = useState<Record<string, boolean>>(savedState?.sidebarSettings || {});
-  const [aiEnabled, setAiEnabled] = useState<boolean>(savedState?.aiEnabled ?? false);
-  
+export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }> = ({ children, userId }) => {
+  const [state, setState] = useState<StoreState | null>(null);
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [detailsWidth, setDetailsWidth] = useState(450);
 
-  const [cycle, setCycle] = useState<TwelveWeekYear>(savedState?.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + (1000 * 60 * 60 * 24 * 84), currentWeek: 1, globalExecutionScore: 0 });
-
-  const [tasks, setTasks] = useState<Task[]>(savedState?.tasks || []);
-  const [projects, setProjects] = useState<Project[]>(savedState?.projects || []);
-  const [diary, setDiary] = useState<DiaryEntry[]>(savedState?.diary || []);
-  const [people, setPeople] = useState<Person[]>(savedState?.people || []);
-  const [tags, setTags] = useState<Tag[]>(savedState?.tags || []);
-  const [hobbies, setHobbies] = useState<Hobby[]>(savedState?.hobbies || []);
-  const [shoppingStores, setShoppingStores] = useState<ShoppingStore[]>(savedState?.shoppingStores || []);
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(savedState?.shoppingItems || []);
-  
-  const [inboxCategories, setInboxCategories] = useState<InboxCategory[]>(savedState?.inboxCategories || [
-    { id: 'pinned', title: 'Закріплено', icon: 'fa-thumbtack', isPinned: true, scope: 'inbox' },
-    { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: false, scope: 'inbox' },
-    { id: 'tasks', title: 'Завдання', icon: 'fa-bolt', isPinned: false, scope: 'actions' },
-    { id: 'notes', title: 'Нотатки', icon: 'fa-note-sticky', isPinned: false, scope: 'inbox' },
-  ]);
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(savedState?.timeBlocks || []);
-  const [blockHistory, setBlockHistory] = useState<Record<string, Record<string, 'pending' | 'completed' | 'missed'>>>(savedState?.blockHistory || {});
-  const [routinePresets, setRoutinePresets] = useState<RoutinePreset[]>(savedState?.routinePresets || []);
-  const [reportTemplate, setReportTemplate] = useState<ReportQuestion[]>(savedState?.reportTemplate || []);
-  const [relationshipTypes, setRelationshipTypes] = useState<string[]>(savedState?.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']);
-  
-  const [character, setCharacter] = useState<Character>(savedState?.character || {
-    name: 'Гравець', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
-    bio: 'Герой на початку шляху.', vision: 'Стати майстром своєї долі.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hero', 
-    energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-    preferences: { focusBlockers: [] },
-    skills: [], achievements: [], stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
-  });
-
-  // SEED TRIGGER
+  // Спеціальний ефект для слухання хмари
   useEffect(() => {
-    const isFirstRun = tasks.length === 0 && projects.length === 0 && people.length === 0;
-    if (isFirstRun) {
-      const data = generateSeedData();
-      setTasks(data.tasks);
-      setProjects(data.projects);
-      setPeople(data.people);
-      setTags(data.tags);
-      setHobbies(data.hobbies);
-      setDiary(data.diary);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    saveState({ tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate, shoppingStores, shoppingItems });
-  }, [tasks, projects, people, relationshipTypes, character, tags, hobbies, cycle, diary, inboxCategories, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, timeBlocks, blockHistory, routinePresets, activeTab, theme, reportTemplate, shoppingStores, shoppingItems]);
-
-  const updateSidebarSetting = useCallback((key: string, visible: boolean) => {
-    setSidebarSettings(prev => ({ ...prev, [key]: visible }));
-  }, []);
-
-  const updateCharacter = useCallback((updates: Partial<Character>) => {
-    setCharacter(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const updateReportTemplate = useCallback((newTemplate: ReportQuestion[]) => {
-    setReportTemplate(newTemplate);
-  }, []);
-
-  const saveDiaryEntry = useCallback((d: string, c: string, id?: string) => {
-    let finalId = id;
-    setDiary(p => {
-      if (id) {
-        return p.map(e => e.id === id ? { ...e, date: d, content: c, updatedAt: Date.now() } : e);
+    const userDoc = doc(db, 'users', userId);
+    const unsubscribe = onSnapshot(userDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        setState(snapshot.data() as StoreState);
       } else {
-        finalId = Math.random().toString(36).substr(2, 9);
-        return [{ id: finalId, date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...p];
+        // Якщо даних немає — створюємо стартові
+        const seed = generateSeedData();
+        const initialState: StoreState = {
+            tasks: seed.tasks,
+            projects: seed.projects,
+            people: seed.people,
+            character: {
+              name: 'Герой', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+              bio: '', vision: '', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hero', 
+              energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+              preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+              stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
+            },
+            tags: seed.tags,
+            hobbies: seed.hobbies,
+            cycle: { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
+            diary: seed.diary,
+            theme: 'classic',
+            aiEnabled: false,
+            sidebarSettings: {},
+            activeTab: 'dashboard',
+            timeBlocks: seed.timeBlocks,
+            blockHistory: {},
+            routinePresets: [],
+            reportTemplate: [],
+            shoppingStores: [],
+            shoppingItems: []
+        };
+        setDoc(userDoc, initialState);
+        setState(initialState);
       }
     });
-    return finalId || '';
-  }, []);
+    return unsubscribe;
+  }, [userId]);
 
-  const value = useMemo(() => ({
-    tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, setActiveTab, theme, setTheme,
-    detailsWidth, setDetailsWidth, sidebarSettings, isSidebarCollapsed, setSidebarCollapsed, updateSidebarSetting,
-    aiEnabled, setAiEnabled, updateCharacter, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
-    reportTemplate, updateReportTemplate, shoppingStores, shoppingItems,
-    addTask: (title: string, categoryId: string = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
-        const id = Math.random().toString(36).substr(2,9);
-        const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
-        setTasks(prev => [newTask, ...prev]);
+  // Функція збереження в хмару
+  const pushUpdate = useCallback((newState: StoreState) => {
+    setDoc(doc(db, 'users', userId), newState);
+  }, [userId]);
+
+  if (!state) return null;
+
+  // Хендлери для оновлення стану через pushUpdate
+  const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? t : old) : [t, ...state.tasks] });
+  const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? p : old) });
+  const deleteTask = (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true } : t) });
+  const addTask = (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
+    const id = Math.random().toString(36).substr(2,9);
+    const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+    pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
+    return id;
+  };
+
+  const value = {
+    ...state,
+    calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
+    isSidebarCollapsed, setSidebarCollapsed, detailsWidth, setDetailsWidth,
+    setActiveTab: (tab: string) => pushUpdate({ ...state, activeTab: tab }),
+    setTheme: (t: ThemeType) => pushUpdate({ ...state, theme: t }),
+    setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
+    updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...state.sidebarSettings, [k]: v } }),
+    updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u } }),
+    addTask, updateTask, updateProject, deleteTask,
+    addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...state.projects, { ...p, id, progress: 0, status: 'active' }] }); return id; },
+    deleteProject: (id: string) => pushUpdate({ ...state, projects: state.projects.filter(p => p.id !== id) }),
+    restoreTask: (id: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === id ? { ...t, isDeleted: false } : t) }),
+    moveTaskToCategory: (id: string, c: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === id ? { ...t, category: c } : t) }),
+    moveTaskToProjectSection: (id: string, s: ProjectSection) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === id ? { ...t, projectSection: s } : t) }),
+    setProjectParent: (id: string, pId: string | undefined) => pushUpdate({ ...state, projects: state.projects.map(p => p.id === id ? { ...p, parentFolderId: pId } : p) }),
+    scheduleTask: (id: string, d: number | undefined) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === id ? { ...t, scheduledDate: d } : t) }),
+    toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined } : t) }); },
+    toggleHabitStatus: (id: string, d: string, s?: any, n?: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history }; } return t; }) }),
+    toggleTaskPin: (id: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t) }),
+    addTag: (n: string) => { const nt = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; pushUpdate({ ...state, tags: [...state.tags, nt] }); return nt; },
+    renameTag: (o: string, n: string) => pushUpdate({ ...state, tags: state.tags.map(t => t.name === o ? { ...t, name: n } : t) }),
+    deleteTag: (n: string) => pushUpdate({ ...state, tags: state.tags.filter(t => t.name !== n) }),
+    addHobby: (n: string) => { const nh = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; pushUpdate({ ...state, hobbies: [...(state.hobbies || []), nh] }); return nh; },
+    renameHobby: (o: string, n: string) => pushUpdate({ ...state, hobbies: (state.hobbies || []).map(h => h.name === o ? { ...h, name: n } : h) }),
+    deleteHobby: (n: string) => pushUpdate({ ...state, hobbies: (state.hobbies || []).filter(h => h.name !== n) }),
+    saveDiaryEntry: (d: string, c: string, id?: string) => {
+        let finalId = id || Math.random().toString(36).substr(2,9);
+        const entries = id ? state.diary?.map(e => e.id === id ? { ...e, date: d, content: c, updatedAt: Date.now() } : e) : [{ id: finalId, date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...(state.diary || [])];
+        pushUpdate({ ...state, diary: entries });
+        return finalId;
+    },
+    deleteDiaryEntry: (id: string) => pushUpdate({ ...state, diary: state.diary?.filter(e => e.id !== id) }),
+    addInboxCategory: (t: string, s: any, c?: any) => pushUpdate({ ...state, inboxCategories: [...(state.inboxCategories || []), { id: Math.random().toString(36).substr(2,9), title: t, icon: 'fa-folder', isPinned: false, scope: s, color: c }] }),
+    updateInboxCategory: (id: string, u: any) => pushUpdate({ ...state, inboxCategories: state.inboxCategories?.map(c => c.id === id ? { ...c, ...u } : c) }),
+    deleteInboxCategory: (id: string) => pushUpdate({ ...state, inboxCategories: state.inboxCategories?.filter(c => c.id !== id) }),
+    addTimeBlock: (b: any) => pushUpdate({ ...state, timeBlocks: [...(state.timeBlocks || []), { ...b, id: Math.random().toString(36).substr(2,9) }] }),
+    updateTimeBlock: (b: TimeBlock) => pushUpdate({ ...state, timeBlocks: state.timeBlocks?.map(old => old.id === b.id ? b : old) }),
+    deleteTimeBlock: (id: string) => pushUpdate({ ...state, timeBlocks: state.timeBlocks?.filter(b => b.id !== id) }),
+    setBlockStatus: (d: string, bid: string, s: any) => pushUpdate({ ...state, blockHistory: { ...state.blockHistory, [d]: { ...(state.blockHistory?.[d] || {}), [bid]: s } } }),
+    saveRoutineAsPreset: (n: string, d: number) => pushUpdate({ ...state, routinePresets: [...(state.routinePresets || []), { id: Math.random().toString(36).substr(2,9), name: n, blocks: (state.timeBlocks || []).filter(b => b.dayOfWeek === d) }] }),
+    applyRoutinePreset: (id: string, d: number) => {
+        const pr = state.routinePresets?.find(x => x.id === id);
+        if (pr) pushUpdate({ ...state, timeBlocks: [...(state.timeBlocks || []).filter(b => b.dayOfWeek !== d), ...pr.blocks.map(b => ({ ...b, id: Math.random().toString(36).substr(2,9), dayOfWeek: d }))] });
+    },
+    addChecklistItem: (tid: string, title: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t) }),
+    toggleChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === tid ? { ...t, checklist: t.checklist?.map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t) }),
+    removeChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: state.tasks.map(t => t.id === tid ? { ...t, checklist: t.checklist?.filter(i => i.id !== iid) } : t) }),
+    updateReportTemplate: (t: any) => pushUpdate({ ...state, reportTemplate: t }),
+    addPerson: (n: string, s = 'acquaintance') => {
+        const id = `p-${Math.random().toString(36).substr(2,9)}`;
+        pushUpdate({ ...state, people: [...(state.people || []), { id, name: n, status: s, rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }] });
         return id;
     },
-    addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); setProjects(prev => [...prev, { ...p, id, progress: 0, status: 'active' }]); return id; },
-    updateTask: (t: Task) => setTasks(prev => {
-      const exists = prev.some(old => old.id === t.id);
-      if (exists) return prev.map(old => old.id === t.id ? t : old);
-      return [t, ...prev];
-    }),
-    updateProject: (p: Project) => setProjects(prev => prev.map(old => old.id === p.id ? p : old)),
-    deleteProject: (id: string) => setProjects(prev => prev.filter(p => p.id !== id)),
-    deleteTask: (id: string, perm = false) => setTasks(prev => perm ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, isDeleted: true } : t)),
-    restoreTask: (id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, isDeleted: false } : t)),
-    moveTaskToCategory: (id: string, cat: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, category: cat } : t)),
-    moveTaskToProjectSection: (id: string, sec: ProjectSection) => setTasks(prev => prev.map(t => t.id === id ? { ...t, projectSection: sec } : t)),
-    setProjectParent: (id: string, pId: string | undefined) => setProjects(prev => prev.map(p => p.id === id ? { ...p, parentFolderId: pId } : p)),
-    scheduleTask: (id: string, date: number | undefined) => setTasks(prev => prev.map(t => t.id === id ? { ...t, scheduledDate: date } : t)),
-    toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined } : t)); },
-    toggleHabitStatus: (id: string, d: string, s?: any, n?: string) => setTasks(prev => prev.map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history }; } return t; })),
-    toggleTaskPin: (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t)),
+    updatePerson: (p: Person) => pushUpdate({ ...state, people: state.people?.map(old => old.id === p.id ? p : old) }),
+    deletePerson: (id: string) => pushUpdate({ ...state, people: state.people?.filter(p => p.id !== id) }),
+    addPersonMemory: (pid: string, m: any) => pushUpdate({ ...state, people: state.people?.map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...(x.memories || [])] } : x) }),
+    addPersonNote: (pid: string, t: string) => pushUpdate({ ...state, people: state.people?.map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text: t, date: new Date().toISOString() }, ...(x.notes || [])] } : x) }),
+    addInteraction: (pid: string, i: any) => pushUpdate({ ...state, people: state.people?.map(x => x.id === pid ? { ...x, lastInteractionAt: i.date, interactions: [{ ...i, id: Math.random().toString(36).substr(2,9) }, ...(x.interactions || [])] } : x) }),
+    deleteInteraction: (pid: string, iid: string) => pushUpdate({ ...state, people: state.people?.map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid) } : x) }),
+    addRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: [...new Set([...(state.relationshipTypes || []), t])] }),
+    deleteRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: state.relationshipTypes?.filter(x => x !== t) }),
+    updateCycle: (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u } }),
+    toggleCycleDay: (d: string) => {}, 
+    setWeeklyScore: (w: number, s: number) => {},
+    addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c }] }),
+    updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: state.shoppingStores?.map(x => x.id === s.id ? s : x) }),
+    deleteStore: (id: string) => pushUpdate({ ...state, shoppingStores: state.shoppingStores?.filter(x => x.id !== id), shoppingItems: state.shoppingItems?.filter(x => x.storeId !== id) }),
+    addShoppingItem: (n: string, sid: string) => pushUpdate({ ...state, shoppingItems: [...(state.shoppingItems || []), { id: Math.random().toString(36).substr(2,9), name: n, storeId: sid, isBought: false }] }),
+    updateShoppingItem: (i: ShoppingItem) => pushUpdate({ ...state, shoppingItems: state.shoppingItems?.map(x => x.id === i.id ? i : x) }),
+    toggleShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: state.shoppingItems?.map(x => x.id === id ? { ...x, isBought: !x.isBought } : x) }),
+    deleteShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: state.shoppingItems?.filter(x => x.id !== id) }),
     undoLastAction: () => {}, pendingUndo: false,
-    addTag: (n: string) => { const nt = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; setTags(p => [...p, nt]); return nt; },
-    renameTag: (o: string, n: string) => setTags(p => p.map(t => t.name === o ? { ...t, name: n } : t)),
-    deleteTag: (n: string) => setTags(p => p.filter(t => t.name !== n)),
-    addHobby: (n: string) => { const nh = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; setHobbies(p => [...p, nh]); return nh; },
-    renameHobby: (o: string, n: string) => setHobbies(p => p.map(h => h.name === o ? { ...h, name: n } : h)),
-    deleteHobby: (n: string) => setHobbies(p => p.filter(h => h.name !== n)),
-    saveDiaryEntry, deleteDiaryEntry: (id: string) => setDiary(p => p.filter(e => e.id !== id)),
-    addInboxCategory: (t: string, scope: 'inbox' | 'actions', color?: InboxCategory['color']) => setInboxCategories(p => [...p, { id: Math.random().toString(36).substr(2,9), title: t, icon: 'fa-folder', isPinned: false, scope, color }]),
-    updateInboxCategory: (id: string, u: any) => setInboxCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)),
-    deleteInboxCategory: (id: string) => setInboxCategories(p => p.filter(c => c.id !== id)),
-    addTimeBlock: (b: any) => setTimeBlocks(p => [...p, { ...b, id: Math.random().toString(36).substr(2,9) }]),
-    updateTimeBlock: (b: TimeBlock) => setTimeBlocks(p => p.map(old => old.id === b.id ? b : old)),
-    deleteTimeBlock: (id: string) => setTimeBlocks(p => p.filter(b => b.id !== id)),
-    setBlockStatus: (d: string, bid: string, s: any) => setBlockHistory(prev => ({ ...prev, [d]: { ...(prev[d] || {}), [bid]: s } })),
-    saveRoutineAsPreset: (n: string, d: number) => { const bs = timeBlocks.filter(b => b.dayOfWeek === d); setRoutinePresets(p => [...p, { id: Math.random().toString(36).substr(2,9), name: n, blocks: bs }]); },
-    applyRoutinePreset: (id: string, d: number) => { const pr = routinePresets.find(x => x.id === id); if (pr) setTimeBlocks(prev => [...prev.filter(b => b.dayOfWeek !== d), ...pr.blocks.map(b => ({ ...b, id: Math.random().toString(36).substr(2,9), dayOfWeek: d }))]); },
-    addChecklistItem: (tid: string, title: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t)),
-    toggleChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t)),
-    removeChecklistItem: (tid: string, iid: string) => setTasks(p => p.map(t => t.id === tid ? { ...t, checklist: t.checklist?.filter(i => i.id !== iid) } : t)),
-    addPerson: (n: string, status: string = 'acquaintance') => { const id = `p-${Math.random().toString(36).substr(2,9)}`; setPeople(prev => [...prev, { id, name: n, status, rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }]); return id; },
-    updatePerson: (p: Person) => setPeople(prev => prev.map(old => old.id === p.id ? p : old)),
-    deletePerson: (id: string) => setPeople(prev => prev.filter(p => p.id !== id)),
-    addPersonMemory: (pid: string, m: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...x.memories] } : x)),
-    addPersonNote: (pid: string, text: string) => setPeople(p => p.map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text, date: new Date().toISOString() }, ...x.notes] } : x)),
-    addInteraction: (pid: string, i: any) => setPeople(p => p.map(x => x.id === pid ? { ...x, lastInteractionAt: i.date, interactions: [{ ...i, id: Math.random().toString(36).substr(2,9) }, ...(x.interactions || [])] } : x)),
-    deleteInteraction: (pid: string, iid: string) => setPeople(p => p.map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid) } : x)),
-    addRelationshipType: (t: string) => setRelationshipTypes(p => [...new Set([...p, t])]),
-    deleteRelationshipType: (t: string) => setRelationshipTypes(p => p.filter(x => x !== t)),
-    updateCycle: (u: any) => setCycle(p => ({ ...p, ...u })),
-    toggleCycleDay: (d: string) => {}, setWeeklyScore: (w: number, s: number) => {},
-    addStore: (name: string, icon = 'fa-shop', color = '#f97316') => setShoppingStores(prev => [...prev, { id: Math.random().toString(36).substr(2,9), name, icon, color }]),
-    updateStore: (s: ShoppingStore) => setShoppingStores(p => p.map(x => x.id === s.id ? s : x)),
-    deleteStore: (id: string) => { setShoppingStores(p => p.filter(x => x.id !== id)); setShoppingItems(p => p.filter(x => x.storeId !== id)); },
-    addShoppingItem: (name: string, storeId: string) => setShoppingItems(prev => [...prev, { id: Math.random().toString(36).substr(2,9), name, storeId, isBought: false }]),
-    updateShoppingItem: (item: ShoppingItem) => setShoppingItems(p => p.map(x => x.id === item.id ? item : x)),
-    toggleShoppingItem: (id: string) => setShoppingItems(p => p.map(x => x.id === id ? { ...x, isBought: !x.isBought } : x)),
-    deleteShoppingItem: (id: string) => setShoppingItems(p => p.filter(x => x.id !== id))
-  }), [tasks, projects, people, relationshipTypes, cycle, character, tags, hobbies, diary, inboxCategories, timeBlocks, blockHistory, routinePresets, activeTab, theme, detailsWidth, sidebarSettings, isSidebarCollapsed, aiEnabled, calendarDate, calendarViewMode, reportTemplate, shoppingStores, shoppingItems, saveDiaryEntry, updateSidebarSetting, updateCharacter, updateReportTemplate, setAiEnabled]);
+    relationshipTypes: state.relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']
+  } as AppContextType;
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

@@ -1,7 +1,8 @@
 
 import React from 'react';
 import Typography from '../ui/Typography';
-import { CalendarViewMode } from '../../contexts/AppContext';
+/* Fixed import: CalendarViewMode is now defined in types.ts */
+import { CalendarViewMode } from '../../types';
 
 interface CalendarHeaderProps {
   currentDate: Date;

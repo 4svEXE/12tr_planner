@@ -1,14 +1,13 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './views/Dashboard';
-import StrategyMap from './views/StrategyMap';
 import Inbox from './views/Inbox';
 import Calendar from './views/Calendar';
 import Hashtags from './views/Hashtags';
 import HobbiesView from './views/HobbiesView';
-import DeepFocus from './views/DeepFocus';
 import ProjectsView from './views/ProjectsView';
 import HabitsView from './views/HabitsView';
 import NotesView from './views/NotesView';
@@ -19,18 +18,16 @@ import CharacterProfile from './views/CharacterProfile';
 import SettingsView from './views/SettingsView';
 import ShoppingView from './views/ShoppingView';
 import PlannerView from './views/PlannerView';
+import StrategyMap from './views/StrategyMap';
+import DeepFocus from './views/DeepFocus';
 import AiChat from './components/AiChat';
-import { TaskStatus, Task } from './types';
+import AuthView from './views/AuthView';
+import { TaskStatus } from './types';
 
 const MainLayout: React.FC = () => {
-  const { 
-    activeTab, setActiveTab, tasks, character, projects,
-    aiEnabled, theme
-  } = useApp();
-  
+  const { activeTab, setActiveTab, tasks, projects, aiEnabled, theme } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
-  
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
@@ -50,8 +47,7 @@ const MainLayout: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-      case 'today': return <Dashboard />;
+      case 'dashboard': case 'today': return <Dashboard />;
       case 'planner': return <PlannerView />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
@@ -71,9 +67,7 @@ const MainLayout: React.FC = () => {
       case 'settings': return <SettingsView />;
       case 'focus': return (
         <div className="flex flex-col items-center justify-center h-full p-12 text-center bg-[var(--bg-main)]">
-          <div className="w-24 h-24 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center text-4xl mb-6">
-            <i className="fa-solid fa-bullseye"></i>
-          </div>
+          <div className="w-24 h-24 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center text-4xl mb-6"><i className="fa-solid fa-bullseye"></i></div>
           <h2 className="text-3xl font-black mb-4">Глибокий Фокус</h2>
           <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl">УВІЙТИ В ПОТІК</button>
         </div>
@@ -94,16 +88,27 @@ const MainLayout: React.FC = () => {
           </button>
         )}
       </main>
-      
       <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
     </div>
   );
 };
 
-const App: React.FC = () => (
-  <AppProvider>
-    <MainLayout />
-  </AppProvider>
-);
+const App: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-slate-950">
+       <i className="fa-solid fa-circle-notch animate-spin text-orange-500 text-2xl"></i>
+    </div>
+  );
+
+  if (!user) return <AuthView />;
+
+  return (
+    <AppProvider userId={user.uid}>
+      <MainLayout />
+    </AppProvider>
+  );
+};
 
 export default App;
