@@ -1,6 +1,6 @@
-
-const CACHE_NAME = '12tr-v2';
+const CACHE_NAME = '12tr-v3';
 const ASSETS = [
+  'https://one2tr.onrender.com/',
   './',
   './index.html',
   './index.tsx',
@@ -14,7 +14,7 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Opened cache');
+      console.log('Opened cache v3');
       return cache.addAll(ASSETS);
     })
   );
@@ -28,6 +28,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -39,9 +40,19 @@ self.addEventListener('activate', (event) => {
 
 // Перехоплення запитів: спочатку кеш, потім мережа
 self.addEventListener('fetch', (event) => {
+  // Пропускаємо запити до API Gemini та зовнішніх скриптів, якщо вони не в списку
+  if (event.request.url.includes('generativelanguage.googleapis.com')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+      return response || fetch(event.request).catch(() => {
+        // Якщо мережа недоступна і ресурсу немає в кеші
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+      });
     })
   );
 });
