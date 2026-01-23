@@ -1,7 +1,7 @@
-const CACHE_NAME = '12tr-v3';
+
+const CACHE_NAME = '12tr-v4';
 const ASSETS = [
-  'https://one2tr.onrender.com/',
-  './',
+  '/',
   './index.html',
   './index.tsx',
   './manifest.json',
@@ -10,18 +10,16 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
 ];
 
-// Встановлення: кешуємо ресурси
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Opened cache v3');
+      console.log('Installing new cache v4');
       return cache.addAll(ASSETS);
     })
   );
   self.skipWaiting();
 });
 
-// Активація: видаляємо старі кеші
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -38,19 +36,21 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Перехоплення запитів: спочатку кеш, потім мережа
 self.addEventListener('fetch', (event) => {
-  // Пропускаємо запити до API Gemini та зовнішніх скриптів, якщо вони не в списку
-  if (event.request.url.includes('generativelanguage.googleapis.com')) {
+  // Не кешуємо запити до API
+  if (event.request.url.includes('generativelanguage.googleapis.com') || 
+      event.request.url.includes('google')) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
-        // Якщо мережа недоступна і ресурсу немає в кеші
+      if (response) return response;
+      
+      return fetch(event.request).catch(() => {
+        // Якщо офлайн і це навігація (сторінка), повертаємо корінь
         if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+          return caches.match('./index.html') || caches.match('/');
         }
       });
     })

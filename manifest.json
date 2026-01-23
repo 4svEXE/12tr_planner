@@ -1,3 +1,4 @@
+
 {
   "short_name": "12TR",
   "name": "12TR: Gamified Life Engine",
@@ -21,7 +22,7 @@
       "purpose": "any"
     }
   ],
-  "start_url": "https://one2tr.onrender.com/",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#f97316",
