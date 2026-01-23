@@ -55,7 +55,6 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
       nextDays = [...currentDays, idx].sort();
     }
     
-    // Автоматично виставляємо тип рекурентності
     let nextRecurrence: RecurrenceType = 'custom';
     if (nextDays.length === 7) nextRecurrence = 'daily';
     else if (nextDays.length === 5 && !nextDays.includes(5) && !nextDays.includes(6)) nextRecurrence = 'weekdays';
@@ -93,15 +92,15 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
               }`} 
               style={{ 
                 backgroundColor: cell.status === 'completed' ? selectedColor : 
-                                 cell.status === 'skipped' ? '#0f172a' : 
-                                 '#e2e8f0', 
-                borderColor: cell.status === 'completed' ? selectedColor : 'transparent'
+                                 cell.status === 'skipped' ? 'var(--text-main)' : 
+                                 'var(--bg-main)', 
+                borderColor: cell.status === 'completed' ? selectedColor : 'var(--border-color)'
               }}
             >
                {cell.status === 'completed' && <i className="fa-solid fa-check text-[7px] text-white"></i>}
-               {cell.status === 'skipped' && <i className="fa-solid fa-xmark text-[7px] text-slate-400"></i>}
+               {cell.status === 'skipped' && <i className="fa-solid fa-xmark text-[7px] text-[var(--bg-card)]"></i>}
             </div>
-            <span className={`text-[5.5px] font-black uppercase tracking-tighter ${cell.ds === today.toISOString().split('T')[0] ? 'text-orange-500' : 'text-slate-400'}`}>
+            <span className={`text-[5.5px] font-black uppercase tracking-tighter ${cell.ds === today.toISOString().split('T')[0] ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
               {cell.weekday}
             </span>
           </div>
@@ -131,11 +130,11 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
           {dots.map((dot, idx) => (
             <div 
               key={idx} 
-              className="w-1 h-1 rounded-[1px] transition-colors"
+              className="w-1.5 h-1.5 rounded-[1px] transition-colors"
               style={{ 
                 backgroundColor: dot.status === 'completed' ? selectedColor : 
-                                 dot.status === 'skipped' ? '#0f172a' : 
-                                 '#f1f5f9'
+                                 dot.status === 'skipped' ? 'var(--text-main)' : 
+                                 'var(--border-color)'
               }}
               title={dot.ds}
             ></div>
@@ -146,8 +145,8 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-       <header className="p-5 border-b border-slate-50">
+    <div className="h-full flex flex-col bg-[var(--bg-card)] text-[var(--text-main)] transition-colors duration-300">
+       <header className="p-5 border-b border-[var(--border-color)]">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-md shrink-0" style={{ backgroundColor: selectedColor }}>
@@ -158,26 +157,25 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                    value={editingTitle} 
                    onChange={e => setEditingTitle(e.target.value)} 
                    onBlur={() => onUpdate({ title: editingTitle })}
-                   className="text-sm font-black text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full"
+                   className="text-sm font-black text-[var(--text-main)] bg-transparent border-none p-0 focus:ring-0 w-full uppercase tracking-tight"
                  />
-                 <Typography variant="tiny" className="text-slate-400 text-[8px]">Налаштування та статистика</Typography>
+                 <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px] tracking-widest">Дисципліна та аналіз</Typography>
               </div>
             </div>
-            <button onClick={onClose} className="w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-300 flex items-center justify-center transition-all shrink-0"><i className="fa-solid fa-xmark text-xs"></i></button>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all shrink-0"><i className="fa-solid fa-xmark text-xs"></i></button>
           </div>
 
-          <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-lg">
+          <div className="flex gap-0.5 bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
              {(['week', 'month', 'year'] as const).map(v => (
-               <button key={v} onClick={() => setActiveView(v)} className={`flex-1 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeView === v ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400'}`}>{v === 'week' ? 'Тиж' : v === 'month' ? 'Міс' : 'Рік'}</button>
+               <button key={v} onClick={() => setActiveView(v)} className={`flex-1 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeView === v ? 'bg-[var(--bg-card)] shadow-sm text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>{v === 'week' ? 'Тиж' : v === 'month' ? 'Міс' : 'Рік'}</button>
              ))}
           </div>
        </header>
 
        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
-          {/* СЕКЦІЯ ПЛАНУВАННЯ */}
           <section className="space-y-3">
-             <Typography variant="tiny" className="text-slate-900 font-black uppercase text-[8px] px-1">Дні активності</Typography>
-             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+             <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60">Дні активності</Typography>
+             <div className="bg-[var(--bg-main)] p-3 rounded-2xl border border-[var(--border-color)]">
                 <div className="flex justify-between gap-1 mb-3">
                    {weekDaysShort.map((day, idx) => {
                      const isSelected = (habit.daysOfWeek || [0,1,2,3,4,5,6]).includes(idx);
@@ -185,7 +183,7 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                        <button 
                         key={idx}
                         onClick={() => toggleDayOfWeek(idx)}
-                        className={`w-8 h-8 rounded-lg text-[9px] font-black transition-all border ${isSelected ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-orange-200'}`}
+                        className={`w-8 h-8 rounded-lg text-[9px] font-black transition-all border ${isSelected ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--primary)]/20'}`}
                        >
                          {day}
                        </button>
@@ -193,44 +191,44 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                    })}
                 </div>
                 <div className="flex gap-1.5">
-                   <button onClick={() => setRecurrencePreset('daily')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'daily' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}`}>Щодня</button>
-                   <button onClick={() => setRecurrencePreset('weekdays')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'weekdays' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}`}>Будні</button>
+                   <button onClick={() => setRecurrencePreset('daily')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'daily' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'}`}>Щодня</button>
+                   <button onClick={() => setRecurrencePreset('weekdays')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'weekdays' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'}`}>Будні</button>
                 </div>
              </div>
           </section>
 
           <div className="grid grid-cols-2 gap-3">
-             <Card padding="sm" className="bg-orange-50/50 border-orange-100 flex flex-col items-center justify-center text-center py-3">
-                <div className="text-xl font-black text-orange-600 leading-none mb-1">{periodStats.percent}%</div>
-                <Typography variant="tiny" className="text-orange-400 text-[7px]">Ефективність</Typography>
+             <Card padding="sm" className="bg-[var(--primary)]/5 border-[var(--primary)]/20 flex flex-col items-center justify-center text-center py-3">
+                <div className="text-xl font-black text-[var(--primary)] leading-none mb-1">{periodStats.percent}%</div>
+                <Typography variant="tiny" className="text-[var(--primary)] text-[7px] opacity-60 font-black">Ефективність</Typography>
              </Card>
-             <Card padding="sm" className="bg-slate-50 border-slate-100 flex flex-col items-center justify-center text-center py-3">
-                <div className="text-xl font-black text-slate-800 leading-none mb-1">
-                  {periodStats.totalCompleted}<span className="text-xs text-slate-300">/{periodStats.totalDays}</span>
+             <Card padding="sm" className="bg-[var(--bg-main)] border-[var(--border-color)] flex flex-col items-center justify-center text-center py-3">
+                <div className="text-xl font-black text-[var(--text-main)] leading-none mb-1">
+                  {periodStats.totalCompleted}<span className="text-xs text-[var(--text-muted)]">/{periodStats.totalDays}</span>
                 </div>
-                <Typography variant="tiny" className="text-slate-400 text-[7px]">Виконано днів</Typography>
+                <Typography variant="tiny" className="text-[var(--text-muted)] text-[7px] font-black uppercase">Виконано</Typography>
              </Card>
           </div>
 
           <section>
              <div className="flex items-center justify-between mb-2 px-1">
-               <Typography variant="tiny" className="text-slate-900 font-black flex items-center gap-1.5 uppercase text-[8px]">
-                  <i className="fa-solid fa-chart-simple text-orange-500 text-[7px]"></i> {activeView === 'year' ? 'Теплова карта' : 'Активність за 14 днів'}
+               <Typography variant="tiny" className="text-[var(--text-main)] font-black flex items-center gap-1.5 uppercase text-[8px] tracking-widest">
+                  <i className="fa-solid fa-chart-simple text-[var(--primary)] text-[7px]"></i> {activeView === 'year' ? 'Теплова карта' : 'Останні 14 днів'}
                </Typography>
              </div>
-             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+             <div className="bg-[var(--bg-main)] p-4 rounded-xl border border-[var(--border-color)]">
                 {activeView === 'year' ? renderYearHeatmap() : renderPeriodGrid()}
              </div>
           </section>
 
           <section>
-             <Typography variant="tiny" className="text-slate-900 font-black mb-2 uppercase text-[8px] px-1">Колір звички</Typography>
+             <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-2 uppercase text-[8px] px-1 opacity-60">Колір звички</Typography>
              <div className="flex flex-wrap gap-1.5 px-1">
                 {colorOptions.map(c => (
                   <button 
                     key={c} 
                     onClick={() => { setSelectedColor(c); onUpdate({ color: c }); }}
-                    className={`w-6 h-6 rounded-lg transition-all ${selectedColor === c ? 'ring-2 ring-offset-1 ring-slate-200 scale-105 shadow-sm' : 'hover:scale-105'}`}
+                    className={`w-7 h-7 rounded-lg transition-all ${selectedColor === c ? 'ring-2 ring-offset-2 ring-[var(--primary)] scale-105 shadow-sm' : 'hover:scale-105 border border-[var(--border-color)]'}`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -238,8 +236,8 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
           </section>
        </div>
 
-       <footer className="p-5 border-t border-slate-50 bg-slate-50/30">
-          <Button variant="white" onClick={onClose} className="w-full rounded-xl py-3 font-black uppercase text-[8px] tracking-widest">ЗАКРИТИ</Button>
+       <footer className="p-5 border-t border-[var(--border-color)] bg-[var(--bg-main)]/30 backdrop-blur-sm">
+          <Button variant="white" onClick={onClose} className="w-full rounded-xl py-3 font-black uppercase text-[8px] tracking-widest shadow-sm">ЗАКРИТИ</Button>
        </footer>
     </div>
   );

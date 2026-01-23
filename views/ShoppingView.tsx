@@ -161,6 +161,40 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
   );
 };
 
+const QuickAddShoppingModal: React.FC<{
+  onClose: () => void;
+  onAdd: (name: string, storeId: string) => void;
+  stores: ShoppingStore[];
+}> = ({ onClose, onAdd, stores }) => {
+  const [name, setName] = useState('');
+  const [storeId, setStoreId] = useState(stores[0]?.id || '');
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
+      <Card className="w-full max-w-sm relative z-10 p-8 rounded-[2.5rem] bg-card border-theme shadow-2xl">
+         <Typography variant="h2" className="mb-6 text-xl uppercase font-black">Новий товар</Typography>
+         <div className="space-y-5">
+           <div>
+              <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Що купити?</label>
+              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Назва..." className="w-full bg-main border border-theme rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none text-main" />
+           </div>
+           <div>
+              <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Де купити?</label>
+              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full bg-main border border-theme rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none text-main appearance-none">
+                 {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+           </div>
+           <div className="flex gap-2 pt-2">
+             <Button variant="white" className="flex-1" onClick={onClose}>ВІДМІНА</Button>
+             <Button disabled={!name.trim() || !storeId} className="flex-1" onClick={() => onAdd(name, storeId)}>ДОДАТИ</Button>
+           </div>
+         </div>
+      </Card>
+    </div>
+  );
+};
+
 const ShoppingView: React.FC = () => {
   const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth, theme } = useApp();
   const { startResizing, isResizing } = useResizer(400, 700);
@@ -168,6 +202,7 @@ const ShoppingView: React.FC = () => {
   const [activeStoreId, setActiveStoreId] = useState<string>('all');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isAddingStore, setIsAddingStore] = useState(false);
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
@@ -217,6 +252,11 @@ const ShoppingView: React.FC = () => {
   const handleSelectStore = (id: string) => {
     setActiveStoreId(id);
     if (isMobileView) setIsContentViewVisible(true);
+  };
+
+  const handleQuickAdd = (name: string, storeId: string) => {
+    addShoppingItem(name, storeId);
+    setIsQuickAdding(false);
   };
 
   return (
@@ -290,7 +330,7 @@ const ShoppingView: React.FC = () => {
             )}
          </header>
 
-         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10">
+         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10 relative">
             <div className="flex flex-col gap-2 max-w-xl mx-auto md:mx-0 pb-32">
                {sortedItems.length > 0 ? sortedItems.map(item => {
                  const store = shoppingStores.find(s => s.id === item.storeId);
@@ -350,6 +390,16 @@ const ShoppingView: React.FC = () => {
                  </div>
                )}
             </div>
+
+            {/* Floating FAB for adding items in 'All' mode */}
+            {activeStoreId === 'all' && shoppingStores.length > 0 && (
+              <button 
+                onClick={() => setIsQuickAdding(true)}
+                className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all hover:scale-110"
+              >
+                <i className="fa-solid fa-plus text-xl"></i>
+              </button>
+            )}
          </div>
       </main>
 
@@ -365,6 +415,14 @@ const ShoppingView: React.FC = () => {
                />
             </div>
          </div>
+      )}
+
+      {isQuickAdding && (
+        <QuickAddShoppingModal 
+          stores={shoppingStores} 
+          onClose={() => setIsQuickAdding(false)} 
+          onAdd={handleQuickAdd} 
+        />
       )}
     </div>
   );

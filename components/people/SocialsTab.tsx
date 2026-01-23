@@ -25,9 +25,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
   const getCleanHandle = (val: string) => {
     if (!val) return '';
-    // Очищуємо від @, початкових пробілів та замикаючих слешів
     let clean = val.trim().replace(/^@/, '');
-    // Якщо вставили повне посилання, витягуємо останню частину (нік)
     if (clean.includes('/')) {
       clean = clean.split('/').filter(Boolean).pop() || '';
     }
@@ -106,11 +104,11 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100 mb-6">
-        <Typography variant="tiny" className="text-orange-600 font-black mb-2 uppercase flex items-center gap-2">
+      <div className="bg-[var(--primary)]/5 p-6 rounded-[2rem] border border-[var(--primary)]/10 mb-6">
+        <Typography variant="tiny" className="text-[var(--primary)] font-black mb-2 uppercase flex items-center gap-2">
            <i className="fa-solid fa-id-card-clip"></i> Система розвідки
         </Typography>
-        <p className="text-[10px] text-orange-800/60 leading-relaxed font-bold">
+        <p className="text-[10px] text-[var(--text-main)] opacity-60 leading-relaxed font-bold">
            Введіть нікнейми союзників. Кнопка "стрілка" відкриє профіль у браузері, "магія" — запустить ШІ розвідку для досьє.
         </p>
       </div>
@@ -123,18 +121,18 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
           const fullUrl = getFullUrl(key, val);
 
           return (
-            <div key={key} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 focus-within:ring-2 focus-within:ring-orange-100 transition-all shadow-sm group">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-focus-within:text-orange-500 transition-colors shrink-0 shadow-inner">
+            <div key={key} className="flex items-center gap-4 bg-[var(--bg-card)] p-3 rounded-2xl border border-[var(--border-color)] focus-within:ring-2 focus-within:ring-[var(--primary)]/10 transition-all shadow-sm group">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors shrink-0 shadow-inner">
                 <i className={`fa-brands ${icon}`}></i>
               </div>
               <div className="flex-1 min-w-0">
-                 <span className="text-[7px] font-black uppercase text-slate-400 block mb-0.5 tracking-widest">{key}</span>
+                 <span className="text-[7px] font-black uppercase text-[var(--text-muted)] block mb-0.5 tracking-widest opacity-60">{key}</span>
                  <div className="flex items-center gap-2">
                    <input 
                      value={val} 
                      onChange={e => handleSocialAction(key, e.target.value)}
                      placeholder={placeholder}
-                     className="flex-1 bg-transparent border-none p-0 text-xs font-bold outline-none text-slate-700 placeholder:text-slate-200"
+                     className="flex-1 bg-transparent border-none p-0 text-xs font-bold outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:opacity-30"
                    />
                    
                    {cleanHandle && (
@@ -144,7 +142,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
                            href={fullUrl} 
                            target="_blank" 
                            rel="noopener noreferrer"
-                           className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm border border-slate-100"
+                           className="w-8 h-8 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all shadow-sm border border-[var(--border-color)]"
                            title="Відкрити профіль"
                          >
                            <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
@@ -158,7 +156,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
                              disabled={!aiEnabled || isAnalyzing}
                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm border ${
                                !aiEnabled 
-                                 ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-help' 
+                                 ? 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] cursor-help opacity-40' 
                                  : 'bg-indigo-50 text-indigo-600 border-indigo-100/50 hover:bg-indigo-600 hover:text-white'
                              }`}
                              title={!aiEnabled ? "Увімкніть ШІ для аналізу" : `Проаналізувати ${key} з ШІ`}
@@ -186,8 +184,8 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
       {aiResultSummary && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur animate-in fade-in">
-          <div className="absolute inset-0 bg-slate-950/40" onClick={() => setAiResultSummary(null)}></div>
-          <Card className="w-full max-w-md bg-white border-none shadow-2xl p-8 rounded-[2.5rem] relative z-10 animate-in zoom-in-95 duration-300">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setAiResultSummary(null)}></div>
+          <Card className="w-full max-w-md bg-[var(--bg-card)] border-[var(--border-color)] shadow-2xl p-8 rounded-[2.5rem] relative z-10 animate-in zoom-in-95 duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-100">
@@ -195,7 +193,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
                 </div>
                 <div>
                   <Typography variant="h2" className="text-xl">Звіт Розвідки</Typography>
-                  <Typography variant="tiny" className="text-slate-400 uppercase tracking-widest">{aiResultSummary.platform}</Typography>
+                  <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest">{aiResultSummary.platform}</Typography>
                 </div>
               </div>
               <Badge variant="emerald" className="h-6 font-black">+{aiResultSummary.newFieldCount} INFO</Badge>
@@ -214,7 +212,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
               {aiResultSummary.addedHobbies.length > 0 && (
                 <div>
-                  <span className="text-[8px] font-black text-slate-400 uppercase mb-2 block tracking-[0.2em]">Нові інтереси</span>
+                  <span className="text-[8px] font-black text-[var(--text-muted)] uppercase mb-2 block tracking-[0.2em]">Нові інтереси</span>
                   <div className="flex flex-wrap gap-2">
                     {aiResultSummary.addedHobbies.map((h: string, i: number) => (
                       <Badge key={i} variant="indigo" className="text-[8px] lowercase font-bold">#{h}</Badge>
@@ -225,10 +223,10 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
 
               {aiResultSummary.addedNotes.length > 0 && (
                 <div>
-                  <span className="text-[8px] font-black text-slate-400 uppercase mb-2 block tracking-[0.2em]">Знайдені факти</span>
+                  <span className="text-[8px] font-black text-[var(--text-muted)] uppercase mb-2 block tracking-[0.2em]">Знайдені факти</span>
                   <div className="space-y-2">
                     {aiResultSummary.addedNotes.map((note: string, i: number) => (
-                      <div key={i} className="flex gap-3 p-3 bg-slate-50 rounded-xl text-[11px] font-bold text-slate-700 border border-slate-100 leading-tight">
+                      <div key={i} className="flex gap-3 p-3 bg-[var(--bg-main)] rounded-xl text-[11px] font-bold text-[var(--text-main)] border border-[var(--border-color)] leading-tight">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-1"></div>
                         {note.replace(`[AI ${aiResultSummary.platform.toUpperCase()}] `, '')}
                       </div>
@@ -245,7 +243,7 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
               )}
             </div>
 
-            <Button variant="primary" className="w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-orange-100" onClick={() => setAiResultSummary(null)}>ПРИЙНЯТИ ДАНІ</Button>
+            <Button variant="primary" className="w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl" onClick={() => setAiResultSummary(null)}>ПРИЙНЯТИ ДАНІ</Button>
           </Card>
         </div>
       )}

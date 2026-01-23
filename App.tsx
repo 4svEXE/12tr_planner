@@ -14,7 +14,6 @@ import NotesView from './views/NotesView';
 import DiaryView from './views/DiaryView';
 import TrashView from './views/TrashView';
 import PeopleView from './views/PeopleView';
-import CharacterProfile from './views/CharacterProfile';
 import SettingsView from './views/SettingsView';
 import ShoppingView from './views/ShoppingView';
 import PlannerView from './views/PlannerView';
@@ -47,7 +46,7 @@ const MainLayout: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': case 'today': return <Dashboard />;
+      case 'today': return <Dashboard />;
       case 'planner': return <PlannerView />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
@@ -63,13 +62,13 @@ const MainLayout: React.FC = () => {
       case 'projects': return <ProjectsView />;
       case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
       case 'trash': return <TrashView />;
-      case 'character': return <CharacterProfile />;
       case 'settings': return <SettingsView />;
       case 'focus': return (
         <div className="flex flex-col items-center justify-center h-full p-12 text-center bg-[var(--bg-main)]">
           <div className="w-24 h-24 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center text-4xl mb-6"><i className="fa-solid fa-bullseye"></i></div>
           <h2 className="text-3xl font-black mb-4">Глибокий Фокус</h2>
-          <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl">УВІЙТИ В ПОТІК</button>
+          <p className="text-sm text-[var(--text-muted)] max-w-xs mb-8 font-medium">Сесія концентрації без відволікань. Оберіть час та увійдіть у потік.</p>
+          <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all">УВІЙТИ В ПОТІК</button>
         </div>
       );
       default: return <Dashboard />;
@@ -81,7 +80,7 @@ const MainLayout: React.FC = () => {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
       <main className="flex-1 overflow-y-auto relative">
         {renderContent()}
-        {showFocusMode && <DeepFocus taskTitle={tasks.find(t => !t.isDeleted)?.title || "Робота над проектом"} onExit={() => setShowFocusMode(false)} />}
+        {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
         {aiEnabled && !isAiOpen && (
           <button onClick={() => setIsAiOpen(true)} className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[150] hover:scale-110 active:scale-95 transition-all">
             <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>

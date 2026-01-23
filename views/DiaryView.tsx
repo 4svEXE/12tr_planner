@@ -239,16 +239,25 @@ const DiaryView: React.FC = () => {
             <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 pb-40">
               <div className="block lg:hidden">{renderCalendar(true)}</div>
               
-              <div className="lg:hidden grid grid-cols-2 gap-3 mx-2 mb-6">
-                <button onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }} className="bg-primary text-white p-5 rounded-[1.8rem] shadow-xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
-                  <i className="fa-solid fa-pen-fancy text-lg"></i>
-                  <span className="text-[9px] font-black uppercase tracking-widest">Написати</span>
-                </button>
-                <button onClick={() => setShowReportWizard(true)} className="bg-card border border-theme p-5 rounded-[1.8rem] shadow-sm flex flex-col items-center justify-center gap-2 active:scale-95 transition-all text-main">
-                  <i className="fa-solid fa-chart-line text-lg text-primary"></i>
-                  <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Звіт дня</span>
-                </button>
-              </div>
+              {/* MOBILE COMPACT FAB BUTTONS */}
+              {!editingEntryId && isMobile && (
+                <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-50 animate-in slide-in-from-bottom-4 duration-500">
+                  <button 
+                    onClick={() => setShowReportWizard(true)}
+                    className="w-12 h-12 rounded-full bg-card border border-theme shadow-lg flex items-center justify-center text-primary active:scale-90 transition-all"
+                    title="Звіт дня"
+                  >
+                    <i className="fa-solid fa-chart-line text-lg"></i>
+                  </button>
+                  <button 
+                    onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
+                    className="w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center active:scale-90 transition-all"
+                    title="Написати"
+                  >
+                    <i className="fa-solid fa-pen-fancy text-xl"></i>
+                  </button>
+                </div>
+              )}
 
               {(Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, entries]) => (
                 <div key={month} className="space-y-3 px-2 md:px-0">

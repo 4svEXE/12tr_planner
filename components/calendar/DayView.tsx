@@ -88,6 +88,9 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
   const [showBlockModal, setShowBlockModal] = useState<Partial<TimeBlock> | null>(null);
   const [showPresets, setShowPresets] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Акордеон по дефолту закритий
+  const [isTasksExpanded, setIsTasksExpanded] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -137,124 +140,147 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
 
   return (
     <div className="flex flex-col lg:flex-row h-full gap-4 md:gap-6">
-       <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar">
-          <div className="bg-[var(--bg-card)] rounded-2xl md:rounded-[2.5rem] p-5 md:p-10 shadow-sm border border-[var(--border-color)]">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
-              <div>
-                <Typography variant="h3" className="text-xl md:text-2xl mb-1">{currentDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })}</Typography>
-                <Typography variant="caption" className="text-[var(--primary)]">{currentDate.toLocaleDateString('uk-UA', { weekday: 'long' })}</Typography>
+       {/* ЗАВДАННЯ ТА РОЗПОРЯДОК У ЄДИНОМУ КОНТЕЙНЕРІ ДЛЯ МОБІЛКИ */}
+       <div className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar pb-20">
+          
+          {/* PLANS ACCORDION */}
+          <div className="bg-[var(--bg-card)] rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-[var(--border-color)] overflow-hidden shrink-0">
+            <div 
+              onClick={() => setIsTasksExpanded(!isTasksExpanded)}
+              className="flex items-center justify-between gap-3 p-4 md:p-8 cursor-pointer hover:bg-black/[0.02] transition-all group select-none active:scale-[0.99]"
+            >
+              <div className="min-w-0 flex flex-col">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <Typography variant="h3" className="text-base md:text-2xl font-black leading-none group-hover:text-[var(--primary)] transition-colors">
+                    {currentDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })}
+                  </Typography>
+                  <Typography variant="caption" className="text-[var(--primary)] lowercase text-[10px] md:text-xs font-bold">
+                    {currentDate.toLocaleDateString('uk-UA', { weekday: 'long' })}
+                  </Typography>
+                </div>
               </div>
-              <Badge variant="orange" className="px-4 py-1.5 rounded-xl uppercase font-black text-[8px] md:text-[10px] tracking-widest">{dayTasks.length} АКТИВНИХ КВЕСТІВ</Badge>
+              <div className="flex items-center gap-3">
+                <Badge variant="orange" className="px-2 md:px-4 py-1 rounded-lg md:rounded-xl uppercase font-black text-[8px] md:text-[10px] tracking-widest shrink-0 whitespace-nowrap">
+                  {dayTasks.length} {window.innerWidth < 768 ? 'АКТИВНО' : 'АКТИВНИХ КВЕСТІВ'}
+                </Badge>
+                <i className={`fa-solid fa-chevron-down text-[10px] text-[var(--text-muted)] transition-transform duration-300 ${isTasksExpanded ? 'rotate-180 text-[var(--primary)]' : 'opacity-40'}`}></i>
+              </div>
             </div>
 
-            {personEvents.length > 0 && (
-              <div className="mb-6 md:mb-8 space-y-3">
-                 <Typography variant="tiny" className="text-[var(--text-muted)] mb-2 uppercase tracking-widest font-black text-[8px]">Події союзників</Typography>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {personEvents.map(pe => (
-                      <div key={pe.id} className="p-4 md:p-5 rounded-2xl md:rounded-[2rem] border-2 bg-amber-500/5 border-amber-500/20 flex items-center gap-3 md:gap-4">
-                         <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                            <i className="fa-solid fa-cake-candles"></i>
+            {/* EXPANDABLE CONTENT */}
+            {isTasksExpanded && (
+              <div className="px-4 md:px-8 pb-8 animate-in slide-in-from-top-2 duration-300 border-t border-[var(--border-color)]/50 pt-6 bg-gradient-to-b from-transparent to-black/[0.01]">
+                {personEvents.length > 0 && (
+                  <div className="mb-6 md:mb-8 space-y-3">
+                     <Typography variant="tiny" className="text-[var(--text-muted)] mb-2 uppercase tracking-widest font-black text-[8px]">Події союзників</Typography>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {personEvents.map(pe => (
+                          <div key={pe.id} className="p-4 md:p-5 rounded-2xl border-2 bg-amber-500/5 border-amber-500/20 flex items-center gap-3 md:gap-4">
+                             <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                                <i className="fa-solid fa-cake-candles"></i>
+                             </div>
+                             <div className="min-w-0">
+                                <div className="text-[10px] md:text-[11px] font-black uppercase tracking-tight text-amber-700 truncate">{pe.title}</div>
+                                <div className="text-[8px] md:text-[9px] font-bold text-amber-600/60">Важлива подія сьогодні!</div>
+                             </div>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
+                )}
+
+                <div className="space-y-2 md:space-y-3">
+                   {dayTasks.map(t => (
+                     <div key={t.id} onClick={() => onSelectTask(t.id)} className={`flex items-center gap-3 md:gap-4 p-4 md:p-5 rounded-xl md:rounded-[2rem] transition-all cursor-pointer group border ${t.isEvent ? 'bg-[var(--primary)]/5 border-[var(--primary)]/20' : 'bg-[var(--bg-main)]/30 border-[var(--border-color)] hover:border-[var(--primary)]/40 shadow-sm'}`}>
+                       <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${t.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-card)] text-transparent group-hover:border-[var(--primary)]'}`}>
+                         <i className="fa-solid fa-check text-xs"></i>
+                       </button>
+                       <div className="flex-1 min-w-0 text-left">
+                         <span className={`text-[13px] md:text-sm font-bold truncate block tracking-tight ${t.status === TaskStatus.DONE ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>{t.title}</span>
+                         <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={t.isEvent ? "rose" : "slate"} className="text-[7px] md:text-[8px] py-0 px-1.5 font-black uppercase tracking-widest">{t.isEvent ? 'Подія' : 'Квест'}</Badge>
                          </div>
-                         <div className="min-w-0">
-                            <div className="text-[10px] md:text-[11px] font-black uppercase tracking-tight text-amber-700 truncate">{pe.title}</div>
-                            <div className="text-[8px] md:text-[9px] font-bold text-amber-600/60">Важлива подія сьогодні!</div>
-                         </div>
-                      </div>
-                    ))}
-                 </div>
+                       </div>
+                       <i className="fa-solid fa-chevron-right text-[10px] text-[var(--text-muted)] opacity-30 group-hover:translate-x-1 group-hover:opacity-100 transition-all"></i>
+                     </div>
+                   ))}
+                   {dayTasks.length === 0 && personEvents.length === 0 && (
+                     <div className="py-12 md:py-20 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
+                        <i className="fa-solid fa-mountain-sun text-5xl md:text-6xl mb-4"></i>
+                        <Typography variant="h3" className="text-base uppercase tracking-[0.2em]">Вільний горизонт</Typography>
+                     </div>
+                   )}
+                </div>
               </div>
             )}
+          </div>
 
-            <div className="space-y-2 md:space-y-3">
-               {dayTasks.map(t => (
-                 <div key={t.id} onClick={() => onSelectTask(t.id)} className={`flex items-center gap-3 md:gap-4 p-4 md:p-5 rounded-xl md:rounded-[2rem] transition-all cursor-pointer group border ${t.isEvent ? 'bg-[var(--primary)]/5 border-[var(--primary)]/20' : 'bg-[var(--bg-main)]/30 border-[var(--border-color)] hover:border-[var(--primary)]/40 shadow-sm'}`}>
-                   <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${t.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-card)] text-transparent group-hover:border-[var(--primary)]'}`}>
-                     <i className="fa-solid fa-check text-xs"></i>
+          {/* SCHEDULE SECTION - MOVED DIRECTLY BELOW PLANS */}
+          <div className="w-full lg:w-auto bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col shadow-sm rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative min-h-[500px]">
+             <header className="p-4 md:p-6 border-b border-[var(--border-color)] flex items-center justify-between shrink-0 bg-[var(--bg-card)]/80 backdrop-blur z-20">
+               <div className="flex flex-col">
+                 <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-1 text-[8px] md:text-[10px] tracking-widest">РОЗПОРЯДОК</Typography>
+                 <div className="flex items-center gap-3">
+                   <button onClick={() => setShowPresets(!showPresets)} className="text-[7px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline">
+                      ПРЕСЕТИ ({routinePresets.length})
                    </button>
-                   <div className="flex-1 min-w-0">
-                     <span className={`text-[13px] md:text-sm font-bold truncate block ${t.status === TaskStatus.DONE ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>{t.title}</span>
-                     <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={t.isEvent ? "rose" : "slate"} className="text-[7px] md:text-[8px] py-0 px-1.5">{t.isEvent ? 'Подія' : 'Квест'}</Badge>
-                     </div>
-                   </div>
-                   <i className="fa-solid fa-chevron-right text-[10px] text-[var(--text-muted)] opacity-30 group-hover:translate-x-1 group-hover:opacity-100 transition-all"></i>
+                   <button onClick={() => { const n = prompt('Назва пресету:'); if(n) saveRoutineAsPreset(n, dayOfWeek); }} className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--primary)]">
+                      ЗБЕРЕГТИ
+                   </button>
                  </div>
-               ))}
-               {dayTasks.length === 0 && personEvents.length === 0 && (
-                 <div className="py-12 md:py-20 text-center opacity-10 flex flex-col items-center">
-                    <i className="fa-solid fa-mountain-sun text-5xl md:text-6xl mb-4"></i>
-                    <Typography variant="h3" className="text-base uppercase tracking-[0.2em]">Вільний горизонт</Typography>
-                 </div>
-               )}
-            </div>
+               </div>
+               <button onClick={() => setShowBlockModal({ dayOfWeek })} className="w-10 h-10 rounded-xl bg-[var(--text-main)] text-[var(--bg-main)] hover:opacity-90 shadow-xl transition-all flex items-center justify-center">
+                  <i className="fa-solid fa-plus text-xs"></i>
+               </button>
+             </header>
+
+             <div ref={scheduleScrollRef} className="flex-1 overflow-y-auto custom-scrollbar relative bg-[var(--bg-main)]/20 min-h-[400px]">
+               <div className="absolute left-0 top-0 w-full" style={{ height: 24 * HOUR_HEIGHT }}>
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <div key={i} className="flex items-start border-t border-[var(--border-color)]/30" style={{ height: HOUR_HEIGHT }}>
+                      <span className="text-[9px] font-black text-[var(--text-muted)] opacity-30 p-2 w-10 md:w-12 text-right tabular-nums">{i}:00</span>
+                      <div className="flex-1 h-px mt-[1px]"></div>
+                    </div>
+                  ))}
+
+                  {relevantBlocks.map(block => (
+                    <div 
+                      key={block.id} 
+                      onClick={() => setShowBlockModal(block)}
+                      className="absolute left-10 md:left-12 right-2 md:right-4 rounded-xl md:rounded-2xl p-2 md:p-3 text-white text-[10px] md:text-[11px] font-bold shadow-lg shadow-black/5 cursor-pointer hover:brightness-105 transition-all group overflow-hidden border-2 border-white/10"
+                      style={{ 
+                        top: block.startHour * HOUR_HEIGHT, 
+                        height: (block.endHour - block.startHour) * HOUR_HEIGHT - 4,
+                        backgroundColor: block.color || 'var(--primary)'
+                      }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className="truncate pr-4 uppercase tracking-tight leading-tight">{block.title}</span>
+                        <i onClick={(e) => { e.stopPropagation(); deleteTimeBlock(block.id); }} className="fa-solid fa-trash-can text-[9px] opacity-0 group-hover:opacity-100 hover:scale-110 transition-all"></i>
+                      </div>
+                      <div className="text-[8px] md:text-[9px] opacity-70 font-black tabular-nums mt-1">{block.startHour}:00 - {block.endHour}:00</div>
+                    </div>
+                  ))}
+
+                  {isToday && (
+                    <div 
+                      className="absolute left-0 right-0 z-30 pointer-events-none flex items-center" 
+                      style={{ top: timeIndicatorPos }}
+                    >
+                      <div className="w-10 md:w-12 text-[7px] md:text-[8px] font-black text-rose-500 bg-[var(--bg-card)]/90 backdrop-blur rounded-r-lg py-0.5 px-1 shadow-sm border border-rose-100 border-l-0 text-right tabular-nums">
+                        {currentTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="flex-1 h-0.5 bg-rose-500/30 relative">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-rose-500 shadow-lg ring-4 ring-rose-100"></div>
+                      </div>
+                    </div>
+                  )}
+               </div>
+             </div>
           </div>
        </div>
 
-       {/* Schedule Column */}
-       <div className="w-full lg:w-96 bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col shadow-sm rounded-2xl md:rounded-[2.5rem] overflow-hidden relative min-h-[400px]">
-          <header className="p-4 md:p-6 border-b border-[var(--border-color)] flex items-center justify-between shrink-0 bg-[var(--bg-card)]/80 backdrop-blur z-20">
-            <div className="flex flex-col">
-              <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-1 text-[8px] md:text-[10px]">РОЗПОРЯДОК</Typography>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowPresets(!showPresets)} className="text-[7px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline">
-                   ПРЕСЕТИ ({routinePresets.length})
-                </button>
-                <button onClick={() => { const n = prompt('Назва пресету:'); if(n) saveRoutineAsPreset(n, dayOfWeek); }} className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--primary)]">
-                   ЗБЕРЕГТИ
-                </button>
-              </div>
-            </div>
-            <button onClick={() => setShowBlockModal({ dayOfWeek })} className="w-10 h-10 rounded-xl bg-[var(--text-main)] text-[var(--bg-main)] hover:opacity-90 shadow-xl transition-all flex items-center justify-center">
-               <i className="fa-solid fa-plus text-xs"></i>
-            </button>
-          </header>
-
-          <div ref={scheduleScrollRef} className="flex-1 overflow-y-auto custom-scrollbar relative bg-[var(--bg-main)]/20">
-            <div className="absolute left-0 top-0 w-full" style={{ height: 24 * HOUR_HEIGHT }}>
-               {Array.from({ length: 24 }, (_, i) => (
-                 <div key={i} className="flex items-start border-t border-[var(--border-color)]/30" style={{ height: HOUR_HEIGHT }}>
-                   <span className="text-[9px] font-black text-[var(--text-muted)] opacity-30 p-2 w-10 md:w-12 text-right tabular-nums">{i}:00</span>
-                   <div className="flex-1 h-px mt-[1px]"></div>
-                 </div>
-               ))}
-
-               {relevantBlocks.map(block => (
-                 <div 
-                   key={block.id} 
-                   onClick={() => setShowBlockModal(block)}
-                   className="absolute left-10 md:left-12 right-2 md:right-3 rounded-xl md:rounded-2xl p-2 md:p-3 text-white text-[10px] md:text-[11px] font-bold shadow-lg shadow-black/5 cursor-pointer hover:brightness-105 transition-all group overflow-hidden border-2 border-white/10"
-                   style={{ 
-                     top: block.startHour * HOUR_HEIGHT, 
-                     height: (block.endHour - block.startHour) * HOUR_HEIGHT - 4,
-                     backgroundColor: block.color || 'var(--primary)'
-                   }}
-                 >
-                   <div className="flex justify-between items-start">
-                     <span className="truncate pr-4 uppercase tracking-tight leading-tight">{block.title}</span>
-                     <i onClick={(e) => { e.stopPropagation(); deleteTimeBlock(block.id); }} className="fa-solid fa-trash-can text-[9px] opacity-0 group-hover:opacity-100 hover:scale-110 transition-all"></i>
-                   </div>
-                   <div className="text-[8px] md:text-[9px] opacity-70 font-black tabular-nums mt-1">{block.startHour}:00 - {block.endHour}:00</div>
-                 </div>
-               ))}
-
-               {isToday && (
-                 <div 
-                   className="absolute left-0 right-0 z-30 pointer-events-none flex items-center" 
-                   style={{ top: timeIndicatorPos }}
-                 >
-                   <div className="w-10 md:w-12 text-[7px] md:text-[8px] font-black text-rose-500 bg-[var(--bg-card)]/90 backdrop-blur rounded-r-lg py-0.5 px-1 shadow-sm border border-rose-100 border-l-0 text-right tabular-nums">
-                     {currentTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
-                   </div>
-                   <div className="flex-1 h-0.5 bg-rose-500/30 relative">
-                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-rose-500 shadow-lg ring-4 ring-rose-100"></div>
-                   </div>
-                 </div>
-               )}
-            </div>
-          </div>
-       </div>
-
+       {/* MODALS remain at top level */}
        {showBlockModal && (
          <TimeBlockModal 
            block={showBlockModal} 
@@ -286,12 +312,6 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSelectTask, onAddQuick
                       <div className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">{p.blocks.length} блоків</div>
                    </button>
                  ))}
-                 {routinePresets.length === 0 && (
-                   <div className="text-center py-8 opacity-20">
-                      <i className="fa-solid fa-box-open text-3xl mb-2"></i>
-                      <p className="text-[9px] font-black uppercase tracking-widest">Пресетів нема</p>
-                   </div>
-                 )}
               </div>
               <Button variant="white" className="w-full mt-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest" onClick={() => setShowPresets(false)}>ЗАКРИТИ</Button>
            </div>

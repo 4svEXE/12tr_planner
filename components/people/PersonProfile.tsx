@@ -26,7 +26,7 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose, initia
   const { 
     people, updatePerson, character, 
     aiEnabled, tasks, addTask, toggleTaskStatus,
-    addInteraction, deleteInteraction, relationshipTypes, addRelationshipType
+    addInteraction, deleteInteraction, relationshipTypes, addRelationshipType, deletePerson
   } = useApp();
   
   const person = people.find(p => p.id === personId);
@@ -75,11 +75,18 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose, initia
     }
   };
 
+  const handleDelete = () => {
+    if (confirm(`Видалити контакт ${person.name} назавжди?`)) {
+      deletePerson(person.id);
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-white border-l border-slate-100 z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
-       <header className="p-3 md:p-8 border-b border-slate-50 flex justify-between items-start shrink-0">
+    <div className="fixed top-0 right-0 h-full w-full md:w-[580px] bg-[var(--bg-card)] border-l border-[var(--border-color)] z-[110] shadow-[-20px_0_60px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+       <header className="p-4 md:p-8 border-b border-[var(--border-color)] flex justify-between items-start shrink-0 bg-[var(--bg-card)]">
           <div className="flex items-center gap-3 md:gap-5 min-w-0">
-             <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-[2rem] bg-slate-50 ring-2 md:ring-4 ring-orange-50 overflow-hidden shadow-lg shrink-0 group relative">
+             <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-[2rem] bg-[var(--bg-main)] ring-2 md:ring-4 ring-[var(--primary)]/10 overflow-hidden shadow-lg shrink-0 group relative">
                 <img 
                   src={person.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} 
                   className="w-full h-full object-cover transition-transform group-hover:scale-110" 
@@ -87,26 +94,29 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose, initia
                 <button onClick={() => handleFetchSocialAvatar()} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i className="fa-solid fa-sync text-white text-xs"></i></button>
              </div>
              <div className="flex-1 min-w-0">
-                <input className="text-base md:text-xl font-black text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full mb-0.5 md:mb-1 truncate" value={person.name} onChange={e => handleUpdate({ name: e.target.value })} />
+                <input className="text-base md:text-xl font-black text-[var(--text-main)] bg-transparent border-none p-0 focus:ring-0 w-full mb-0.5 md:mb-1 truncate uppercase tracking-tight" value={person.name} onChange={e => handleUpdate({ name: e.target.value })} />
                 <div className="flex items-center gap-1 md:gap-2">
                    <Badge variant="orange" className="text-[6px] md:text-[8px] uppercase">{person.status}</Badge>
                    <Badge variant="yellow" className="text-[6px] md:text-[8px] uppercase">Karma {person.rating || 0}</Badge>
                 </div>
              </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-all shrink-0"><i className="fa-solid fa-xmark text-xs md:text-sm"></i></button>
+          <div className="flex items-center gap-1 md:gap-2 shrink-0">
+             <button onClick={handleDelete} className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-2xl bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-rose-500 flex items-center justify-center transition-all" title="Видалити союзника"><i className="fa-solid fa-trash-can text-xs"></i></button>
+             <button onClick={onClose} className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-2xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all" title="Закрити"><i className="fa-solid fa-xmark text-xs md:text-sm"></i></button>
+          </div>
        </header>
 
-       <div className="flex border-b border-slate-50 px-1 md:px-4 shrink-0 overflow-x-auto no-scrollbar bg-white sticky top-0 z-30">
+       <div className="flex border-b border-[var(--border-color)] px-1 md:px-4 shrink-0 overflow-x-auto no-scrollbar bg-[var(--bg-card)]/90 backdrop-blur sticky top-0 z-30">
           {(['dossier', 'dates', 'skills', 'vcard', 'timeline', 'tasks', 'ai'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-none md:flex-1 min-w-[65px] md:min-w-[80px] px-3 py-3 md:py-4 text-[7px] md:text-[9px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-orange-600' : 'text-slate-400'}`}>
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-none md:flex-1 min-w-[65px] md:min-w-[80px] px-3 py-3 md:py-4 text-[7px] md:text-[9px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
               {tab === 'dossier' ? 'Досьє' : tab === 'dates' ? 'Дати' : tab === 'skills' ? 'Деталі' : tab === 'vcard' ? 'Профілі' : tab === 'timeline' ? 'Лог' : tab === 'tasks' ? 'Квести' : 'ШІ'}
-              {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600"></div>}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--primary)]"></div>}
             </button>
           ))}
        </div>
 
-       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-white">
+       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-[var(--bg-card)]">
           {activeTab === 'dossier' && <DossierTab person={person} onUpdate={handleUpdate} onAddInteraction={handleAddKarmaLog} />}
           {activeTab === 'dates' && <DatesTab person={person} onUpdate={handleUpdate} />}
           {activeTab === 'skills' && <InfoTab person={person} onUpdate={handleUpdate} onAddHobby={h => handleUpdate({ hobbies: [...person.hobbies, h] })} onAddSkill={s => handleUpdate({ tags: [...person.tags, s] })} relationshipTypes={relationshipTypes} onAddRelType={addRelationshipType} />}
@@ -116,7 +126,7 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId, onClose, initia
           {activeTab === 'ai' && <AiStrategyTab person={person} aiEnabled={aiEnabled} isAnalyzing={isAnalyzing} onAnalyze={handleGenerateAI} />}
        </div>
 
-       <footer className="p-4 md:p-6 border-t border-slate-50 bg-slate-50/30 flex gap-3 md:gap-4 shrink-0 mb-safe">
+       <footer className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-main)]/50 backdrop-blur flex gap-3 md:gap-4 shrink-0 mb-safe">
           <Button variant="white" onClick={onClose} className="flex-1 rounded-xl md:rounded-2xl py-2.5 md:py-4 font-black uppercase text-[7px] md:text-[10px] tracking-widest shadow-sm">ЗАКРИТИ</Button>
        </footer>
     </div>

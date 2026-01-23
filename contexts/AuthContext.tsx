@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User } from '../services/firebase';
+import { onAuthStateChanged, User } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -12,31 +12,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>({ 
+    uid: 'local-user', 
+    displayName: 'Локальний Гравець', 
+    photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LocalHero' 
+  });
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
+  // В локальному режимі ми просто тримаємо сесію завжди активною
   const login = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Помилка входу:", error);
-    }
+    setLoading(true);
+    setTimeout(() => setLoading(false), 500);
   };
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Помилка виходу:", error);
-    }
+    alert("Локальний режим: Вихід не видаляє дані, лише очищує сесію браузера.");
+    setUser(null);
   };
 
   return (

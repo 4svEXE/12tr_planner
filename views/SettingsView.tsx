@@ -14,7 +14,8 @@ const SettingsView: React.FC = () => {
     updateSidebarSetting, character, updateCharacter 
   } = useApp();
   
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(window.innerWidth < 1024 ? 'profile' : 'profile');
+  // Змінено: за замовчуванням null, щоб бачити список розділів (основні налаштування)
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -45,8 +46,8 @@ const SettingsView: React.FC = () => {
   };
 
   const sections = [
-    { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
+    { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
     { id: 'sidebar', icon: 'fa-bars-staggered', label: 'Навігація', color: 'text-amber-500', desc: 'Бокова панель' },
     { id: 'data', icon: 'fa-database', label: 'Сховище', color: 'text-rose-500', desc: 'Резервні копії' },
@@ -160,9 +161,9 @@ const SettingsView: React.FC = () => {
         );
       case 'sidebar':
         const navItems = [
-          { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
           { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
           { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні' },
+          { id: 'planner', icon: 'fa-calendar-check', label: 'Планувальник' },
           { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
           { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
           { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки' },

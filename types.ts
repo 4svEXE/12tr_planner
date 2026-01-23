@@ -187,6 +187,7 @@ export interface Person {
   aiPortrait?: any;
   lastInteractionAt?: number;
   createdAt: number;
+  isDeleted?: boolean;
 }
 
 export interface Task {
