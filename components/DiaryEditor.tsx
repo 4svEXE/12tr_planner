@@ -36,7 +36,7 @@ const EditableBlock: React.FC<{
     if (contentRef.current && contentRef.current.innerHTML !== block.content) {
       contentRef.current.innerHTML = block.content;
     }
-  }, [block.id]);
+  }, [block.id, block.content]);
 
   useEffect(() => {
     if (isFocused && contentRef.current) {
@@ -122,19 +122,55 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   
   const saveTimeoutRef = useRef<number | null>(null);
 
+  // Sync internal ID with prop ID to handle switching entries
+  useEffect(() => {
+    setCurrentId(id);
+  }, [id]);
+
+  const parseMarkdownToBlocks = (md: string): Block[] => {
+    if (!md) return [{ id: 'b1', type: 'text', content: '' }];
+    
+    const lines = md.split('\n');
+    return lines.map((line, i) => {
+      let type: Block['type'] = 'text';
+      let content = line.trim();
+      let checked = false;
+
+      if (line.startsWith('#### ')) { type = 'h3'; content = line.replace('#### ', ''); }
+      else if (line.startsWith('### ')) { type = 'h2'; content = line.replace('### ', ''); }
+      else if (line.startsWith('## ')) { type = 'heading'; content = line.replace('## ', ''); }
+      else if (line.startsWith('- [x] ')) { type = 'task'; content = line.replace('- [x] ', ''); checked = true; }
+      else if (line.startsWith('- [ ] ')) { type = 'task'; content = line.replace('- [ ] ', ''); }
+      else if (line.startsWith('- ')) { type = 'bullet'; content = line.replace('- ', ''); }
+      else if (line.startsWith('> ')) { type = 'quote'; content = line.replace('> ', ''); }
+      else if (line === '---') { type = 'divider'; content = ''; }
+
+      // Форматуємо жирний текст та курсив у HTML для відображення в editor
+      content = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+      return { id: `b-${i}-${Math.random()}`, type, content: content || '<br>', checked };
+    }).filter(b => b.content !== '' || b.type === 'divider');
+  };
+
   useEffect(() => {
     const content = standaloneMode ? initialContent : diary.find(e => e.id === currentId)?.content;
     if (content) {
-      try {
-        const parsed = JSON.parse(content);
-        setBlocks(Array.isArray(parsed) ? parsed : [{ id: 'b1', type: 'text', content: content }]);
-      } catch (e) {
-        setBlocks([{ id: 'b1', type: 'text', content: content }]);
+      if (content.startsWith('[') || content.startsWith('[{')) {
+        try {
+          const parsed = JSON.parse(content);
+          setBlocks(Array.isArray(parsed) ? parsed : [{ id: 'b1', type: 'text', content: content }]);
+        } catch (e) {
+          setBlocks(parseMarkdownToBlocks(content));
+        }
+      } else {
+        setBlocks(parseMarkdownToBlocks(content));
       }
     } else {
       setBlocks([{ id: 'b1', type: 'text', content: '' }]);
     }
-  }, [id, currentId]);
+  }, [currentId, initialContent, standaloneMode, diary]);
 
   const handleManualSave = () => {
     const contentStr = JSON.stringify(blocks);
@@ -238,9 +274,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
         <div className="flex items-center gap-2">
            <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-[var(--primary)] animate-pulse shadow-[0_0_8px_var(--primary)]' : 'bg-emerald-400'}`}></div>
            <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] opacity-60">{isSaving ? 'Синхронізація' : 'Збережено'}</span>
-        </div>
-        <div className="flex gap-4">
-          <button className="text-[9px] font-black uppercase text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors tracking-widest opacity-40 hover:opacity-100">Журнал змін</button>
         </div>
       </footer>
     </div>

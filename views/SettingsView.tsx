@@ -14,7 +14,6 @@ const SettingsView: React.FC = () => {
     updateSidebarSetting, character, updateCharacter 
   } = useApp();
   
-  // Змінено: за замовчуванням null, щоб бачити список розділів (основні налаштування)
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -34,7 +33,7 @@ const SettingsView: React.FC = () => {
 
   const handleSaveApiKey = () => {
     localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
-    alert('API Ключ збережено.');
+    alert('API Ключ збережено. Тепер ви можете активувати ШІ.');
   };
 
   const handleSendFeedback = (e: React.FormEvent) => {
@@ -140,20 +139,39 @@ const SettingsView: React.FC = () => {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Card className="border-[var(--border-color)] p-8 relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--primary)]/10 blur-[80px]"></div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-8">
                    <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-lg"><i className="fa-solid fa-wand-magic-sparkles text-xl text-white"></i></div>
-                   <button onClick={() => setAiEnabled(!aiEnabled)} className={`w-14 h-7 rounded-full relative transition-all ${aiEnabled ? 'bg-emerald-500' : 'bg-[var(--text-muted)]/20'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${aiEnabled ? 'right-1.5' : 'left-1.5'}`}></div></button>
+                   <Badge variant="emerald" className="font-black">Active Assistant Ready</Badge>
                 </div>
                 <Typography variant="h2" className="mb-2 text-2xl">Двигун Інтелекту</Typography>
-                <p className="text-xs text-slate-500 leading-relaxed mb-6 italic">Використовується для декомпозиції завдань, аналізу людей та ранкових брифінгів.</p>
-                <div className="space-y-3 bg-[var(--bg-main)] p-6 rounded-[1.8rem] border border-[var(--border-color)]">
-                   <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] block">Gemini Cloud API Key</label>
-                   <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <input type={showKey ? "text" : "password"} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Введіть ключ..." className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-[11px] font-mono outline-none focus:border-[var(--primary)] text-[var(--text-main)]" />
-                        <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"><i className={`fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
+                <p className="text-xs text-slate-500 leading-relaxed mb-8 italic">Використовується для декомпозиції завдань, аналізу людей та стратегічної ретроспективи дня.</p>
+                
+                <div className="space-y-6">
+                   <div className="bg-[var(--bg-main)] p-6 rounded-[2rem] border border-[var(--border-color)] shadow-inner">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] block mb-3 ml-1">Gemini Cloud API Key</label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input type={showKey ? "text" : "password"} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="AIza..." className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-[11px] font-mono outline-none focus:border-[var(--primary)] text-[var(--text-main)] shadow-sm" />
+                          <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"><i className={`fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
+                        </div>
+                        <button onClick={handleSaveApiKey} className="bg-slate-900 text-white px-6 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-black active:scale-95 shadow-md">ЗБЕРЕГТИ</button>
                       </div>
-                      <button onClick={handleSaveApiKey} className="bg-[var(--primary)] text-white px-6 rounded-xl text-[10px] font-black uppercase transition-colors hover:brightness-110">OK</button>
+                   </div>
+
+                   <div className="bg-indigo-600 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg"><i className="fa-solid fa-power-off"></i></div>
+                         <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Статус помічника</div>
+                            <div className="text-xs font-bold opacity-80">{aiEnabled ? 'ШІ Активізовано' : 'ШІ в режимі очікування'}</div>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={() => setAiEnabled(!aiEnabled)} 
+                        className={`w-14 h-8 rounded-full relative transition-all duration-300 ${aiEnabled ? 'bg-emerald-400' : 'bg-white/20'}`}
+                      >
+                         <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 shadow-md ${aiEnabled ? 'right-1' : 'left-1'}`}></div>
+                      </button>
                    </div>
                 </div>
              </Card>
@@ -258,7 +276,7 @@ const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ (на ПК вона постійна, на мобільних перекриває) */}
+      {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ */}
       <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedSectionId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
         {!isMobile && (
           <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>

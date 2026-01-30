@@ -1,24 +1,31 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { DiaryEntry, TaskStatus } from '../types';
+import { DiaryEntry, TaskStatus, AiSuggestion } from '../types';
 import Typography from '../components/ui/Typography';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import DiaryEditor from '../components/DiaryEditor';
 import DailyReportWizard from '../components/DailyReportWizard';
+import DailyReportAiWizard from '../components/DailyReportAiWizard';
 import { useResizer } from '../hooks/useResizer';
+import { analyzeDailyReport } from '../services/geminiService';
 
 const DiaryView: React.FC = () => {
-  const { diary, tasks, people, deleteDiaryEntry } = useApp();
+  const { diary = [], tasks, people, deleteDiaryEntry, character, aiEnabled, setActiveTab } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [showReportWizard, setShowReportWizard] = useState(false);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [mobileTab, setMobileTab] = useState<'list' | 'stats'>('list');
-  const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
+  
+  // AI Analysis State
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[] | null>(null);
+  const [showAiWizard, setShowAiWizard] = useState(false);
 
+  const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
@@ -34,6 +41,10 @@ const DiaryView: React.FC = () => {
     });
   }, [diary]);
 
+  const activeEntry = useMemo(() => 
+    diary.find(e => e.id === editingEntryId), 
+  [diary, editingEntryId]);
+
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, DiaryEntry[]> = {};
     sortedDiary.forEach(entry => {
@@ -46,6 +57,32 @@ const DiaryView: React.FC = () => {
     });
     return groups;
   }, [sortedDiary]);
+
+  const handleStartAiAnalysis = async () => {
+    if (!activeEntry) return;
+    
+    if (!aiEnabled) {
+      setActiveTab('settings');
+      return;
+    }
+
+    setIsAiAnalyzing(true);
+    try {
+      let analysisText = activeEntry.content;
+      try {
+        const blocks = JSON.parse(activeEntry.content);
+        analysisText = Array.isArray(blocks) ? blocks.map(b => b.content).join('\n') : activeEntry.content;
+      } catch(e) {}
+
+      const suggestions = await analyzeDailyReport(analysisText, character);
+      setAiSuggestions(suggestions);
+      setShowAiWizard(true);
+    } catch (e) {
+      alert("Помилка аналізу. Перевірте API ключ.");
+    } finally {
+      setIsAiAnalyzing(false);
+    }
+  };
 
   const memoriesFromPast = useMemo(() => {
     const target = new Date(selectedDate);
@@ -121,7 +158,9 @@ const DiaryView: React.FC = () => {
 
             const isSelected = selectedDate === dateStr;
             const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
-            const hasEntry = diary.some(e => e.date === dateStr);
+            
+            // КРАПКИ ТІЛЬКИ ДЛЯ ДНІВ ІЗ ЗАПИСАМИ ЩОДЕННИКА
+            const hasDiaryEntry = diary.some(e => e.date === dateStr);
 
             return (
               <button
@@ -130,7 +169,9 @@ const DiaryView: React.FC = () => {
                 className={`h-8 md:h-9 rounded-xl flex items-center justify-center text-[10px] font-bold transition-all relative ${isSelected ? 'bg-primary text-white shadow-lg' : isToday ? 'text-primary bg-primary/10' : 'text-main hover:bg-black/5'}`}
               >
                 {date.getDate()}
-                {hasEntry && !isSelected && <div className="absolute bottom-1.5 w-1 h-1 bg-primary/60 rounded-full"></div>}
+                {hasDiaryEntry && (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-primary animate-pulse'}`}></div>
+                )}
               </button>
             );
           })}
@@ -311,9 +352,39 @@ const DiaryView: React.FC = () => {
          {!isMobile && (
            <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-primary z-[100] transition-colors ${isResizing ? 'bg-primary' : 'bg-theme'}`}></div>
          )}
-         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full flex flex-col bg-card shadow-2xl lg:shadow-none overflow-hidden">
+         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-card shadow-2xl lg:shadow-none overflow-hidden">
             {editingEntryId ? (
-              <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <header className="p-4 md:p-6 border-b border-theme flex justify-between items-center bg-card shrink-0">
+                  <div className="flex items-center gap-3">
+                    {isMobile && (
+                      <button onClick={() => setEditingEntryId(null)} className="w-8 h-8 rounded-lg bg-main flex items-center justify-center text-muted"><i className="fa-solid fa-chevron-left"></i></button>
+                    )}
+                    <Typography variant="h3" className="text-xs font-black uppercase tracking-widest text-primary">Перегляд запису</Typography>
+                  </div>
+                  {activeEntry && (
+                    <button 
+                      onClick={handleStartAiAnalysis}
+                      disabled={isAiAnalyzing}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+                        aiEnabled 
+                          ? 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-200/20' 
+                          : 'bg-slate-300 text-slate-500 cursor-pointer shadow-none hover:bg-slate-400'
+                      }`}
+                    >
+                      {isAiAnalyzing ? (
+                        <i className="fa-solid fa-circle-notch animate-spin"></i>
+                      ) : (
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                      )}
+                      ШІ Аналіз
+                    </button>
+                  )}
+                </header>
+                <div className="flex-1 overflow-hidden">
+                  <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
+                </div>
+              </div>
             ) : (
               !isMobile && renderStatsPanel()
             )}
@@ -321,6 +392,13 @@ const DiaryView: React.FC = () => {
       </div>
 
       {showReportWizard && <DailyReportWizard onClose={() => setShowReportWizard(false)} />}
+      
+      {showAiWizard && aiSuggestions && (
+        <DailyReportAiWizard 
+          suggestions={aiSuggestions} 
+          onClose={() => setShowAiWizard(false)} 
+        />
+      )}
     </div>
   );
 };
