@@ -1,37 +1,70 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from '../services/firebase';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isGuest: boolean;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (isOpen: boolean) => void;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  continueAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>({ 
-    uid: 'local-user', 
-    displayName: 'Локальний Гравець', 
-    photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LocalHero' 
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isGuest, setIsGuest] = useState(() => {
+    const saved = localStorage.getItem('12tr_guest_mode');
+    // Default to true if no user and no saved preference to ensure app starts
+    return saved === null ? true : saved === 'true';
   });
-  const [loading, setLoading] = useState(false);
 
-  // В локальному режимі ми просто тримаємо сесію завжди активною
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u) {
+        setIsGuest(false);
+        setIsAuthModalOpen(false); // Auto close modal on login
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const login = async () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 500);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      localStorage.setItem('12tr_guest_mode', 'false');
+      setIsGuest(false);
+    } catch (error) {
+      console.error("Login failed", error);
+    }
   };
 
   const logout = async () => {
-    alert("Локальний режим: Вихід не видаляє дані, лише очищує сесію браузера.");
+    await signOut(auth);
+    localStorage.setItem('12tr_guest_mode', 'true');
+    setIsGuest(true);
     setUser(null);
   };
 
+  const continueAsGuest = () => {
+    localStorage.setItem('12tr_guest_mode', 'true');
+    setIsGuest(true);
+    setIsAuthModalOpen(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, loading, isGuest, isAuthModalOpen, setIsAuthModalOpen, 
+      login, logout, continueAsGuest 
+    }}>
       {children}
     </AuthContext.Provider>
   );

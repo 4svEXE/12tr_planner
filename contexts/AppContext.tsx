@@ -1,7 +1,9 @@
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction, StoreState, CalendarViewMode } from '../types';
 import { generateSeedData } from '../services/seedService';
+import { db, doc, setDoc, getDoc } from '../services/firebase';
+import { useAuth } from './AuthContext';
 
 const LOCAL_STORAGE_KEY = '12tr_engine_local_data';
 
@@ -29,8 +31,6 @@ interface AppContextType extends StoreState {
   toggleTaskStatus: (task: Task) => void;
   toggleHabitStatus: (habitId: string, dateStr: string, status?: 'completed' | 'skipped' | 'none', note?: string) => void;
   toggleTaskPin: (taskId: string) => void;
-  undoLastAction: () => void;
-  pendingUndo: boolean;
   addTag: (name: string) => Tag;
   renameTag: (oldName: string, newName: string) => void;
   deleteTag: (tagName: string) => void;
@@ -63,8 +63,6 @@ interface AppContextType extends StoreState {
   addRelationshipType: (type: string) => void;
   deleteRelationshipType: (type: string) => void;
   updateCycle: (updates: Partial<TwelveWeekYear>) => void;
-  toggleCycleDay: (dateStr: string) => void;
-  setWeeklyScore: (weekNum: number, score: number) => void;
   addStore: (name: string, icon?: string, color?: string) => void;
   updateStore: (store: ShoppingStore) => void;
   deleteStore: (id: string) => void;
@@ -99,105 +97,95 @@ const DEFAULT_CATEGORIES: InboxCategory[] = [
 const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquaintance'];
 
 export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }> = ({ children, userId }) => {
+  const { user } = useAuth();
   const [state, setState] = useState<StoreState | null>(null);
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detailsWidth, setDetailsWidth] = useState(450);
+  const syncTimeoutRef = useRef<number | null>(null);
 
+  // Initialize from LocalStorage and Cloud
   useEffect(() => {
-    const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        const sanitized = {
-          ...parsed,
-          tasks: parsed.tasks || [],
-          projects: parsed.projects || [],
-          people: parsed.people || [],
-          tags: parsed.tags || [],
-          hobbies: parsed.hobbies || [],
-          diary: parsed.diary || [],
-          inboxCategories: parsed.inboxCategories || DEFAULT_CATEGORIES,
-          relationshipTypes: parsed.relationshipTypes || DEFAULT_REL_TYPES,
-          timeBlocks: parsed.timeBlocks || [],
-          shoppingStores: parsed.shoppingStores || [],
-          shoppingItems: parsed.shoppingItems || [],
-          routinePresets: parsed.routinePresets || [],
-          reportTemplate: parsed.reportTemplate || [],
-          sidebarSettings: parsed.sidebarSettings || {}
-        };
-        setState(sanitized);
-      } catch (e) {
-        console.error("Помилка парсингу локальних даних, скидання...");
-        initDefault();
+    const init = async () => {
+      let data: any = null;
+      const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      
+      if (localData) {
+        try { data = JSON.parse(localData); } catch (e) { console.error("Local parse error"); }
       }
-    } else {
-      initDefault();
-    }
-  }, []);
 
-  const initDefault = () => {
-    const seed = generateSeedData();
-    const initialState: StoreState = {
-        tasks: seed.tasks,
-        projects: seed.projects,
-        people: seed.people,
-        character: {
-          name: 'Локальний Герой', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
-          bio: 'Граю локально.', vision: 'Дослідити всі можливості двигуна 12TR.', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Local', 
-          energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-          preferences: { focusBlockers: [] }, skills: [], achievements: [], 
-          stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
-        },
-        tags: seed.tags,
-        hobbies: seed.hobbies,
-        cycle: { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
-        diary: seed.diary,
-        theme: 'classic',
-        aiEnabled: false,
-        sidebarSettings: {},
-        activeTab: 'today',
-        timeBlocks: seed.timeBlocks,
-        blockHistory: {},
-        routinePresets: [],
-        reportTemplate: [],
-        shoppingStores: [],
-        shoppingItems: [],
-        inboxCategories: DEFAULT_CATEGORIES,
-        relationshipTypes: DEFAULT_REL_TYPES
+      if (user) {
+        try {
+          const cloudDoc = await getDoc(doc(db, "users", user.uid));
+          if (cloudDoc.exists()) {
+            const cloudData = cloudDoc.data() as StoreState;
+            data = { ...data, ...cloudData }; // Cloud overwrites local on login
+          }
+        } catch (e) { console.error("Cloud fetch error", e); }
+      }
+
+      if (!data) {
+        const seed = generateSeedData();
+        data = {
+          tasks: seed.tasks,
+          projects: seed.projects,
+          people: seed.people,
+          character: {
+            name: user?.displayName || 'Мандрівник', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+            bio: 'Граю локально.', vision: 'Дослідити всі можливості двигуна 12TR.', avatarUrl: user?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Local', 
+            energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+            preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+            stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
+          },
+          tags: seed.tags,
+          hobbies: seed.hobbies,
+          cycle: { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
+          diary: seed.diary,
+          theme: 'classic',
+          aiEnabled: false,
+          sidebarSettings: {},
+          activeTab: 'today',
+          timeBlocks: seed.timeBlocks,
+          blockHistory: {},
+          routinePresets: [],
+          reportTemplate: [],
+          shoppingStores: [],
+          shoppingItems: [],
+          inboxCategories: DEFAULT_CATEGORIES,
+          relationshipTypes: DEFAULT_REL_TYPES
+        };
+      }
+      setState(data);
     };
-    setState(initialState);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialState));
-  };
+    init();
+  }, [user]);
 
+  // Handle Sync to Cloud & LocalStorage
   const pushUpdate = useCallback((newState: StoreState) => {
     setState(newState);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newState));
-  }, []);
+
+    if (user) {
+      if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = window.setTimeout(async () => {
+        try {
+          await setDoc(doc(db, "users", user.uid), newState);
+          console.log("Cloud sync complete");
+        } catch (e) {
+          console.error("Cloud sync failed", e);
+        }
+      }, 2000); // 2s debounce
+    }
+  }, [user]);
 
   if (!state) return null;
 
+  // Actions
   const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? t : old) : [t, ...state.tasks] });
   const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? p : old) });
   const deleteTask = (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true } : t) });
   
-  const deletePerson = (id: string, permanent = false) => {
-    if (permanent) {
-        const nextPeople = (state.people || []).filter(p => p.id !== id);
-        const nextTasks = (state.tasks || []).filter(t => t.personId !== id);
-        pushUpdate({ ...state, people: nextPeople, tasks: nextTasks });
-    } else {
-        const nextPeople = (state.people || []).map(p => p.id === id ? { ...p, isDeleted: true } : p);
-        pushUpdate({ ...state, people: nextPeople });
-    }
-  };
-
-  const restorePerson = (id: string) => {
-    const nextPeople = (state.people || []).map(p => p.id === id ? { ...p, isDeleted: false } : p);
-    pushUpdate({ ...state, people: nextPeople });
-  };
-
   const addTask = (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
     const id = Math.random().toString(36).substr(2,9);
     const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
@@ -207,21 +195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
 
   const value = {
     ...state,
-    tasks: state.tasks || [],
-    projects: state.projects || [],
-    people: state.people || [],
-    tags: state.tags || [],
-    hobbies: state.hobbies || [],
-    diary: state.diary || [],
-    inboxCategories: state.inboxCategories || DEFAULT_CATEGORIES,
-    relationshipTypes: state.relationshipTypes || DEFAULT_REL_TYPES,
-    timeBlocks: state.timeBlocks || [],
-    shoppingStores: state.shoppingStores || [],
-    shoppingItems: state.shoppingItems || [],
-    routinePresets: state.routinePresets || [],
-    reportTemplate: state.reportTemplate || [],
-    sidebarSettings: state.sidebarSettings || {},
-    
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     isSidebarCollapsed, setSidebarCollapsed, detailsWidth, setDetailsWidth,
     setActiveTab: (tab: string) => pushUpdate({ ...state, activeTab: tab }),
@@ -229,7 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
     updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u } }),
-    addTask, updateTask, updateProject, deleteTask, deletePerson, restorePerson,
+    addTask, updateTask, updateProject, deleteTask,
     addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...(state.projects || []), { ...p, id, progress: 0, status: 'active' }] }); return id; },
     deleteProject: (id: string) => pushUpdate({ ...state, projects: (state.projects || []).filter(p => p.id !== id) }),
     restoreTask: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isDeleted: false } : t) }),
@@ -282,8 +255,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     addRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: [...new Set([...(state.relationshipTypes || DEFAULT_REL_TYPES), t])] }),
     deleteRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: (state.relationshipTypes || DEFAULT_REL_TYPES).filter(x => x !== t) }),
     updateCycle: (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u } }),
-    toggleCycleDay: (d: string) => {}, 
-    setWeeklyScore: (w: number, s: number) => {},
     addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c }] }),
     updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).map(x => x.id === s.id ? s : x) }),
     deleteStore: (id: string) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).filter(x => x.id !== id), shoppingItems: (state.shoppingItems || []).filter(x => x.storeId !== id) }),
@@ -291,7 +262,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     updateShoppingItem: (i: ShoppingItem) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === i.id ? i : x) }),
     toggleShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === id ? { ...x, isBought: !x.isBought } : x) }),
     deleteShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).filter(x => x.id !== id) }),
-    undoLastAction: () => {}, pendingUndo: false,
+    deletePerson: (id: string, perm = false) => {
+        if (perm) pushUpdate({ ...state, people: (state.people || []).filter(p => p.id !== id) });
+        else pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: true } : p) });
+    },
+    restorePerson: (id: string) => pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: false } : p) }),
   } as AppContextType;
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -30,7 +30,7 @@ const MainLayout: React.FC = () => {
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme || 'classic');
   }, [theme]);
 
   const counts = React.useMemo(() => ({
@@ -82,7 +82,7 @@ const MainLayout: React.FC = () => {
         {renderContent()}
         {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
         {aiEnabled && !isAiOpen && (
-          <button onClick={() => setIsAiOpen(true)} className="fixed bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[150] hover:scale-110 active:scale-95 transition-all">
+          <button onClick={() => setIsAiOpen(true)} className="fixed bottom-20 md:bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[45] hover:scale-110 active:scale-95 transition-all">
             <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
           </button>
         )}
@@ -93,7 +93,7 @@ const MainLayout: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, isAuthModalOpen, loading } = useAuth();
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-slate-950">
@@ -101,11 +101,10 @@ const App: React.FC = () => {
     </div>
   );
 
-  if (!user) return <AuthView />;
-
   return (
-    <AppProvider userId={user.uid}>
+    <AppProvider userId={user?.uid || 'guest'}>
       <MainLayout />
+      {isAuthModalOpen && <AuthView />}
     </AppProvider>
   );
 };

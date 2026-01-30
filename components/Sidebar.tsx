@@ -2,9 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { TaskStatus, ThemeType } from '../types';
+import { TaskStatus } from '../types';
 import Typography from './ui/Typography';
-import Button from './ui/Button';
 
 interface SidebarProps {
   activeTab: string;
@@ -15,10 +14,9 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
   const { 
     tasks, updateTask, scheduleTask, toggleTaskStatus, 
-    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings, 
-    theme, setTheme
+    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings
   } = useApp();
-  const { user, logout } = useAuth();
+  const { user, isGuest, logout, setIsAuthModalOpen } = useAuth();
   
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -96,14 +94,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           </button>
         </div>
         
-        {!isSidebarCollapsed && user && (
+        {!isSidebarCollapsed && (
           <div className="px-4 py-2 mb-2">
-             <div className="flex items-center gap-3 bg-black/5 p-2 rounded-2xl border border-[var(--border-color)]">
-                <img src={user.photoURL || ''} className="w-8 h-8 rounded-xl border border-[var(--bg-card)] shadow-sm" />
+             <div className="flex items-center gap-3 bg-black/5 p-2 rounded-2xl border border-[var(--border-color)] relative">
+                <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-8 h-8 rounded-xl border border-[var(--bg-card)] shadow-sm" />
                 <div className="flex-1 min-w-0">
-                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user.displayName}</div>
-                   <button onClick={logout} className="text-[7px] font-black uppercase text-[var(--primary)] hover:underline">Вийти</button>
+                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user?.displayName || 'Гість (Offline)'}</div>
+                   {user ? (
+                     <button onClick={logout} className="text-[7px] font-black uppercase text-rose-500 hover:underline">Вийти</button>
+                   ) : (
+                     <button onClick={() => setIsAuthModalOpen(true)} className="text-[7px] font-black uppercase text-[var(--primary)] hover:underline">Авторизуватись</button>
+                   )}
                 </div>
+                {user && <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" title="Синхронізовано"></div>}
              </div>
           </div>
         )}
@@ -123,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)]/90 backdrop-blur-xl border-t border-[var(--border-color)] z-50 flex items-center justify-around px-4 pb-safe transition-colors duration-300">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)]/90 backdrop-blur-xl border-t border-[var(--border-color)] z-40 flex items-center justify-around px-4 pb-safe transition-colors duration-300">
          {[
            { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
            { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
@@ -158,6 +161,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
            </header>
            
            <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-main)]">
+              {!user && (
+                <button 
+                  onClick={() => { setIsAuthModalOpen(true); setShowMobileMenu(false); }}
+                  className="w-full mb-6 p-4 rounded-[2rem] bg-[var(--primary)] text-white flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all"
+                >
+                  <i className="fa-solid fa-cloud-arrow-up"></i>
+                  <span className="font-black text-xs uppercase tracking-widest">Авторизуватись</span>
+                </button>
+              )}
+
               <div className="grid grid-cols-3 gap-4 pb-20">
                  {allNavItems.map(item => {
                    if (sidebarSettings[item.id] === false) return null;

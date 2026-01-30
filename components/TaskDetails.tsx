@@ -72,7 +72,8 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
 
   const isDone = task.status === TaskStatus.DONE;
 
-  const MenuSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+  // FIX: Made children optional to resolve TS error where the compiler thinks they are missing during usage
+  const MenuSection = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className="py-2 border-b border-[var(--border-color)] last:border-0">
       <div className="px-4 py-1.5 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em] opacity-50">{title}</div>
       {children}

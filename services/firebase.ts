@@ -1,28 +1,22 @@
 
-// Тимчасово відключено для локальної роботи
-export const auth = {
-  currentUser: { uid: 'local-user', displayName: 'Гравець' }
-} as any;
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
 
-export const db = {} as any;
-export const googleProvider = {};
-
-export const signInWithPopup = async () => {};
-export const signOut = async () => {};
-export const onAuthStateChanged = (auth: any, callback: any) => {
-  callback({ uid: 'local-user', displayName: 'Локальний Гравець', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Local' });
-  return () => {};
+const firebaseConfig = {
+  apiKey: "AIzaSyBcTcIm0Seue-wWf8g9JVH3dy8bECL_oZ8",
+  authDomain: "tr-e57b7.firebaseapp.com",
+  projectId: "tr-e57b7",
+  storageBucket: "tr-e57b7.firebasestorage.app",
+  messagingSenderId: "431741978111",
+  appId: "1:431741978111:web:85a1c4ec8f0d00614693ca",
+  measurementId: "G-FE2KQTSSW8"
 };
 
-export const doc = (...args: any[]) => ({});
-export const getDoc = async () => ({ exists: () => false });
-export const setDoc = async () => {};
-export const onSnapshot = (docRef: any, callback: any) => {
-  return () => {}; // No-op unsubscribe
-};
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const googleProvider = new GoogleAuthProvider();
 
-export type User = {
-  uid: string;
-  displayName: string | null;
-  photoURL: string | null;
-};
+export { signInWithPopup, signOut, onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
+export type User = FirebaseUser;

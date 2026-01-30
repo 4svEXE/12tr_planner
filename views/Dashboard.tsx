@@ -50,7 +50,8 @@ const Dashboard: React.FC = () => {
     const doneTasks = periodTasks.filter(t => t.status === TaskStatus.DONE);
     const kpi = periodTasks.length > 0 ? Math.round((doneTasks.length / periodTasks.length) * 100) : 0;
     
-    const spheres = { health: { done: 0, total: 0 }, career: { done: 0, total: 0 }, finance: { done: 0, total: 0 }, rest: { done: 0, total: 0 } };
+    // FIX: Explicitly type 'spheres' to ensure Object.entries identifies correctly typed values
+    const spheres: Record<string, { done: number; total: number }> = { health: { done: 0, total: 0 }, career: { done: 0, total: 0 }, finance: { done: 0, total: 0 }, rest: { done: 0, total: 0 } };
     tasks.forEach(t => {
       if (t.isDeleted) return;
       const proj = projects.find(p => p.id === t.projectId);
@@ -95,7 +96,8 @@ const Dashboard: React.FC = () => {
     if (!aiEnabled) return alert("Увімкніть ШІ в налаштуваннях");
     setIsAiAnalyzing(true);
     await new Promise(r => setTimeout(r, 1500));
-    alert(`ШІ аналіз: Твій KPI складає ${stats.kpi}%. Найбільший фокус зараз на сфері ${Object.entries(stats.spheres).sort((a,b) => b[1].total - a[1].total)[0][0]}. Продовжуй в тому ж дусі!`);
+    // FIX: Using type assertion for Object.entries values to ensure 'total' property is recognized
+    alert(`ШІ аналіз: Твій KPI складає ${stats.kpi}%. Найбільший фокус зараз на сфері ${Object.entries(stats.spheres).sort((a: any, b: any) => b[1].total - a[1].total)[0][0]}. Продовжуй в тому ж дусі!`);
     setIsAiAnalyzing(false);
   };
 
