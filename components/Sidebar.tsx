@@ -4,6 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { TaskStatus } from '../types';
 import Typography from './ui/Typography';
+import MiniCalendar from './sidebar/MiniCalendar';
 
 interface SidebarProps {
   activeTab: string;
@@ -108,6 +109,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                 </div>
                 {user && <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" title="Синхронізовано"></div>}
              </div>
+          </div>
+        )}
+
+        {!isSidebarCollapsed && (
+          <div className="px-4 mb-4">
+            <MiniCalendar />
           </div>
         )}
 
