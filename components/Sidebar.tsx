@@ -15,7 +15,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
   const { 
     tasks, updateTask, scheduleTask, toggleTaskStatus, 
-    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings
+    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings,
+    isSyncing, syncData, lastSyncTime
   } = useApp();
   const { user, isGuest, logout, setIsAuthModalOpen } = useAuth();
   
@@ -36,6 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
     { id: 'people', icon: 'fa-user-ninja', label: 'Люди' },
     { id: 'focus', icon: 'fa-bullseye', label: 'Фокус' },
+    { id: 'character', icon: 'fa-user-shield', label: 'Герой' },
     { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
   ];
 
@@ -89,27 +91,60 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     <>
       <div className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} hidden md:flex bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0`}>
         <div className="p-4 flex items-center justify-between">
-          {!isSidebarCollapsed && <div className="text-xl font-black font-heading text-[var(--primary)] flex items-center gap-2 tracking-tighter leading-none"><span>12TR</span></div>}
-          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-8 h-8 rounded-xl hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all">
-            <i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'}`}></i>
-          </button>
+          {!isSidebarCollapsed && (
+            <div className="text-xl font-black font-heading text-[var(--primary)] flex items-center gap-2 tracking-tighter leading-none animate-in fade-in zoom-in-95 duration-500">
+               <span>12TR</span>
+            </div>
+          )}
+          
+          <div className="flex flex-col md:flex-row items-center gap-1">
+            {/* Кнопка синхронізації - тепер завжди видима */}
+            {user && (
+              <button 
+                onClick={syncData} 
+                disabled={isSyncing}
+                title={lastSyncTime ? `Остання синхр: ${new Date(lastSyncTime).toLocaleTimeString()}` : "Синхронізувати зараз"}
+                className={`w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all ${isSyncing ? 'animate-spin text-[var(--primary)] bg-[var(--primary)]/5' : ''}`}
+              >
+                <i className="fa-solid fa-rotate text-[10px]"></i>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} 
+              className="w-8 h-8 rounded-xl hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all"
+            >
+              <i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'} text-[10px]`}></i>
+            </button>
+          </div>
         </div>
         
         {!isSidebarCollapsed && (
           <div className="px-4 py-2 mb-2">
-             <div className="flex items-center gap-3 bg-black/5 p-2 rounded-2xl border border-[var(--border-color)] relative">
+             <div className="flex items-center gap-3 bg-black/5 p-2 rounded-2xl border border-[var(--border-color)] relative group/user">
                 <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-8 h-8 rounded-xl border border-[var(--bg-card)] shadow-sm" />
                 <div className="flex-1 min-w-0">
-                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user?.displayName || 'Гість (Offline)'}</div>
+                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user?.displayName || 'Мандрівник (Guest)'}</div>
                    {user ? (
                      <button onClick={logout} className="text-[7px] font-black uppercase text-rose-500 hover:underline">Вийти</button>
                    ) : (
-                     <button onClick={() => setIsAuthModalOpen(true)} className="text-[7px] font-black uppercase text-[var(--primary)] hover:underline">Авторизуватись</button>
+                     <button onClick={() => setIsAuthModalOpen(true)} className="text-[7px] font-black uppercase text-[var(--primary)] hover:underline">Увійти</button>
                    )}
                 </div>
-                {user && <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" title="Синхронізовано"></div>}
+                {user && (
+                  <div 
+                    className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full transition-colors duration-500 ${isSyncing ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]'}`} 
+                    title={isSyncing ? "Йде синхронізація..." : "Дані в безпеці у хмарі"}
+                  ></div>
+                )}
              </div>
           </div>
+        )}
+
+        {isSidebarCollapsed && user && (
+           <div className="px-3 py-2 flex flex-col items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.3)]'}`}></div>
+           </div>
         )}
 
         {!isSidebarCollapsed && (
@@ -160,6 +195,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                  <Typography variant="h2" className="text-xl">Модулі</Typography>
               </div>
               <div className="flex items-center gap-2">
+                 <button 
+                   onClick={syncData} 
+                   disabled={isSyncing}
+                   title={lastSyncTime ? `Остання синхр: ${new Date(lastSyncTime).toLocaleTimeString()}` : "Синхронізувати"}
+                   className={`w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] ${isSyncing ? 'animate-spin text-[var(--primary)]' : ''}`}
+                 >
+                    <i className="fa-solid fa-rotate"></i>
+                 </button>
                  <button onClick={() => { setActiveTab('settings'); setShowMobileMenu(false); }} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] active:bg-black/10 transition-colors">
                     <i className="fa-solid fa-gear text-lg"></i>
                  </button>
@@ -168,15 +211,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
            </header>
            
            <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-main)]">
-              {!user && (
-                <button 
-                  onClick={() => { setIsAuthModalOpen(true); setShowMobileMenu(false); }}
-                  className="w-full mb-6 p-4 rounded-[2rem] bg-[var(--primary)] text-white flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all"
-                >
-                  <i className="fa-solid fa-cloud-arrow-up"></i>
-                  <span className="font-black text-xs uppercase tracking-widest">Авторизуватись</span>
-                </button>
-              )}
+              <div className="mb-8 p-6 bg-[var(--bg-card)] rounded-[2.5rem] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-12 h-12 rounded-2xl border-2 border-white shadow-md" />
+                    <div>
+                       <div className="text-xs font-black uppercase text-[var(--text-main)]">{user?.displayName || 'Мандрівник (Guest)'}</div>
+                       <div className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest">{user ? user.email : 'Офлайн режим'}</div>
+                    </div>
+                 </div>
+                 {user ? (
+                   <button onClick={logout} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><i className="fa-solid fa-right-from-bracket"></i></button>
+                 ) : (
+                   <button onClick={() => { setIsAuthModalOpen(true); setShowMobileMenu(false); }} className="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Увійти</button>
+                 )}
+              </div>
 
               <div className="grid grid-cols-3 gap-4 pb-20">
                  {allNavItems.map(item => {

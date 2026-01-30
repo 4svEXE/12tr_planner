@@ -36,6 +36,8 @@ export interface Hobby {
   id: string;
   name: string;
   color: string;
+  // Fix: Added missing updatedAt property for data consistency
+  updatedAt: number;
 }
 
 export interface ReportQuestion {

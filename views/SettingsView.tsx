@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { ThemeType, Character } from '../types';
 import Typography from '../components/ui/Typography';
 import Button from '../components/ui/Button';
@@ -11,8 +12,10 @@ import { useResizer } from '../hooks/useResizer';
 const SettingsView: React.FC = () => {
   const { 
     theme, setTheme, aiEnabled, setAiEnabled, sidebarSettings, 
-    updateSidebarSetting, character, updateCharacter 
+    updateSidebarSetting, character, updateCharacter,
+    isSyncing, syncData, lastSyncTime
   } = useApp();
+  const { user } = useAuth();
   
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
@@ -49,7 +52,7 @@ const SettingsView: React.FC = () => {
     { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
     { id: 'sidebar', icon: 'fa-bars-staggered', label: 'Навігація', color: 'text-amber-500', desc: 'Бокова панель' },
-    { id: 'data', icon: 'fa-database', label: 'Сховище', color: 'text-rose-500', desc: 'Резервні копії' },
+    { id: 'data', icon: 'fa-database', label: 'Хмара & Сховище', color: 'text-rose-500', desc: 'Синхронізація даних' },
     { id: 'feedback', icon: 'fa-comment-dots', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
   ];
 
@@ -212,6 +215,33 @@ const SettingsView: React.FC = () => {
       case 'data':
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             {user && (
+                <Card padding="md" className="bg-indigo-50/50 border-indigo-100">
+                   <Typography variant="tiny" className="text-indigo-600 font-black uppercase mb-4 block">Статус хмари</Typography>
+                   <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-4">
+                         <div className={`w-12 h-12 rounded-2xl bg-white border-2 flex items-center justify-center text-lg ${isSyncing ? 'text-indigo-600 animate-spin border-indigo-100' : 'text-emerald-500 border-emerald-100'}`}>
+                            <i className={`fa-solid ${isSyncing ? 'fa-rotate' : 'fa-cloud-check'}`}></i>
+                         </div>
+                         <div>
+                            <div className="text-xs font-black text-slate-800 uppercase leading-none mb-1">Синхронізація активна</div>
+                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Останній раз: {lastSyncTime ? new Date(lastSyncTime).toLocaleString() : 'Ніколи'}</div>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={syncData}
+                        disabled={isSyncing}
+                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50 transition-all"
+                      >
+                        ОНОВИТИ ЗАРАЗ
+                      </button>
+                   </div>
+                   <p className="text-[9px] text-slate-500 italic leading-relaxed">
+                      * Система використовує "Smart Merge": дані зливаются за часом останнього редагування (LWW), що запобігає втраті інформації при роботі з декількох пристроїв.
+                   </p>
+                </Card>
+             )}
+
              <Card padding="lg" className="border-rose-100 bg-rose-50/20">
                 <Typography variant="h2" className="text-rose-600 mb-2">Небезпечна зона</Typography>
                 <p className="text-[11px] text-slate-500 mb-6 leading-relaxed">Ця дія безповоротно видалить всі дані системи. Ви зможете почати гру з чистого листа.</p>

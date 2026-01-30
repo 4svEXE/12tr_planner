@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus, Project, Priority, RecurrenceType } from '../types';
@@ -94,6 +95,8 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
         xp: 100,
         tags: ['weekly-goal'],
         createdAt: Date.now(),
+        // Fix: Added missing updatedAt property
+        updatedAt: Date.now(),
         projectSection: 'planner',
         plannerWeek: selectedWeek,
         projectId: projectId
@@ -118,6 +121,8 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
       tags: isFocus ? ['daily-focus'] : [],
       recurrence,
       createdAt: Date.now(),
+      // Fix: Added missing updatedAt property
+      updatedAt: Date.now(),
       projectSection: 'planner',
       // Для повторюваних не прив'язуємось до тижня
       plannerWeek: recurrence === 'none' ? selectedWeek : undefined,

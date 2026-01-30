@@ -39,11 +39,16 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
     if (!quickTaskTitle.trim()) return;
     const id = addTask(quickTaskTitle.trim(), showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
     setQuickTaskTitle('');
+    // For manual input, we might still want to open it, but the FAB below will NOT open details.
     setSelectedTaskId(id);
   };
 
+  const handleFabAdd = () => {
+    addTask("Нове завдання", showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
+  };
+
   const handleAiProcess = async () => {
-    const unsortedTasks = tasks.filter(t => !t.isDeleted && t.status === targetStatus);
+    const unsortedTasks = tasks.filter(t => !t.isDeleted && t.status === targetStatus && t.category !== 'note');
     if (unsortedTasks.length === 0) return;
     setIsAiProcessing(true);
     try {
@@ -104,7 +109,8 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 max-w-4xl mx-auto w-full pb-32">
           {sections.map(section => {
-            const sectionTasks = tasks.filter(t => !t.isDeleted && t.status === targetStatus && section.filter(t));
+            // FIX: Врахування фільтрації нотаток (category !== 'note')
+            const sectionTasks = tasks.filter(t => !t.isDeleted && t.status === targetStatus && t.category !== 'note' && section.filter(t));
             if (sectionTasks.length === 0 && section.id === 'pinned') return null;
             const isCollapsed = collapsed[section.id];
 
@@ -161,7 +167,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
             );
           })}
           
-          {tasks.filter(t => !t.isDeleted && t.status === targetStatus).length === 0 && (
+          {tasks.filter(t => !t.isDeleted && t.status === targetStatus && t.category !== 'note').length === 0 && (
              <div className="py-20 text-center flex flex-col items-center opacity-10 grayscale select-none">
                 <i className={`fa-solid ${showCompleted ? 'fa-flag-checkered' : 'fa-mountain-sun'} text-7xl mb-6`}></i>
                 <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Тут порожньо</Typography>
@@ -171,12 +177,22 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
         </div>
 
         {aiEnabled && !showCompleted && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 md:bottom-8">
              <button onClick={handleAiProcess} disabled={isAiProcessing} className="bg-[var(--text-main)] text-[var(--bg-main)] px-8 py-3.5 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all font-black text-[10px] uppercase tracking-[0.2em] border border-white/10">
                 {isAiProcessing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles text-[var(--primary)]"></i>}
                 AI Анализ Вхідних
              </button>
           </div>
+        )}
+
+        {/* FAB + BUTTON */}
+        {!showCompleted && (
+          <button 
+            onClick={handleFabAdd}
+            className="fixed bottom-24 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all border-4 border-white"
+          >
+            <i className="fa-solid fa-plus text-xl"></i>
+          </button>
         )}
       </div>
 

@@ -160,7 +160,9 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
       interactions: [],
       importantDates: [],
       loop: 'month',
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      // Fix: Added missing updatedAt property
+      updatedAt: Date.now()
     };
     
     setLocalNewPeople(prev => [...prev, newPerson]);
@@ -407,7 +409,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
              <Button variant="primary" className="flex-[2] py-4 rounded-2xl shadow-xl shadow-orange-200 uppercase font-black tracking-widest" onClick={() => {
                 const idx = steps.indexOf(currentStep);
                 setCurrentStep(steps[idx + 1]);
-             }}>ДАЛІ</button>
+             }}>ДАЛІ</Button>
            )}
         </footer>
       </div>

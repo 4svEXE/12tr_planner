@@ -61,5 +61,6 @@ export interface Person {
   aiPortrait?: any;
   lastInteractionAt?: number;
   createdAt: number;
+  updatedAt: number;
   isDeleted?: boolean;
 }

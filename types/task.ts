@@ -5,6 +5,7 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  updatedAt: number;
 }
 
 export interface ChecklistItem {
@@ -33,6 +34,7 @@ export interface Task {
   projectSection?: ProjectSection;
   goalId?: string;
   createdAt: number;
+  updatedAt: number;
   dueDate?: number;
   scheduledDate?: number; 
   endDate?: number; 

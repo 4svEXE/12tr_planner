@@ -13,4 +13,5 @@ export interface Project {
   monthlyGoal?: string;
   monthlyKpi?: number;
   monthlyKpiCurrent?: number;
+  updatedAt: number;
 }

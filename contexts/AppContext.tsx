@@ -18,7 +18,7 @@ interface AppContextType extends StoreState {
   updateSidebarSetting: (key: string, visible: boolean) => void;
   updateCharacter: (updates: Partial<Character>) => void;
   addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
-  addProject: (project: Omit<Project, 'id' | 'progress' | 'status'>) => string;
+  addProject: (project: Omit<Project, 'id' | 'progress' | 'status' | 'updatedAt'>) => string;
   updateTask: (task: Task) => void;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
@@ -70,6 +70,9 @@ interface AppContextType extends StoreState {
   updateShoppingItem: (item: ShoppingItem) => void;
   toggleShoppingItem: (id: string) => void;
   deleteShoppingItem: (id: string) => void;
+  syncData: () => Promise<void>;
+  isSyncing: boolean;
+  lastSyncTime: number | null;
   calendarDate: number;
   calendarViewMode: CalendarViewMode;
   isSidebarCollapsed: boolean;
@@ -96,105 +99,154 @@ const DEFAULT_CATEGORIES: InboxCategory[] = [
 
 const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquaintance'];
 
+// Helper to merge arrays of objects by ID and updatedAt
+const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [], cloud: T[] = []): T[] => {
+  const map = new Map<string, T>();
+  [...cloud, ...local].forEach(item => {
+    const existing = map.get(item.id);
+    if (!existing || (item.updatedAt || 0) > (existing.updatedAt || 0)) {
+      map.set(item.id, item);
+    }
+  });
+  return Array.from(map.values());
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }> = ({ children, userId }) => {
   const { user } = useAuth();
   const [state, setState] = useState<StoreState | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detailsWidth, setDetailsWidth] = useState(450);
   const syncTimeoutRef = useRef<number | null>(null);
 
-  // Initialize from LocalStorage and Cloud
+  // Initialize from LocalStorage
   useEffect(() => {
-    const init = async () => {
-      let data: any = null;
-      const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      
-      if (localData) {
-        try { data = JSON.parse(localData); } catch (e) { console.error("Local parse error"); }
-      }
+    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localData) {
+      try { 
+        setState(JSON.parse(localData)); 
+      } catch (e) { console.error("Local parse error"); }
+    }
+  }, []);
 
-      if (user) {
-        try {
-          const cloudDoc = await getDoc(doc(db, "users", user.uid));
-          if (cloudDoc.exists()) {
-            const cloudData = cloudDoc.data() as StoreState;
-            data = { ...data, ...cloudData }; // Cloud overwrites local on login
-          }
-        } catch (e) { console.error("Cloud fetch error", e); }
-      }
-
-      if (!data) {
-        const seed = generateSeedData();
-        data = {
-          tasks: seed.tasks,
-          projects: seed.projects,
-          people: seed.people,
-          character: {
-            name: user?.displayName || 'Мандрівник', race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
-            bio: 'Граю локально.', vision: 'Дослідити всі можливості двигуна 12TR.', avatarUrl: user?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Local', 
-            energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-            preferences: { focusBlockers: [] }, skills: [], achievements: [], 
-            stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
-          },
-          tags: seed.tags,
-          hobbies: seed.hobbies,
-          cycle: { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
-          diary: seed.diary,
-          theme: 'classic',
-          aiEnabled: false,
-          sidebarSettings: {},
-          activeTab: 'today',
-          timeBlocks: seed.timeBlocks,
-          blockHistory: {},
-          routinePresets: [],
-          reportTemplate: [],
-          shoppingStores: [],
-          shoppingItems: [],
-          inboxCategories: DEFAULT_CATEGORIES,
-          relationshipTypes: DEFAULT_REL_TYPES
-        };
-      }
-      setState(data);
-    };
-    init();
+  // Effect to sync on user login
+  useEffect(() => {
+    if (user && state) {
+      syncData();
+    }
   }, [user]);
 
-  // Handle Sync to Cloud & LocalStorage
+  // Smart Sync Function
+  const syncData = useCallback(async () => {
+    if (!user || !state) return;
+    setIsSyncing(true);
+    try {
+      const cloudDoc = await getDoc(doc(db, "users", user.uid));
+      let cloudData = cloudDoc.exists() ? cloudDoc.data() as StoreState : null;
+
+      if (cloudData) {
+        // Perform Smart Merge
+        const mergedState: StoreState = {
+          ...state,
+          tasks: mergeItems(state.tasks, cloudData.tasks),
+          projects: mergeItems(state.projects, cloudData.projects),
+          people: mergeItems(state.people, cloudData.people),
+          diary: mergeItems(state.diary, cloudData.diary),
+          tags: mergeItems(state.tags, cloudData.tags),
+          hobbies: mergeItems(state.hobbies, cloudData.hobbies),
+          shoppingItems: mergeItems(state.shoppingItems, cloudData.shoppingItems),
+          shoppingStores: mergeItems(state.shoppingStores, cloudData.shoppingStores),
+          // Character is simple overwrite based on updatedAt
+          character: (cloudData as any).updatedAt > (state as any).updatedAt ? cloudData.character : state.character,
+          cycle: cloudData.cycle 
+        };
+        
+        setState(mergedState);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedState));
+        await setDoc(doc(db, "users", user.uid), { ...mergedState, updatedAt: Date.now() });
+      } else {
+        await setDoc(doc(db, "users", user.uid), { ...state, updatedAt: Date.now() });
+      }
+      setLastSyncTime(Date.now());
+    } catch (e) {
+      console.error("Sync failed", e);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user, state]);
+
+  // Handle Auto-Sync to LocalStorage & Debounced Cloud Push
   const pushUpdate = useCallback((newState: StoreState) => {
-    setState(newState);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newState));
+    const stateWithTimestamp = { ...newState, updatedAt: Date.now() };
+    setState(stateWithTimestamp);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateWithTimestamp));
 
     if (user) {
       if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
       syncTimeoutRef.current = window.setTimeout(async () => {
+        setIsSyncing(true); // Показуємо обертання при фоновому збереженні
         try {
-          await setDoc(doc(db, "users", user.uid), newState);
-          console.log("Cloud sync complete");
-        } catch (e) {
-          console.error("Cloud sync failed", e);
+          await setDoc(doc(db, "users", user.uid), stateWithTimestamp);
+          setLastSyncTime(Date.now());
+        } catch (e) { console.error("Cloud sync failed", e); }
+        finally {
+          setIsSyncing(false);
         }
-      }, 2000); // 2s debounce
+      }, 3000); // 3s debounce for auto-push
     }
   }, [user]);
+
+  // Seed initialization if state is empty
+  useEffect(() => {
+    if (state === null) {
+      const seed = generateSeedData();
+      const initialState: StoreState = {
+        tasks: seed.tasks.map(t => ({ ...t, updatedAt: Date.now() })),
+        projects: seed.projects.map(p => ({ ...p, updatedAt: Date.now() })),
+        people: seed.people.map(p => ({ ...p, updatedAt: Date.now() })),
+        character: {
+          name: user?.displayName || 'Мандрівник', 
+          race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+          bio: 'Я тільки починаю свій шлях у 12TR.', vision: 'Дослідити всі можливості двигуна 12TR.', 
+          avatarUrl: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`, 
+          energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+          preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+          stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
+        },
+        tags: seed.tags.map(t => ({ ...t, updatedAt: Date.now() })),
+        hobbies: seed.hobbies.map(h => ({ ...h, updatedAt: Date.now() })),
+        cycle: { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
+        diary: seed.diary.map(d => ({ ...d, updatedAt: Date.now() })),
+        theme: 'classic', aiEnabled: false, sidebarSettings: {}, activeTab: 'today',
+        timeBlocks: seed.timeBlocks, blockHistory: {}, routinePresets: [], reportTemplate: [],
+        shoppingStores: [], shoppingItems: [],
+        inboxCategories: DEFAULT_CATEGORIES, relationshipTypes: DEFAULT_REL_TYPES
+      };
+      pushUpdate(initialState);
+    }
+  }, [state, user, pushUpdate]);
 
   if (!state) return null;
 
   // Actions
-  const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? t : old) : [t, ...state.tasks] });
-  const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? p : old) });
-  const deleteTask = (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true } : t) });
+  const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] });
+  const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) });
+  const deleteTask = (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true, updatedAt: Date.now() } : t) });
   
   const addTask = (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
     const id = Math.random().toString(36).substr(2,9);
-    const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: Date.now(), category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+    const now = Date.now();
+    const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
     pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
     return id;
   };
 
   const value = {
     ...state,
+    isSyncing, lastSyncTime, syncData,
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     isSidebarCollapsed, setSidebarCollapsed, detailsWidth, setDetailsWidth,
     setActiveTab: (tab: string) => pushUpdate({ ...state, activeTab: tab }),
@@ -203,25 +255,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
     updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u } }),
     addTask, updateTask, updateProject, deleteTask,
-    addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...(state.projects || []), { ...p, id, progress: 0, status: 'active' }] }); return id; },
+    addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...(state.projects || []), { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] }); return id; },
     deleteProject: (id: string) => pushUpdate({ ...state, projects: (state.projects || []).filter(p => p.id !== id) }),
-    restoreTask: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isDeleted: false } : t) }),
-    moveTaskToCategory: (id: string, c: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, category: c } : t) }),
-    moveTaskToProjectSection: (id: string, s: ProjectSection) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, projectSection: s } : t) }),
-    setProjectParent: (id: string, pId: string | undefined) => pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === id ? { ...p, parentFolderId: pId } : p) }),
-    scheduleTask: (id: string, d: number | undefined) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, scheduledDate: d } : t) }),
-    toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined } : t) }); },
-    toggleHabitStatus: (id: string, d: string, s?: any, n?: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history }; } return t; }) }),
-    toggleTaskPin: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isPinned: !t.isPinned } : t) }),
-    addTag: (n: string) => { const nt = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; pushUpdate({ ...state, tags: [...(state.tags || []), nt] }); return nt; },
-    renameTag: (o: string, n: string) => pushUpdate({ ...state, tags: (state.tags || []).map(t => t.name === o ? { ...t, name: n } : t) }),
+    restoreTask: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isDeleted: false, updatedAt: Date.now() } : t) }),
+    moveTaskToCategory: (id: string, c: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, category: c, updatedAt: Date.now() } : t) }),
+    moveTaskToProjectSection: (id: string, s: ProjectSection) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, projectSection: s, updatedAt: Date.now() } : t) }),
+    setProjectParent: (id: string, pId: string | undefined) => pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === id ? { ...p, parentFolderId: pId, updatedAt: Date.now() } : p) }),
+    scheduleTask: (id: string, d: number | undefined) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, scheduledDate: d, updatedAt: Date.now() } : t) }),
+    toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined, updatedAt: Date.now() } : t) }); },
+    toggleHabitStatus: (id: string, d: string, s?: any, n?: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => { if (t.id === id) { const history = { ...(t.habitHistory || {}) }; history[d] = { status: s || (history[d]?.status === 'completed' ? 'none' : 'completed'), note: n || history[d]?.note }; return { ...t, habitHistory: history, updatedAt: Date.now() }; } return t; }) }),
+    toggleTaskPin: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isPinned: !t.isPinned, updatedAt: Date.now() } : t) }),
+    addTag: (n: string) => { const nt = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316', updatedAt: Date.now() }; pushUpdate({ ...state, tags: [...(state.tags || []), nt] }); return nt; },
+    renameTag: (o: string, n: string) => pushUpdate({ ...state, tags: (state.tags || []).map(t => t.name === o ? { ...t, name: n, updatedAt: Date.now() } : t) }),
     deleteTag: (n: string) => pushUpdate({ ...state, tags: (state.tags || []).filter(t => t.name !== n) }),
-    addHobby: (n: string) => { const nh = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316' }; pushUpdate({ ...state, hobbies: [...(state.hobbies || []), nh] }); return nh; },
-    renameHobby: (o: string, n: string) => pushUpdate({ ...state, hobbies: (state.hobbies || []).map(h => h.name === o ? { ...h, name: n } : h) }),
+    addHobby: (n: string) => { const nh = { id: Math.random().toString(36).substr(2,9), name: n, color: '#f97316', updatedAt: Date.now() }; pushUpdate({ ...state, hobbies: [...(state.hobbies || []), nh] }); return nh; },
+    renameHobby: (o: string, n: string) => pushUpdate({ ...state, hobbies: (state.hobbies || []).map(h => h.name === o ? { ...h, name: n, updatedAt: Date.now() } : h) }),
     deleteHobby: (n: string) => pushUpdate({ ...state, hobbies: (state.hobbies || []).filter(h => h.name !== n) }),
     saveDiaryEntry: (d: string, c: string, id?: string) => {
         let finalId = id || Math.random().toString(36).substr(2,9);
-        const entries = id ? (state.diary || []).map(e => e.id === id ? { ...e, date: d, content: c, updatedAt: Date.now() } : e) : [{ id: finalId, date: d, content: c, createdAt: Date.now(), updatedAt: Date.now() }, ...(state.diary || [])];
+        const now = Date.now();
+        const entries = id ? (state.diary || []).map(e => e.id === id ? { ...e, date: d, content: c, updatedAt: now } : e) : [{ id: finalId, date: d, content: c, createdAt: now, updatedAt: now }, ...(state.diary || [])];
         pushUpdate({ ...state, diary: entries });
         return finalId;
     },
@@ -238,35 +291,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         const pr = (state.routinePresets || []).find(x => x.id === id);
         if (pr) pushUpdate({ ...state, timeBlocks: [...(state.timeBlocks || []).filter(b => b.dayOfWeek !== d), ...pr.blocks.map(b => ({ ...b, id: Math.random().toString(36).substr(2,9), dayOfWeek: d }))] });
     },
-    addChecklistItem: (tid: string, title: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }] } : t) }),
-    toggleChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: (t.checklist || []).map(i => i.id === iid ? { ...i, completed: !i.completed } : i) } : t) }),
-    removeChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: (t.checklist || []).filter(i => i.id !== iid) } : t) }),
+    addChecklistItem: (tid: string, title: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: [...(t.checklist || []), { id: Math.random().toString(36).substr(2,9), title, completed: false }], updatedAt: Date.now() } : t) }),
+    toggleChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: (t.checklist || []).map(i => i.id === iid ? { ...i, completed: !i.completed } : i), updatedAt: Date.now() } : t) }),
+    removeChecklistItem: (tid: string, iid: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === tid ? { ...t, checklist: (t.checklist || []).filter(i => i.id !== iid), updatedAt: Date.now() } : t) }),
     updateReportTemplate: (t: any) => pushUpdate({ ...state, reportTemplate: t }),
     addPerson: (n: string, s = 'acquaintance') => {
         const id = `p-${Math.random().toString(36).substr(2,9)}`;
-        pushUpdate({ ...state, people: [...(state.people || []), { id, name: n, status: s, rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: Date.now() }] });
+        const now = Date.now();
+        pushUpdate({ ...state, people: [...(state.people || []), { id, name: n, status: s, rating: 5, tags: [], hobbies: [], socials: {}, notes: [], memories: [], interactions: [], importantDates: [], loop: 'month', createdAt: now, updatedAt: now }] });
         return id;
     },
-    updatePerson: (p: Person) => pushUpdate({ ...state, people: (state.people || []).map(old => old.id === p.id ? p : old) }),
-    addPersonMemory: (pid: string, m: any) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...(x.memories || [])] } : x) }),
-    addPersonNote: (pid: string, t: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text: t, date: new Date().toISOString() }, ...(x.notes || [])] } : x) }),
-    addInteraction: (pid: string, i: any) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, lastInteractionAt: i.date, interactions: [{ ...i, id: Math.random().toString(36).substr(2,9) }, ...(x.interactions || [])] } : x) }),
-    deleteInteraction: (pid: string, iid: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid) } : x) }),
+    updatePerson: (p: Person) => pushUpdate({ ...state, people: (state.people || []).map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) }),
+    addPersonMemory: (pid: string, m: any) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, memories: [{ ...m, id: Math.random().toString(36).substr(2,9) }, ...(x.memories || [])], updatedAt: Date.now() } : x) }),
+    addPersonNote: (pid: string, t: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, notes: [{ id: Math.random().toString(36).substr(2,9), text: t, date: new Date().toISOString() }, ...(x.notes || [])], updatedAt: Date.now() } : x) }),
+    addInteraction: (pid: string, i: any) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, lastInteractionAt: i.date, interactions: [{ ...i, id: Math.random().toString(36).substr(2,9) }, ...(x.interactions || [])], updatedAt: Date.now() } : x) }),
+    deleteInteraction: (pid: string, iid: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid), updatedAt: Date.now() } : x) }),
     addRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: [...new Set([...(state.relationshipTypes || DEFAULT_REL_TYPES), t])] }),
     deleteRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: (state.relationshipTypes || DEFAULT_REL_TYPES).filter(x => x !== t) }),
     updateCycle: (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u } }),
-    addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c }] }),
-    updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).map(x => x.id === s.id ? s : x) }),
+    addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c, updatedAt: Date.now() }] }),
+    updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).map(x => x.id === s.id ? { ...s, updatedAt: Date.now() } : x) }),
     deleteStore: (id: string) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).filter(x => x.id !== id), shoppingItems: (state.shoppingItems || []).filter(x => x.storeId !== id) }),
-    addShoppingItem: (n: string, sid: string) => pushUpdate({ ...state, shoppingItems: [...(state.shoppingItems || []), { id: Math.random().toString(36).substr(2,9), name: n, storeId: sid, isBought: false }] }),
-    updateShoppingItem: (i: ShoppingItem) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === i.id ? i : x) }),
-    toggleShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === id ? { ...x, isBought: !x.isBought } : x) }),
+    addShoppingItem: (n: string, sid: string) => pushUpdate({ ...state, shoppingItems: [...(state.shoppingItems || []), { id: Math.random().toString(36).substr(2,9), name: n, storeId: sid, isBought: false, updatedAt: Date.now() }] }),
+    updateShoppingItem: (i: ShoppingItem) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === i.id ? { ...i, updatedAt: Date.now() } : x) }),
+    toggleShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).map(x => x.id === id ? { ...x, isBought: !x.isBought, updatedAt: Date.now() } : x) }),
     deleteShoppingItem: (id: string) => pushUpdate({ ...state, shoppingItems: (state.shoppingItems || []).filter(x => x.id !== id) }),
     deletePerson: (id: string, perm = false) => {
         if (perm) pushUpdate({ ...state, people: (state.people || []).filter(p => p.id !== id) });
-        else pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: true } : p) });
+        else pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: true, updatedAt: Date.now() } : p) });
     },
-    restorePerson: (id: string) => pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: false } : p) }),
+    restorePerson: (id: string) => pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: false, updatedAt: Date.now() } : p) }),
   } as AppContextType;
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
