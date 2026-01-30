@@ -94,58 +94,57 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
   };
 
   const socialPlatforms = [
-    { key: 'telegram', icon: 'fa-telegram', placeholder: '@username' },
-    { key: 'instagram', icon: 'fa-instagram', placeholder: 'username' },
-    { key: 'linkedin', icon: 'fa-linkedin', placeholder: 'id-name' },
-    { key: 'tiktok', icon: 'fa-tiktok', placeholder: 'username' },
-    { key: 'threads', icon: 'fa-at', placeholder: 'username' },
-    { key: 'website', icon: 'fa-chrome', placeholder: 'domain.com' }
+    { key: 'telegram', icon: 'fa-telegram', placeholder: '@username', provider: 'telegram' },
+    { key: 'instagram', icon: 'fa-instagram', placeholder: 'username', provider: 'instagram' },
+    { key: 'linkedin', icon: 'fa-linkedin', placeholder: 'id-name', provider: null },
+    { key: 'tiktok', icon: 'fa-tiktok', placeholder: 'username', provider: 'tiktok' },
+    { key: 'threads', icon: 'fa-at', placeholder: 'username', provider: null },
+    { key: 'website', icon: 'fa-chrome', placeholder: 'domain.com', provider: null }
   ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="bg-[var(--primary)]/5 p-6 rounded-[2rem] border border-[var(--primary)]/10 mb-6">
-        <Typography variant="tiny" className="text-[var(--primary)] font-black mb-2 uppercase flex items-center gap-2">
+      <div className="bg-[var(--primary)]/5 p-5 rounded-[2rem] border border-[var(--primary)]/10 mb-6">
+        <Typography variant="tiny" className="text-[var(--primary)] font-black mb-1.5 uppercase flex items-center gap-2 text-[8px]">
            <i className="fa-solid fa-id-card-clip"></i> Система розвідки
         </Typography>
-        <p className="text-[10px] text-[var(--text-main)] opacity-60 leading-relaxed font-bold">
-           Введіть нікнейми союзників. Кнопка "стрілка" відкриє профіль у браузері, "магія" — запустить ШІ розвідку для досьє.
+        <p className="text-[9px] text-[var(--text-main)] opacity-60 leading-relaxed font-bold">
+           Введіть нікнейми. Стрілка відкриє профіль, магія запустить ШІ розвідку, коло оновить фото.
         </p>
       </div>
 
-      <div className="space-y-3">
-        {socialPlatforms.map(({ key, icon, placeholder }) => {
+      <div className="space-y-2">
+        {socialPlatforms.map(({ key, icon, placeholder, provider }) => {
           const val = (person.socials as any)?.[key] || '';
           const cleanHandle = getCleanHandle(val);
           const isAnalyzing = analyzingKey === key;
           const fullUrl = getFullUrl(key, val);
 
           return (
-            <div key={key} className="flex items-center gap-4 bg-[var(--bg-card)] p-3 rounded-2xl border border-[var(--border-color)] focus-within:ring-2 focus-within:ring-[var(--primary)]/10 transition-all shadow-sm group">
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors shrink-0 shadow-inner">
-                <i className={`fa-brands ${icon}`}></i>
+            <div key={key} className="flex items-center gap-3 bg-[var(--bg-card)] p-2.5 rounded-xl border border-[var(--border-color)] focus-within:border-[var(--primary)]/40 transition-all shadow-sm group">
+              <div className="w-8 h-8 rounded-lg bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors shrink-0">
+                <i className={`fa-brands ${icon} text-xs`}></i>
               </div>
               <div className="flex-1 min-w-0">
-                 <span className="text-[7px] font-black uppercase text-[var(--text-muted)] block mb-0.5 tracking-widest opacity-60">{key}</span>
                  <div className="flex items-center gap-2">
                    <input 
                      value={val} 
                      onChange={e => handleSocialAction(key, e.target.value)}
                      placeholder={placeholder}
-                     className="flex-1 bg-transparent border-none p-0 text-xs font-bold outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:opacity-30"
+                     className="flex-1 bg-transparent border-none p-0 text-[11px] font-bold outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:opacity-30"
                    />
                    
                    {cleanHandle && (
-                     <div className="flex gap-1">
+                     <div className="flex gap-1 shrink-0">
                        {fullUrl && (
                          <a 
                            href={fullUrl} 
                            target="_blank" 
                            rel="noopener noreferrer"
-                           className="w-8 h-8 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all shadow-sm border border-[var(--border-color)]"
+                           className="w-7 h-7 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm"
                            title="Відкрити профіль"
                          >
-                           <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                           <i className="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
                          </a>
                        )}
 
@@ -154,22 +153,22 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
                            <button 
                              onClick={() => handleAiAnalyze(key, cleanHandle)}
                              disabled={!aiEnabled || isAnalyzing}
-                             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm border ${
+                             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${
                                !aiEnabled 
-                                 ? 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] cursor-help opacity-40' 
-                                 : 'bg-indigo-50 text-indigo-600 border-indigo-100/50 hover:bg-indigo-600 hover:text-white'
+                                 ? 'bg-[var(--bg-main)] text-[var(--text-muted)] cursor-help opacity-40' 
+                                 : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
                              }`}
-                             title={!aiEnabled ? "Увімкніть ШІ для аналізу" : `Проаналізувати ${key} з ШІ`}
+                             title={`Проаналізувати ${key} з ШІ`}
                            >
-                             <i className={`fa-solid ${isAnalyzing ? 'fa-circle-notch animate-spin' : 'fa-wand-magic-sparkles'} text-[9px]`}></i>
+                             <i className={`fa-solid ${isAnalyzing ? 'fa-circle-notch animate-spin' : 'fa-wand-magic-sparkles'} text-[8px]`}></i>
                            </button>
 
                            <button 
-                             onClick={() => onFetchAvatar(cleanHandle, key)}
-                             className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm border border-orange-100/50"
-                             title={`Підтягнути фото з ${key}`}
+                             onClick={() => onFetchAvatar(cleanHandle, provider || undefined)}
+                             className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm"
+                             title="Оновити фото профілю"
                            >
-                             <i className="fa-solid fa-arrows-rotate text-[9px]"></i>
+                             <i className="fa-solid fa-arrows-rotate text-[8px]"></i>
                            </button>
                          </>
                        )}
@@ -185,65 +184,44 @@ const SocialsTab: React.FC<SocialsTabProps> = ({ person, onUpdate, onFetchAvatar
       {aiResultSummary && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur animate-in fade-in">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAiResultSummary(null)}></div>
-          <Card className="w-full max-w-md bg-[var(--bg-card)] border-[var(--border-color)] shadow-2xl p-8 rounded-[2.5rem] relative z-10 animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-100">
+          <Card className="w-full max-w-md bg-[var(--bg-card)] border-[var(--border-color)] shadow-2xl p-6 rounded-[2rem] relative z-10 animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg">
                   <i className="fa-solid fa-wand-magic-sparkles"></i>
                 </div>
                 <div>
-                  <Typography variant="h2" className="text-xl">Звіт Розвідки</Typography>
-                  <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest">{aiResultSummary.platform}</Typography>
+                  <Typography variant="h3" className="text-sm font-black uppercase">Звіт Розвідки</Typography>
+                  <Typography variant="tiny" className="text-[var(--text-muted)] uppercase text-[7px]">{aiResultSummary.platform}</Typography>
                 </div>
               </div>
-              <Badge variant="emerald" className="h-6 font-black">+{aiResultSummary.newFieldCount} INFO</Badge>
+              <Badge variant="emerald" className="h-5 font-black text-[7px]">+{aiResultSummary.newFieldCount} INFO</Badge>
             </div>
 
-            <div className="space-y-5 mb-8 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-4 mb-6 max-h-[40vh] overflow-y-auto custom-scrollbar pr-2">
               {aiResultSummary.birthDate && (
-                <div className="p-3 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-orange-500 shadow-sm"><i className="fa-solid fa-cake-candles text-[10px]"></i></div>
+                <div className="p-3 bg-orange-50 rounded-xl border border-orange-100 flex items-center gap-3">
+                  <i className="fa-solid fa-cake-candles text-orange-500 text-xs"></i>
                   <div>
-                    <span className="text-[7px] font-black text-orange-400 uppercase block tracking-widest">Виявлено дату</span>
-                    <span className="text-xs font-black text-orange-700">{aiResultSummary.birthDate}</span>
-                  </div>
-                </div>
-              )}
-
-              {aiResultSummary.addedHobbies.length > 0 && (
-                <div>
-                  <span className="text-[8px] font-black text-[var(--text-muted)] uppercase mb-2 block tracking-[0.2em]">Нові інтереси</span>
-                  <div className="flex flex-wrap gap-2">
-                    {aiResultSummary.addedHobbies.map((h: string, i: number) => (
-                      <Badge key={i} variant="indigo" className="text-[8px] lowercase font-bold">#{h}</Badge>
-                    ))}
+                    <span className="text-[7px] font-black text-orange-400 uppercase block">Виявлено дату</span>
+                    <span className="text-[11px] font-black text-orange-700">{aiResultSummary.birthDate}</span>
                   </div>
                 </div>
               )}
 
               {aiResultSummary.addedNotes.length > 0 && (
-                <div>
-                  <span className="text-[8px] font-black text-[var(--text-muted)] uppercase mb-2 block tracking-[0.2em]">Знайдені факти</span>
-                  <div className="space-y-2">
+                <div className="space-y-1.5">
                     {aiResultSummary.addedNotes.map((note: string, i: number) => (
-                      <div key={i} className="flex gap-3 p-3 bg-[var(--bg-main)] rounded-xl text-[11px] font-bold text-[var(--text-main)] border border-[var(--border-color)] leading-tight">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-1"></div>
+                      <div key={i} className="flex gap-2 p-2.5 bg-[var(--bg-main)] rounded-xl text-[10px] font-bold text-[var(--text-main)] border border-[var(--border-color)] leading-snug">
+                        <div className="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-1"></div>
                         {note.replace(`[AI ${aiResultSummary.platform.toUpperCase()}] `, '')}
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {aiResultSummary.summary && (
-                <div className="p-4 bg-indigo-50/30 rounded-2xl border border-indigo-100/50">
-                  <span className="text-[7px] font-black text-indigo-400 uppercase block mb-1 tracking-widest">Профіль особистості</span>
-                  <p className="text-[11px] font-medium text-indigo-900 leading-relaxed italic">"{aiResultSummary.summary}"</p>
                 </div>
               )}
             </div>
 
-            <Button variant="primary" className="w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl" onClick={() => setAiResultSummary(null)}>ПРИЙНЯТИ ДАНІ</Button>
+            <Button variant="primary" className="w-full py-3 rounded-xl font-black uppercase text-[8px] tracking-widest shadow-xl" onClick={() => setAiResultSummary(null)}>ПРИЙНЯТИ ДАНІ</Button>
           </Card>
         </div>
       )}
