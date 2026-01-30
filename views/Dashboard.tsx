@@ -24,7 +24,6 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
-  // FIX: Provide both minWidth (300) and maxWidth (800) arguments to useResizer
   const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {
@@ -33,10 +32,8 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const todayTimestamp = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
-  /* Fixed useMemo call by adding missing dependency array */
   const dateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // --- ANALYTICS LOGIC ---
   const stats = useMemo(() => {
     const activeTasks = tasks.filter(t => !t.isDeleted && t.projectSection !== 'habits');
     const getPeriodLimit = () => {
@@ -50,7 +47,6 @@ const Dashboard: React.FC = () => {
     const doneTasks = periodTasks.filter(t => t.status === TaskStatus.DONE);
     const kpi = periodTasks.length > 0 ? Math.round((doneTasks.length / periodTasks.length) * 100) : 0;
     
-    // FIX: Explicitly type 'spheres' to ensure Object.entries identifies correctly typed values
     const spheres: Record<string, { done: number; total: number }> = { health: { done: 0, total: 0 }, career: { done: 0, total: 0 }, finance: { done: 0, total: 0 }, rest: { done: 0, total: 0 } };
     tasks.forEach(t => {
       if (t.isDeleted) return;
@@ -96,9 +92,13 @@ const Dashboard: React.FC = () => {
     if (!aiEnabled) return alert("Увімкніть ШІ в налаштуваннях");
     setIsAiAnalyzing(true);
     await new Promise(r => setTimeout(r, 1500));
-    // FIX: Using type assertion for Object.entries values to ensure 'total' property is recognized
     alert(`ШІ аналіз: Твій KPI складає ${stats.kpi}%. Найбільший фокус зараз на сфері ${Object.entries(stats.spheres).sort((a: any, b: any) => b[1].total - a[1].total)[0][0]}. Продовжуй в тому ж дусі!`);
     setIsAiAnalyzing(false);
+  };
+
+  const handleOpenNowInCalendar = () => {
+    setCalendarViewMode('day');
+    setActiveTab('calendar');
   };
 
   return (
@@ -134,18 +134,22 @@ const Dashboard: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-4 pb-32">
             {mainTab === 'tasks' ? (
               <>
-                <Card padding="none" className="bg-[var(--bg-card)] border-[var(--border-color)] p-2.5 rounded-xl shadow-sm flex items-center gap-3 relative border-l-4 border-l-[var(--primary)] transition-none">
-                  <div className="min-w-0 flex-1 pl-1">
+                <Card 
+                  padding="none" 
+                  onClick={handleOpenNowInCalendar}
+                  className="bg-[var(--bg-card)] border-[var(--border-color)] py-1.5 px-3 rounded-xl shadow-sm flex items-center gap-3 relative border-l-4 border-l-[var(--primary)] transition-none cursor-pointer hover:bg-[var(--bg-main)]/50"
+                >
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">ЗАРАЗ:</span>
-                      <span className="text-11px font-black text-[var(--text-main)] truncate uppercase">
+                      <span className="text-[10px] font-black text-[var(--text-main)] truncate uppercase">
                         {timeBlocks.find(b => b.dayOfWeek === currentTime.getDay() && currentTime.getHours() >= b.startHour && currentTime.getHours() < b.endHour)?.title || 'Вільний час'}
                       </span>
                     </div>
                   </div>
-                  <button onClick={() => setActiveTab('calendar')} className="w-7 h-7 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] hover:bg-[var(--primary)] hover:text-white flex items-center justify-center shrink-0 transition-none">
-                    <i className="fa-solid fa-clock-rotate-left text-[10px]"></i>
-                  </button>
+                  <div className="w-6 h-6 rounded-lg bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-clock-rotate-left text-[9px]"></i>
+                  </div>
                 </Card>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start transition-none">
@@ -177,7 +181,12 @@ const Dashboard: React.FC = () => {
                       </section>
 
                       <section className="space-y-2">
-                         <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70 px-1">Дисципліна ({habitCompletionRate}%)</Typography>
+                         <div className="flex justify-between items-center px-1">
+                           <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Дисципліна ({habitCompletionRate}%)</Typography>
+                           <button onClick={() => setActiveTab('habits')} className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                              <i className="fa-solid fa-arrow-right-long text-[10px]"></i>
+                           </button>
+                         </div>
                          <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
                             {tasks.filter(t => !t.isDeleted && t.projectSection === 'habits').map(habit => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
@@ -196,17 +205,32 @@ const Dashboard: React.FC = () => {
                    </div>
                    <div className="lg:col-span-4 space-y-6">
                       <section className="space-y-2">
-                         <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70 px-1">Радар подій</Typography>
+                         <div className="flex justify-between items-center px-1">
+                            <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Радар подій</Typography>
+                            <button onClick={() => { setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                               <i className="fa-solid fa-calendar-days text-[10px]"></i>
+                            </button>
+                         </div>
                          <div className="space-y-1">
                             {tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).slice(0, 3).map(ev => (
-                              <div key={ev.id} className="p-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg flex items-center gap-2.5 shadow-sm">
-                                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-pink-500/10 text-pink-500"><i className="fa-solid fa-calendar-star text-[8px]"></i></div>
+                              <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg flex items-center gap-2.5 shadow-sm cursor-pointer hover:border-[var(--primary)]/30 group">
+                                 <button 
+                                    onClick={(e) => { e.stopPropagation(); toggleTaskStatus(ev); }} 
+                                    className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${ev.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 bg-slate-50 group-hover:border-[var(--primary)]/50'}`}
+                                  >
+                                    {ev.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[7px]"></i>}
+                                 </button>
                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[9px] font-black text-[var(--text-main)] truncate uppercase">{ev.title}</div>
+                                    <div className={`text-[9px] font-black truncate uppercase ${ev.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{ev.title}</div>
                                     <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.scheduledDate!).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
                                  </div>
-                              </div>
+                              </Card>
                             ))}
+                            {tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).length === 0 && (
+                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest">
+                                Горизонт чистий
+                              </div>
+                            )}
                          </div>
                       </section>
                    </div>
