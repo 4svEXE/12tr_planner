@@ -165,9 +165,10 @@ const QuickAddShoppingModal: React.FC<{
   onClose: () => void;
   onAdd: (name: string, storeId: string) => void;
   stores: ShoppingStore[];
-}> = ({ onClose, onAdd, stores }) => {
+  defaultStoreId?: string;
+}> = ({ onClose, onAdd, stores, defaultStoreId }) => {
   const [name, setName] = useState('');
-  const [storeId, setStoreId] = useState(stores[0]?.id || '');
+  const [storeId, setStoreId] = useState(defaultStoreId || stores[0]?.id || '');
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur">
@@ -196,7 +197,7 @@ const QuickAddShoppingModal: React.FC<{
 };
 
 const ShoppingView: React.FC = () => {
-  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth, theme } = useApp();
+  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth } = useApp();
   const { startResizing, isResizing } = useResizer(400, 700);
 
   const [activeStoreId, setActiveStoreId] = useState<string>('all');
@@ -286,7 +287,14 @@ const ShoppingView: React.FC = () => {
 
             {isAddingStore && (
               <form onSubmit={handleAddStore} className="px-2 mb-2 animate-in slide-in-from-top-2">
-                 <input autoFocus value={newStoreName} onChange={e => setNewStoreName(e.target.value)} onBlur={() => !newStoreName && setIsAddingStore(false)} placeholder="Назва магазину..." className="w-full bg-main border border-primary/30 rounded-xl py-3 px-4 text-[10px] font-black uppercase outline-none text-main" />
+                 <input 
+                  autoFocus 
+                  value={newStoreName} 
+                  onChange={e => setNewStoreName(e.target.value)} 
+                  onBlur={() => !newStoreName && setIsAddingStore(false)} 
+                  placeholder="Назва магазину..." 
+                  className="w-full bg-white text-slate-900 border border-primary/30 rounded-xl py-3 px-4 text-[10px] font-black uppercase outline-none shadow-sm placeholder:text-slate-400" 
+                 />
               </form>
             )}
 
@@ -342,7 +350,8 @@ const ShoppingView: React.FC = () => {
                     key={item.id} 
                     padding="none" 
                     onClick={() => setSelectedItemId(item.id)}
-                    className={`p-4 flex items-center justify-between group transition-all cursor-pointer border ${item.isBought ? 'opacity-40 grayscale bg-main/50' : 'bg-card border-theme hover:border-primary/30 shadow-sm hover:shadow-md'}`}
+                    /* ПАДІНГИ ТА ЗАОКРУГЛЕННЯ ОНОВЛЕНО */
+                    className={`px-4 py-1.5 flex items-center justify-between group transition-all cursor-pointer border rounded-xl ${item.isBought ? 'opacity-40 grayscale bg-main/50' : 'bg-card border-theme hover:border-primary/30 shadow-sm hover:shadow-md'}`}
                    >
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                          <button 
@@ -358,7 +367,7 @@ const ShoppingView: React.FC = () => {
                                  <Badge variant="orange" className="text-[8px] font-black">{lastPriceEntry.price} ₴</Badge>
                                )}
                             </div>
-                            <div className="flex items-center gap-2 md:gap-3 mt-1.5 flex-wrap">
+                            <div className="flex items-center gap-2 md:gap-3 mt-0.5 flex-wrap">
                                {activeStoreId === 'all' && store && (
                                  <Badge variant="slate" className="text-[7px] py-0 px-1 uppercase opacity-60 tracking-tighter">{store.name}</Badge>
                                )}
@@ -369,9 +378,6 @@ const ShoppingView: React.FC = () => {
                                        Best: {bestP} ₴
                                     </span>
                                  </div>
-                               )}
-                               {lastPriceEntry && (
-                                  <span className="text-[7px] font-bold text-muted uppercase truncate opacity-50">Останній в: {lastPriceEntry.storeName}</span>
                                )}
                             </div>
                          </div>
@@ -391,13 +397,14 @@ const ShoppingView: React.FC = () => {
                )}
             </div>
 
-            {/* Floating FAB for adding items in 'All' mode */}
-            {activeStoreId === 'all' && shoppingStores.length > 0 && (
+            {/* Floating Action Button for adding items */}
+            {shoppingStores.length > 0 && (
               <button 
                 onClick={() => setIsQuickAdding(true)}
-                className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all hover:scale-110"
+                className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all hover:scale-110 hover:shadow-primary/40"
+                title="Додати товар"
               >
-                <i className="fa-solid fa-plus text-xl"></i>
+                <i className="fa-solid fa-plus text-2xl"></i>
               </button>
             )}
          </div>
@@ -420,6 +427,7 @@ const ShoppingView: React.FC = () => {
       {isQuickAdding && (
         <QuickAddShoppingModal 
           stores={shoppingStores} 
+          defaultStoreId={activeStoreId !== 'all' ? activeStoreId : undefined}
           onClose={() => setIsQuickAdding(false)} 
           onAdd={handleQuickAdd} 
         />
