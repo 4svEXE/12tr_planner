@@ -20,6 +20,36 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
   const colorOptions = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#06b6d4', '#facc15', '#a855f7', '#475569'];
   const weekDaysShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 
+  const calculateSmartStreak = useMemo(() => {
+    const history = habit.habitHistory || {};
+    const scheduledDays = habit.daysOfWeek || [0,1,2,3,4,5,6];
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const dow = (d.getDay() + 6) % 7;
+      const status = history[ds]?.status || 'none';
+
+      if (status === 'completed') {
+        streak++;
+      } else if (status === 'skipped') {
+        continue;
+      } else {
+        if (scheduledDays.includes(dow)) {
+          if (i === 0) continue; 
+          break;
+        } else {
+          continue;
+        }
+      }
+    }
+    return streak;
+  }, [habit.habitHistory, habit.daysOfWeek]);
+
   const periodStats = useMemo(() => {
     const history = habit.habitHistory || {};
     const today = new Date();
@@ -162,7 +192,16 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                  <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px] tracking-widest">Дисципліна та аналіз</Typography>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all shrink-0"><i className="fa-solid fa-xmark text-xs"></i></button>
+            <div className="flex gap-1 shrink-0">
+               <button 
+                 onClick={() => onUpdate({ isArchived: !habit.isArchived })}
+                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${habit.isArchived ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-indigo-500'}`}
+                 title={habit.isArchived ? "Розархівувати" : "Архівувати"}
+               >
+                 <i className={`fa-solid ${habit.isArchived ? 'fa-box-open' : 'fa-box-archive'} text-xs`}></i>
+               </button>
+               <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all"><i className="fa-solid fa-xmark text-xs"></i></button>
+            </div>
           </div>
 
           <div className="flex gap-0.5 bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
@@ -173,6 +212,24 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
        </header>
 
        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+          {/* STREAK SECTION */}
+          <section>
+             <Card padding="md" className="bg-gradient-to-br from-orange-500 to-rose-500 text-white border-none shadow-xl flex items-center justify-between overflow-hidden relative">
+                <div className="relative z-10">
+                   <Typography variant="tiny" className="text-white/70 font-black uppercase text-[8px] tracking-widest mb-1">Поточна серія</Typography>
+                   <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black">{calculateSmartStreak}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">Днів</span>
+                   </div>
+                </div>
+                <div className="relative z-10 w-16 h-16 flex items-center justify-center">
+                   <i className="fa-solid fa-fire text-5xl animate-pulse text-white/90"></i>
+                </div>
+                {/* Background Decor */}
+                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+             </Card>
+          </section>
+
           <section className="space-y-3">
              <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60">Дні активності</Typography>
              <div className="bg-[var(--bg-main)] p-3 rounded-2xl border border-[var(--border-color)]">
