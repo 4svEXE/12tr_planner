@@ -161,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                 }}
               >
                 <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-chevron-down' : 'fa-chevron-right') : 'fa-file-lines'} opacity-40 w-3 text-center`}></i>
-                <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-list-ul'} opacity-40 text-[9px]`}></i>
+                <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-folder'} opacity-40 text-[9px]`}></i>
                 <span className="truncate flex-1 uppercase tracking-tight">{p.name}</span>
                 <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                   {isFolder && (
@@ -284,7 +284,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
          ].map(item => (
            <button 
              key={item.id} 
-             onClick={() => item.isMenuTrigger ? setShowMobileMenu(!showMobileMenu) : setActiveTab(item.id)} 
+             onClick={() => {
+                if (item.isMenuTrigger) {
+                  setShowMobileMenu(!showMobileMenu);
+                } else {
+                  setActiveTab(item.id);
+                  setShowMobileMenu(false); // Закриваємо меню при натисканні на пункт нижнього бару
+                }
+             }} 
              className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${!item.isMenuTrigger && activeTab === item.id ? 'text-[var(--primary)] bg-black/5' : 'text-[var(--text-muted)]'}`}
            >
              <i className={`fa-solid ${item.isMenuTrigger ? 'fa-table-cells-large' : item.icon} text-lg mb-0.5`}></i>
@@ -314,6 +321,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                  </div>
               </div>
               <div className="flex gap-2">
+                 {user && (
+                    <button 
+                       onClick={syncData} 
+                       disabled={isSyncing}
+                       className={`w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all ${isSyncing ? 'animate-spin text-[var(--primary)]' : ''}`}
+                       title="Синхронізувати"
+                    >
+                       <i className="fa-solid fa-rotate text-lg"></i>
+                    </button>
+                 )}
                  <button 
                     onClick={() => { setActiveTab('settings'); setShowMobileMenu(false); }} 
                     className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"
@@ -327,6 +344,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
               <div className="grid grid-cols-3 gap-4 pb-10">
                  {primaryItems.concat(widgetItems).concat(bottomItems).map(item => {
                    if (sidebarSettings && sidebarSettings[item.id] === false) return null;
+                   // Виключаємо ті розділи, що вже є в нижньому барі
+                   if (['today', 'inbox', 'lists', 'calendar'].includes(item.id)) return null;
+                   
                    const isActive = activeTab === item.id;
                    return (
                      <button 

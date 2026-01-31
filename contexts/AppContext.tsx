@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 
 const DATA_STORAGE_KEY = '12tr_engine_data_v2';
 const SETTINGS_STORAGE_KEY = '12tr_local_settings';
+const LAST_SYNC_KEY = '12tr_last_sync_time';
 
 interface LocalSettings {
   theme: ThemeType;
@@ -143,7 +144,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const { user } = useAuth();
   const [state, setState] = useState<StoreState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem(LAST_SYNC_KEY);
+    return saved ? parseInt(saved) : null;
+  });
   const [isInitialized, setIsInitialized] = useState(false);
   
   const [theme, setThemeState] = useState<ThemeType>('classic');
@@ -206,6 +210,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
               setState(cloudData);
               localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(cloudData));
             }
+            const now = Date.now();
+            setLastSyncTime(now);
+            localStorage.setItem(LAST_SYNC_KEY, now.toString());
           } else {
             const final = localData || ensureDefaults({});
             setState(final);
@@ -214,7 +221,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
           if (localData) setState(localData);
         } finally {
           setIsSyncing(false);
-          setLastSyncTime(Date.now());
         }
       } else {
         if (!localData) {
@@ -253,8 +259,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         setIsSyncing(true);
         try {
           await setDoc(doc(db, "users", user.uid), persistentData);
-          setLastSyncTime(Date.now());
-        } catch (e) {}
+          const syncTime = Date.now();
+          setLastSyncTime(syncTime);
+          localStorage.setItem(LAST_SYNC_KEY, syncTime.toString());
+        } catch (e) {
+          console.error("Cloud push failed", e);
+        }
         finally { setIsSyncing(false); }
       }, 2000);
     }
@@ -282,8 +292,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
       } else {
         await setDoc(doc(db, "users", user.uid), state);
       }
-      setLastSyncTime(Date.now());
-    } catch (e) {}
+      const now = Date.now();
+      setLastSyncTime(now);
+      localStorage.setItem(LAST_SYNC_KEY, now.toString());
+    } catch (e) {
+      console.error("Manual sync failed", e);
+    }
     finally { setIsSyncing(false); }
   };
 

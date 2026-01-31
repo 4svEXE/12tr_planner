@@ -218,7 +218,9 @@ const SettingsView: React.FC = () => {
                          </div>
                          <div>
                             <div className="text-[10px] font-black text-slate-800 uppercase leading-none mb-1">Синхронізація</div>
-                            <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString() : 'Ніколи'}</div>
+                            <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                               {lastSyncTime ? `Оновлено: ${new Date(lastSyncTime).toLocaleString('uk-UA')}` : 'Ніколи'}
+                            </div>
                          </div>
                       </div>
                       <button 
@@ -226,7 +228,7 @@ const SettingsView: React.FC = () => {
                         disabled={isSyncing}
                         className="px-4 py-1.5 bg-indigo-600 text-white rounded text-[8px] font-black uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50 transition-all"
                       >
-                        ОНОВИТИ
+                        ОНОВИТИ ЗАРАЗ
                       </button>
                    </div>
                 </Card>
@@ -234,7 +236,7 @@ const SettingsView: React.FC = () => {
 
              <Card padding="md" className="border-rose-100 bg-rose-50/20">
                 <Typography variant="h2" className="text-rose-600 mb-2 text-sm">Очищення</Typography>
-                <button onClick={() => {if(confirm('Видалити ВСІ дані?')) {localStorage.clear(); window.location.reload();}}} className="w-full py-3 rounded bg-white text-rose-500 border border-rose-100 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">ОЧИСТИТИ ВСЕ</button>
+                <button onClick={() => {if(confirm('Видалити ВСІ дані?')) {localStorage.clear(); window.location.reload();}}} className="w-full py-3 rounded bg-white text-rose-500 border border-rose-100 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">ОЧИСТИТИ ЛОКАЛЬНЕ СХОВИЩЕ</button>
              </Card>
           </div>
         );
@@ -298,7 +300,7 @@ const SettingsView: React.FC = () => {
       {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ */}
       <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedSectionId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
         {!isMobile && (
-          <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
+          <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg(--primary) z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
         )}
         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] relative overflow-hidden flex flex-col shadow-2xl">
            {selectedSectionId ? (
