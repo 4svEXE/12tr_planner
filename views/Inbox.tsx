@@ -37,13 +37,13 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const handleQuickAdd = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!quickTaskTitle.trim()) return;
-    const id = addTask(quickTaskTitle.trim(), showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
+    // Додаємо таск без автоматичного вибору (щоб не перебивати потік вводу)
+    addTask(quickTaskTitle.trim(), showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
     setQuickTaskTitle('');
-    // For manual input, we might still want to open it, but the FAB below will NOT open details.
-    setSelectedTaskId(id);
   };
 
   const handleFabAdd = () => {
+    // Швидке додавання без відкриття деталей
     addTask("Нове завдання", showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
   };
 

@@ -15,7 +15,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
   const { 
     tasks, updateTask, scheduleTask, toggleTaskStatus, 
-    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings,
+    isSidebarCollapsed, setSidebarCollapsed, sidebarSettings = {},
     isSyncing, syncData, lastSyncTime
   } = useApp();
   const { user, isGuest, logout, setIsAuthModalOpen } = useAuth();
@@ -68,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   };
 
   const renderMenuItem = (item: any) => {
-    if (sidebarSettings[item.id] === false) return null;
+    if (sidebarSettings && sidebarSettings[item.id] === false) return null;
     const isActive = activeTab === item.id;
     
     return (
@@ -98,7 +98,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           )}
           
           <div className="flex flex-col md:flex-row items-center gap-1">
-            {/* Кнопка синхронізації - тепер завжди видима */}
             {user && (
               <button 
                 onClick={syncData} 
@@ -228,7 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
               <div className="grid grid-cols-3 gap-4 pb-20">
                  {allNavItems.map(item => {
-                   if (sidebarSettings[item.id] === false) return null;
+                   if (sidebarSettings && sidebarSettings[item.id] === false) return null;
                    const isActive = activeTab === item.id;
                    return (
                      <button 

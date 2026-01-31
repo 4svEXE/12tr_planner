@@ -7,12 +7,17 @@ export interface TimeBlock {
   color?: string;
   type: 'work' | 'rest' | 'routine' | 'study';
   dayOfWeek?: number;
+  // Fix: Added optional updatedAt to TimeBlock for consistency with AppContext usage
+  updatedAt?: number;
 }
 
 export interface RoutinePreset {
   id: string;
   name: string;
-  blocks: Omit<TimeBlock, 'id'>[];
+  // Fix: Changed blocks from Omit<TimeBlock, 'id'>[] to TimeBlock[] to match AppContext usage
+  blocks: TimeBlock[];
+  // Fix: Added missing updatedAt property
+  updatedAt: number;
 }
 
 export interface DiaryEntry {
@@ -30,6 +35,8 @@ export interface InboxCategory {
   isPinned: boolean;
   scope?: 'inbox' | 'actions';
   color?: 'slate' | 'orange' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'violet';
+  // Fix: Added missing updatedAt property
+  updatedAt: number;
 }
 
 export interface Hobby {
