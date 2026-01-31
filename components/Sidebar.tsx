@@ -1,10 +1,13 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { TaskStatus } from '../types';
+import { TaskStatus, Project } from '../types';
 import Typography from './ui/Typography';
 import MiniCalendar from './sidebar/MiniCalendar';
+
+const EXPANDED_NODES_KEY = '12tr_sidebar_expanded_nodes';
+const LISTS_SECTION_COLLAPSED_KEY = '12tr_sidebar_lists_collapsed';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,20 +17,42 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
   const { 
-    tasks, updateTask, scheduleTask, toggleTaskStatus, 
+    tasks, projects, updateTask, scheduleTask, toggleTaskStatus, 
     isSidebarCollapsed, setSidebarCollapsed, sidebarSettings = {},
-    isSyncing, syncData, lastSyncTime
+    isSyncing, syncData, lastSyncTime, addProject, deleteProject, updateProject
   } = useApp();
-  const { user, isGuest, logout, setIsAuthModalOpen } = useAuth();
+  const { user, logout, setIsAuthModalOpen } = useAuth();
   
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const dragExpandTimerRef = useRef<number | null>(null);
+  
+  // Завантаження розгорнутих вузлів
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem(EXPANDED_NODES_KEY);
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Стан розгорнутості самої секції "Списки"
+  const [isListsExpanded, setIsListsExpanded] = useState<boolean>(() => {
+    const saved = localStorage.getItem(LISTS_SECTION_COLLAPSED_KEY);
+    return saved !== 'true'; 
+  });
+
+  useEffect(() => {
+    localStorage.setItem(EXPANDED_NODES_KEY, JSON.stringify(Array.from(expandedNodes)));
+  }, [expandedNodes]);
+
+  useEffect(() => {
+    localStorage.setItem(LISTS_SECTION_COLLAPSED_KEY, (!isListsExpanded).toString());
+  }, [isListsExpanded]);
 
   const primaryItems = [
     { id: 'today', icon: 'fa-star', label: 'Сьогодні', acceptDrop: true },
     { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні', acceptDrop: true },
     { id: 'next_actions', icon: 'fa-bolt', label: 'Наступні', acceptDrop: true },
+    { id: 'lists', icon: 'fa-folder-tree', label: 'Списки', acceptDrop: true },
     { id: 'planner', icon: 'fa-calendar-check', label: 'Планувальник' },
-    { id: 'projects', icon: 'fa-folder-tree', label: 'Проєкти' },
+    { id: 'projects', icon: 'fa-flag-checkered', label: 'Цілі' },
     { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
     { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки', acceptDrop: true },
   ];
@@ -48,14 +73,23 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', acceptDrop: true },
   ];
 
-  const allNavItems = useMemo(() => [...primaryItems, ...widgetItems, ...bottomItems], []);
-
   const handleGlobalDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
+    if (dragExpandTimerRef.current) {
+      window.clearTimeout(dragExpandTimerRef.current);
+      dragExpandTimerRef.current = null;
+    }
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
+
+    // Якщо кидаємо на проект в дереві
+    if (targetId.startsWith('proj_')) {
+      const projectId = targetId.replace('proj_', '');
+      updateTask({ ...task, projectId, projectSection: 'actions' as any, isDeleted: false });
+      return;
+    }
 
     switch (targetId) {
       case 'today': scheduleTask(taskId, new Date().setHours(0,0,0,0)); break;
@@ -64,25 +98,122 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       case 'notes': updateTask({ ...task, category: 'note', status: TaskStatus.INBOX, isDeleted: false }); break;
       case 'completed': if (task.status !== TaskStatus.DONE) toggleTaskStatus(task); break;
       case 'trash': updateTask({ ...task, isDeleted: true }); break;
+      case 'lists': setActiveTab('lists'); break;
     }
+  };
+
+  const handleDragOverLists = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isListsExpanded && !dragExpandTimerRef.current) {
+      dragExpandTimerRef.current = window.setTimeout(() => {
+        setIsListsExpanded(true);
+      }, 600);
+    }
+  };
+
+  const toggleNode = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const next = new Set(expandedNodes);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedNodes(next);
+  };
+
+  const handleSidebarCreate = (type: 'folder' | 'list', parentId?: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const name = prompt(`Назва ${type === 'folder' ? 'папки' : 'списку'}:`);
+    if (!name) return;
+    
+    addProject({
+      name,
+      type,
+      color: type === 'folder' ? 'var(--text-muted)' : 'var(--primary)',
+      isStrategic: false,
+      parentFolderId: parentId,
+      sections: type === 'list' ? [{ id: 'actions', title: 'Завдання' }] : []
+    });
+    
+    if (parentId) {
+      const next = new Set(expandedNodes);
+      next.add(parentId);
+      setExpandedNodes(next);
+    }
+  };
+
+  const renderRecursiveLists = (parentId: string | undefined, level: number) => {
+    const children = projects.filter(p => 
+      p.parentFolderId === parentId && 
+      (p.type === 'folder' || p.type === 'list' || !p.type) && 
+      p.description !== 'FOLDER_NOTE' &&
+      p.description !== 'SYSTEM_PLANNER_CONFIG'
+    );
+    if (children.length === 0) return null;
+
+    return (
+      <div className={`mt-0.5 space-y-0.5 ${level === 0 ? 'ml-1' : 'ml-2 border-l border-[var(--border-color)] pl-1'}`}>
+        {children.map(p => {
+          const isFolder = p.type === 'folder';
+          const isExpanded = expandedNodes.has(p.id);
+          return (
+            <div key={p.id} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }} onDrop={(e) => { e.stopPropagation(); handleGlobalDrop(e, `proj_${p.id}`); }}>
+              <div 
+                className="group/item flex items-center gap-1 px-1.5 py-1 rounded text-[8px] font-bold text-[var(--text-muted)] hover:bg-black/5 transition-all truncate cursor-pointer"
+                onClick={() => {
+                  if (isFolder) toggleNode(p.id);
+                  else setActiveTab('lists');
+                }}
+              >
+                <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-chevron-down' : 'fa-chevron-right') : 'fa-file-lines'} opacity-40 w-3 text-center`}></i>
+                <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-list-ul'} opacity-40 text-[9px]`}></i>
+                <span className="truncate flex-1 uppercase tracking-tight">{p.name}</span>
+                <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                  {isFolder && (
+                    <button onClick={(e) => handleSidebarCreate('list', p.id, e)} className="hover:text-[var(--primary)]"><i className="fa-solid fa-plus"></i></button>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити?')) deleteProject(p.id); }} className="hover:text-rose-500"><i className="fa-solid fa-xmark"></i></button>
+                </div>
+              </div>
+              {isExpanded && renderRecursiveLists(p.id, level + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const renderMenuItem = (item: any) => {
     if (sidebarSettings && sidebarSettings[item.id] === false) return null;
     const isActive = activeTab === item.id;
+    const isLists = item.id === 'lists';
     
     return (
-      <div key={item.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleGlobalDrop(e, item.id)} className="relative group px-1">
-        <button 
-          onClick={() => setActiveTab(item.id)} 
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-[var(--primary)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
-        >
-          <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-white' : ''}`}><i className={`fa-solid ${item.icon}`}></i></span>
-          {!isSidebarCollapsed && (
-            <><span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
-              {counts[item.id] > 0 && <span className={`h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 ${isActive ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--text-muted)]'}`}>{counts[item.id]}</span>}</>
+      <div 
+        key={item.id} 
+        onDragOver={isLists ? handleDragOverLists : (e) => e.preventDefault()} 
+        onDrop={(e) => handleGlobalDrop(e, item.id)} 
+        className="relative group px-1"
+      >
+        <div className="flex items-center">
+          <button 
+            onClick={() => setActiveTab(item.id)} 
+            className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all ${isActive ? 'bg-[var(--primary)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
+          >
+            <span className={`w-4 flex justify-center text-xs ${isActive ? 'text-white' : ''}`}><i className={`fa-solid ${item.icon}`}></i></span>
+            {!isSidebarCollapsed && (
+              <><span className="flex-1 text-left font-black text-[9px] tracking-widest truncate uppercase leading-none">{item.label}</span>
+                {counts[item.id] > 0 && <span className={`h-3.5 min-w-[14px] flex items-center justify-center rounded-full text-[7px] font-black px-1 ${isActive ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--text-muted)]'}`}>{counts[item.id]}</span>}</>
+            )}
+          </button>
+          {isLists && !isSidebarCollapsed && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsListsExpanded(!isListsExpanded); }}
+              className={`w-6 h-8 flex items-center justify-center text-[8px] transition-all ${isListsExpanded ? 'rotate-180 text-[var(--primary)]' : 'text-muted opacity-40'}`}
+            >
+              <i className="fa-solid fa-chevron-up"></i>
+            </button>
           )}
-        </button>
+        </div>
+        {isLists && !isSidebarCollapsed && isListsExpanded && renderRecursiveLists(undefined, 0)}
       </div>
     );
   };
@@ -96,23 +227,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                <span>12TR</span>
             </div>
           )}
-          
           <div className="flex flex-col md:flex-row items-center gap-1">
             {user && (
-              <button 
-                onClick={syncData} 
-                disabled={isSyncing}
-                title={lastSyncTime ? `Остання синхр: ${new Date(lastSyncTime).toLocaleTimeString()}` : "Синхронізувати зараз"}
-                className={`w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all ${isSyncing ? 'animate-spin text-[var(--primary)] bg-[var(--primary)]/5' : ''}`}
-              >
+              <button onClick={syncData} disabled={isSyncing} className={`w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all ${isSyncing ? 'animate-spin text-[var(--primary)] bg-[var(--primary)]/5' : ''}`}>
                 <i className="fa-solid fa-rotate text-[10px]"></i>
               </button>
             )}
-            
-            <button 
-              onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} 
-              className="w-8 h-8 rounded-xl hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all"
-            >
+            <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="w-8 h-8 rounded-xl hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all">
               <i className={`fa-solid ${isSidebarCollapsed ? 'fa-bars' : 'fa-chevron-left'} text-[10px]`}></i>
             </button>
           </div>
@@ -130,20 +251,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                      <button onClick={() => setIsAuthModalOpen(true)} className="text-[7px] font-black uppercase text-[var(--primary)] hover:underline">Увійти</button>
                    )}
                 </div>
-                {user && (
-                  <div 
-                    className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full transition-colors duration-500 ${isSyncing ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]'}`} 
-                    title={isSyncing ? "Йде синхронізація..." : "Дані в безпеці у хмарі"}
-                  ></div>
-                )}
              </div>
           </div>
-        )}
-
-        {isSidebarCollapsed && user && (
-           <div className="px-3 py-2 flex flex-col items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.3)]'}`}></div>
-           </div>
         )}
 
         {!isSidebarCollapsed && (
@@ -158,6 +267,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           {!isSidebarCollapsed && <div className="px-4 mb-1"><span className="text-[7px] uppercase font-black tracking-widest text-[var(--text-muted)] opacity-50">Toolbox</span></div>}
           {widgetItems.map(renderMenuItem)}
         </nav>
+        
         <div className="px-1 py-4 border-t border-[var(--border-color)] space-y-0.5">
           {bottomItems.map(renderMenuItem)}
           <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[var(--primary)] text-white' : 'text-[var(--text-muted)] hover:bg-black/5'}`}>
@@ -171,7 +281,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
          {[
            { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
            { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
-           { id: 'notes', icon: 'fa-note-sticky', label: 'Нотатки' },
+           { id: 'lists', icon: 'fa-folder-tree', label: 'Списки' },
            { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
            { id: 'menu', icon: 'fa-grid-2', label: 'Меню', isMenuTrigger: true }
          ].map(item => (
@@ -193,40 +303,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
                  <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--primary)] shadow-sm"><i className="fa-solid fa-table-cells-large"></i></div>
                  <Typography variant="h2" className="text-xl">Модулі</Typography>
               </div>
-              <div className="flex items-center gap-2">
-                 <button 
-                   onClick={syncData} 
-                   disabled={isSyncing}
-                   title={lastSyncTime ? `Остання синхр: ${new Date(lastSyncTime).toLocaleTimeString()}` : "Синхронізувати"}
-                   className={`w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] ${isSyncing ? 'animate-spin text-[var(--primary)]' : ''}`}
-                 >
-                    <i className="fa-solid fa-rotate"></i>
-                 </button>
-                 <button onClick={() => { setActiveTab('settings'); setShowMobileMenu(false); }} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] active:bg-black/10 transition-colors">
-                    <i className="fa-solid fa-gear text-lg"></i>
-                 </button>
-                 <button onClick={() => setShowMobileMenu(false)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark text-lg"></i></button>
-              </div>
+              <button onClick={() => setShowMobileMenu(false)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark text-lg"></i></button>
            </header>
-           
            <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-main)]">
-              <div className="mb-8 p-6 bg-[var(--bg-card)] rounded-[2.5rem] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
-                 <div className="flex items-center gap-4">
-                    <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-12 h-12 rounded-2xl border-2 border-white shadow-md" />
-                    <div>
-                       <div className="text-xs font-black uppercase text-[var(--text-main)]">{user?.displayName || 'Мандрівник (Guest)'}</div>
-                       <div className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest">{user ? user.email : 'Офлайн режим'}</div>
-                    </div>
-                 </div>
-                 {user ? (
-                   <button onClick={logout} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><i className="fa-solid fa-right-from-bracket"></i></button>
-                 ) : (
-                   <button onClick={() => { setIsAuthModalOpen(true); setShowMobileMenu(false); }} className="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Увійти</button>
-                 )}
-              </div>
-
               <div className="grid grid-cols-3 gap-4 pb-20">
-                 {allNavItems.map(item => {
+                 {primaryItems.concat(widgetItems).concat(bottomItems).map(item => {
                    if (sidebarSettings && sidebarSettings[item.id] === false) return null;
                    const isActive = activeTab === item.id;
                    return (

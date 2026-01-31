@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction, StoreState, CalendarViewMode } from '../types';
+import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, TwelveWeekYear, ProjectSection, HabitDayData, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ThemeType, ChecklistItem, ReportQuestion, Person, Memory, PersonNote, ImportantDate, ShoppingStore, ShoppingItem, Interaction, StoreState, CalendarViewMode, ProjectSectionData } from '../types';
 import { generateSeedData } from '../services/seedService';
 import { db, doc, setDoc, getDoc } from '../services/firebase';
 import { useAuth } from './AuthContext';
@@ -25,7 +25,7 @@ interface AppContextType extends StoreState {
   setAiEnabled: (enabled: boolean) => void;
   updateSidebarSetting: (key: string, visible: boolean) => void;
   updateCharacter: (updates: Partial<Character>) => void;
-  addTask: (title: string, category?: string, projectId?: string, projectSection?: ProjectSection, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
+  addTask: (title: string, category?: string, projectId?: string, projectSection?: string, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
   addProject: (project: Omit<Project, 'id' | 'progress' | 'status' | 'updatedAt'>) => string;
   updateTask: (task: Task) => void;
   updateProject: (project: Project) => void;
@@ -33,7 +33,7 @@ interface AppContextType extends StoreState {
   deleteTask: (taskId: string, permanent?: boolean) => void;
   restoreTask: (taskId: string) => void;
   moveTaskToCategory: (taskId: string, category: string, isPinned?: boolean) => void;
-  moveTaskToProjectSection: (taskId: string, section: ProjectSection) => void;
+  moveTaskToProjectSection: (taskId: string, section: string) => void;
   setProjectParent: (projectId: string, parentId: string | undefined) => void;
   scheduleTask: (taskId: string, date: number | undefined) => void;
   toggleTaskStatus: (task: Task) => void;
@@ -78,6 +78,9 @@ interface AppContextType extends StoreState {
   updateShoppingItem: (item: ShoppingItem) => void;
   toggleShoppingItem: (id: string) => void;
   deleteShoppingItem: (id: string) => void;
+  addProjectSection: (projectId: string, title: string) => void;
+  renameProjectSection: (projectId: string, sectionId: string, title: string) => void;
+  deleteProjectSection: (projectId: string, sectionId: string) => void;
   syncData: () => Promise<void>;
   isSyncing: boolean;
   lastSyncTime: number | null;
@@ -97,8 +100,6 @@ const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquainta
 
 const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [], cloud: T[] = []): T[] => {
   const map = new Map<string, T>();
-  // Порядок важливий: спочатку клауд, потім локал (або навпаки), 
-  // але виграє завжди той, у кого updatedAt більший
   [...cloud, ...local].forEach(item => {
     const existing = map.get(item.id);
     if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
@@ -157,7 +158,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const stateRef = useRef<StoreState | null>(null);
   stateRef.current = state;
 
-  // 1. LOAD SETTINGS
   useEffect(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
@@ -171,7 +171,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     }
   }, []);
 
-  // 2. INITIAL LOAD & SYNC
   useEffect(() => {
     const init = async () => {
       let localDataRaw = localStorage.getItem(DATA_STORAGE_KEY);
@@ -183,8 +182,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
           const cloudDoc = await getDoc(doc(db, "users", user.uid));
           if (cloudDoc.exists()) {
             const cloudData = ensureDefaults(cloudDoc.data());
-            
-            // Якщо локальні дані є - мержимо, якщо ні - беремо клауд
             if (localData) {
               const merged: StoreState = ensureDefaults({
                 ...cloudData,
@@ -198,7 +195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
                 shoppingStores: mergeItems(localData.shoppingStores, cloudData.shoppingStores),
                 inboxCategories: mergeItems(localData.inboxCategories, cloudData.inboxCategories),
                 timeBlocks: mergeItems(localData.timeBlocks, cloudData.timeBlocks),
-                // Corrected: character and cycle interfaces now include updatedAt
                 character: (localData.character?.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? localData.character : cloudData.character,
                 cycle: (localData.cycle?.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? localData.cycle : cloudData.cycle,
                 aiEnabled: cloudData.aiEnabled ?? localData.aiEnabled,
@@ -211,22 +207,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
               localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(cloudData));
             }
           } else {
-            // Клауд порожній - якщо є локал, юзаємо його, якщо ні - пустий стейт без сіду (або мінімальний)
             const final = localData || ensureDefaults({});
             setState(final);
           }
         } catch (e) {
-          console.error("Cloud init error", e);
           if (localData) setState(localData);
         } finally {
           setIsSyncing(false);
           setLastSyncTime(Date.now());
         }
       } else {
-        // GUEST MODE
         if (!localData) {
-          // ТІЛЬКИ ДЛЯ ГОСТЕЙ ПРИ ПЕРШОМУ ВХОДІ ГЕНЕРУЄМО СІД
-          // generateSeedData now correctly returns character and cycle
           const seed = generateSeedData();
           const initialSeed = ensureDefaults({
             ...seed,
@@ -241,27 +232,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
       }
       setIsInitialized(true);
     };
-
     init();
   }, [user?.uid]);
 
-  // 3. PERSIST SETTINGS
   useEffect(() => {
     const settings: LocalSettings = { theme, isSidebarCollapsed, activeTab, detailsWidth };
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme, isSidebarCollapsed, activeTab, detailsWidth]);
 
-  // 4. AUTO-SAVE & AUTO-SYNC
   const pushUpdate = useCallback((newState: StoreState) => {
-    if (!isInitialized) return; // Не пушимо, поки не вичитали правду
-
+    if (!isInitialized) return;
     const now = Date.now();
     const persistentData = { ...ensureDefaults(newState), updatedAt: now };
-    
     setState(persistentData);
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(persistentData));
-
     if (user) {
       if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
       syncTimeoutRef.current = window.setTimeout(async () => {
@@ -269,9 +254,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         try {
           await setDoc(doc(db, "users", user.uid), persistentData);
           setLastSyncTime(Date.now());
-        } catch (e) { console.error("Sync error", e); }
+        } catch (e) {}
         finally { setIsSyncing(false); }
-      }, 2000); // 2 seconds debounced sync
+      }, 2000);
     }
   }, [user, isInitialized]);
 
@@ -288,9 +273,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
           projects: mergeItems(state.projects, cloudData.projects),
           people: mergeItems(state.people, cloudData.people),
           diary: mergeItems(state.diary, cloudData.diary),
-          // Corrected: character and cycle interfaces now include updatedAt
-          character: (state.character.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? state.character : cloudData.character,
-          cycle: (state.cycle.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? state.cycle : cloudData.cycle,
+          character: (state.character.updatedAt || 0) > (cloudData.character.updatedAt || 0) ? state.character : cloudData.character,
+          cycle: (state.cycle.updatedAt || 0) > (cloudData.cycle.updatedAt || 0) ? state.cycle : cloudData.cycle,
         });
         setState(merged);
         localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(merged));
@@ -299,20 +283,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         await setDoc(doc(db, "users", user.uid), state);
       }
       setLastSyncTime(Date.now());
-    } catch (e) {
-      console.error("Manual sync failed", e);
-    } finally {
-      setIsSyncing(false);
-    }
+    } catch (e) {}
+    finally { setIsSyncing(false); }
   };
 
   if (!state) return null;
-
-  // Helpers with updatedAt
-  const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] });
-  const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) });
-  const updateCharacter = (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } });
-  const updateCycle = (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u, updatedAt: Date.now() } });
 
   const value = {
     ...state,
@@ -324,21 +299,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
-    updateCharacter,
-    updateTask, updateProject,
-    addTask: (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
+    updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } }),
+    updateTask: (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] }),
+    updateProject: (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) }),
+    addTask: (title: string, categoryId = 'unsorted', projectId?: string, section: string = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
       const id = Math.random().toString(36).substr(2,9);
       const now = Date.now();
-      const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+      const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section as any, isEvent, scheduledDate: date, personId };
       pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
       return id;
     },
     deleteTask: (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true, updatedAt: Date.now() } : t) }),
     addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...(state.projects || []), { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] }); return id; },
-    deleteProject: (id: string) => pushUpdate({ ...state, projects: (state.projects || []).filter(p => p.id !== id) }),
+    deleteProject: (id: string) => pushUpdate({ ...state, projects: (state.projects || []).filter(p => p.id !== id), tasks: state.tasks.map(t => t.projectId === id ? { ...t, projectId: undefined, updatedAt: Date.now() } : t) }),
     restoreTask: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isDeleted: false, updatedAt: Date.now() } : t) }),
     moveTaskToCategory: (id: string, c: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, category: c, updatedAt: Date.now() } : t) }),
-    moveTaskToProjectSection: (id: string, s: ProjectSection) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, projectSection: s, updatedAt: Date.now() } : t) }),
+    moveTaskToProjectSection: (id: string, s: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, projectSection: s as any, updatedAt: Date.now() } : t) }),
     setProjectParent: (id: string, pId: string | undefined) => pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === id ? { ...p, parentFolderId: pId, updatedAt: Date.now() } : p) }),
     scheduleTask: (id: string, d: number | undefined) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, scheduledDate: d, updatedAt: Date.now() } : t) }),
     toggleTaskStatus: (task: Task) => { const isNowDone = task.status !== TaskStatus.DONE; pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === task.id ? { ...t, status: isNowDone ? TaskStatus.DONE : TaskStatus.INBOX, completedAt: isNowDone ? Date.now() : undefined, updatedAt: Date.now() } : t) }); },
@@ -364,7 +340,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     addTimeBlock: (b: any) => pushUpdate({ ...state, timeBlocks: [...(state.timeBlocks || []), { ...b, id: Math.random().toString(36).substr(2,9), updatedAt: Date.now() }] }),
     updateTimeBlock: (b: TimeBlock) => pushUpdate({ ...state, timeBlocks: (state.timeBlocks || []).map(old => old.id === b.id ? { ...b, updatedAt: Date.now() } : old) }),
     deleteTimeBlock: (id: string) => pushUpdate({ ...state, timeBlocks: (state.timeBlocks || []).filter(b => b.id !== id) }),
-    // Fix: Removed incorrect updatedAt from record to match type Record<string, Record<string, 'pending' | 'completed' | 'missed'>>
     setBlockStatus: (d: string, bid: string, s: any) => pushUpdate({ ...state, blockHistory: { ...(state.blockHistory || {}), [d]: { ...((state.blockHistory || {})?.[d] || {}), [bid]: s } } }),
     saveRoutineAsPreset: (n: string, d: number) => pushUpdate({ ...state, routinePresets: [...(state.routinePresets || []), { id: Math.random().toString(36).substr(2,9), name: n, blocks: (state.timeBlocks || []).filter(b => b.dayOfWeek === d), updatedAt: Date.now() }] }),
     applyRoutinePreset: (id: string, d: number) => {
@@ -388,7 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     deleteInteraction: (pid: string, iid: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid), updatedAt: Date.now() } : x) }),
     addRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: [...new Set([...(state.relationshipTypes || DEFAULT_REL_TYPES), t])] }),
     deleteRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: (state.relationshipTypes || DEFAULT_REL_TYPES).filter(x => x !== t) }),
-    updateCycle,
+    updateCycle: (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u, updatedAt: Date.now() } }),
     addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c, updatedAt: Date.now() }] }),
     updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).map(x => x.id === s.id ? { ...s, updatedAt: Date.now() } : x) }),
     deleteStore: (id: string) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).filter(x => x.id !== id), shoppingItems: (state.shoppingItems || []).filter(x => x.storeId !== id) }),
@@ -401,6 +376,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         else pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: true, updatedAt: Date.now() } : p) });
     },
     restorePerson: (id: string) => pushUpdate({ ...state, people: (state.people || []).map(p => p.id === id ? { ...p, isDeleted: false, updatedAt: Date.now() } : p) }),
+    addProjectSection: (pId: string, title: string) => {
+      pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === pId ? { ...p, sections: [...(p.sections || []), { id: Math.random().toString(36).substr(2,9), title }], updatedAt: Date.now() } : p) });
+    },
+    renameProjectSection: (pId: string, sId: string, title: string) => {
+      pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === pId ? { ...p, sections: (p.sections || []).map(s => s.id === sId ? { ...s, title } : s), updatedAt: Date.now() } : p) });
+    },
+    deleteProjectSection: (pId: string, sId: string) => {
+      pushUpdate({ ...state, projects: (state.projects || []).map(p => p.id === pId ? { ...p, sections: (p.sections || []).filter(s => s.id !== sId), updatedAt: Date.now() } : p), tasks: state.tasks.map(t => t.projectId === pId && (t.projectSection as any) === sId ? { ...t, projectSection: 'actions' as any, updatedAt: Date.now() } : t) });
+    },
   } as AppContextType;
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

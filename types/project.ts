@@ -1,4 +1,9 @@
 
+export interface ProjectSectionData {
+  id: string;
+  title: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -7,9 +12,10 @@ export interface Project {
   parentFolderId?: string; 
   status: 'active' | 'archived';
   progress: number;
-  type?: 'goal' | 'subproject' | 'folder';
+  type?: 'goal' | 'subproject' | 'folder' | 'list';
   isStrategic: boolean;
   sphere?: 'health' | 'career' | 'finance' | 'education' | 'relationships' | 'rest';
+  sections?: ProjectSectionData[];
   monthlyGoal?: string;
   monthlyKpi?: number;
   monthlyKpiCurrent?: number;
