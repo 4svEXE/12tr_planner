@@ -19,20 +19,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const { 
     tasks, projects, updateTask, scheduleTask, toggleTaskStatus, 
     isSidebarCollapsed, setSidebarCollapsed, sidebarSettings = {},
-    isSyncing, syncData, lastSyncTime, addProject, deleteProject, updateProject
+    isSyncing, syncData, addProject, deleteProject
   } = useApp();
   const { user, logout, setIsAuthModalOpen } = useAuth();
   
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const dragExpandTimerRef = useRef<number | null>(null);
   
-  // Завантаження розгорнутих вузлів
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(EXPANDED_NODES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  // Стан розгорнутості самої секції "Списки"
   const [isListsExpanded, setIsListsExpanded] = useState<boolean>(() => {
     const saved = localStorage.getItem(LISTS_SECTION_COLLAPSED_KEY);
     return saved !== 'true'; 
@@ -84,7 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Якщо кидаємо на проект в дереві
     if (targetId.startsWith('proj_')) {
       const projectId = targetId.replace('proj_', '');
       updateTask({ ...task, projectId, projectSection: 'actions' as any, isDeleted: false });
@@ -223,7 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       <div className={`${isSidebarCollapsed ? 'w-14' : 'w-48'} hidden md:flex bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0`}>
         <div className="p-4 flex items-center justify-between">
           {!isSidebarCollapsed && (
-            <div className="text-xl font-black font-heading text-[var(--primary)] flex items-center gap-2 tracking-tighter leading-none animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-xl font-black font-heading text-[var(--primary)] flex items-center gap-2 tracking-tighter leading-none">
                <span>12TR</span>
             </div>
           )}
@@ -244,7 +241,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
              <div className="flex items-center gap-3 bg-black/5 p-2 rounded-2xl border border-[var(--border-color)] relative group/user">
                 <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-8 h-8 rounded-xl border border-[var(--bg-card)] shadow-sm" />
                 <div className="flex-1 min-w-0">
-                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user?.displayName || 'Мандрівник (Guest)'}</div>
+                   <div className="text-[9px] font-black uppercase truncate text-[var(--text-main)]">{user?.displayName || 'Мандрівник'}</div>
                    {user ? (
                      <button onClick={logout} className="text-[7px] font-black uppercase text-rose-500 hover:underline">Вийти</button>
                    ) : (
@@ -277,7 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)]/90 backdrop-blur-xl border-t border-[var(--border-color)] z-40 flex items-center justify-around px-4 pb-safe transition-colors duration-300">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)]/90 backdrop-blur-xl border-t border-[var(--border-color)] z-[210] flex items-center justify-around px-4 pb-safe transition-colors duration-300">
          {[
            { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
            { id: 'inbox', icon: 'fa-inbox', label: 'Вхідні' },
@@ -287,7 +284,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
          ].map(item => (
            <button 
              key={item.id} 
-             onClick={() => item.isMenuTrigger ? setShowMobileMenu(true) : setActiveTab(item.id)} 
+             onClick={() => item.isMenuTrigger ? setShowMobileMenu(!showMobileMenu) : setActiveTab(item.id)} 
              className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${!item.isMenuTrigger && activeTab === item.id ? 'text-[var(--primary)] bg-black/5' : 'text-[var(--text-muted)]'}`}
            >
              <i className={`fa-solid ${item.isMenuTrigger ? 'fa-table-cells-large' : item.icon} text-lg mb-0.5`}></i>
@@ -297,16 +294,37 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </div>
 
       {showMobileMenu && (
-        <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] md:hidden animate-in fade-in slide-in-from-bottom duration-300 flex flex-col">
+        <div className="fixed top-0 left-0 right-0 bottom-16 z-[200] bg-[var(--bg-main)] md:hidden animate-in fade-in slide-in-from-bottom duration-300 flex flex-col">
            <header className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)]">
               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--primary)] shadow-sm"><i className="fa-solid fa-table-cells-large"></i></div>
-                 <Typography variant="h2" className="text-xl">Модулі</Typography>
+                 <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--primary)] shadow-sm">
+                    {user ? (
+                      <img src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'Guest'}`} className="w-full h-full rounded-2xl object-cover" />
+                    ) : (
+                      <i className="fa-solid fa-user-ninja"></i>
+                    )}
+                 </div>
+                 <div className="flex flex-col">
+                    <Typography variant="h2" className="text-xl leading-none mb-1">{user?.displayName || 'Мандрівник'}</Typography>
+                    {user ? (
+                      <button onClick={logout} className="text-[9px] font-black uppercase text-rose-500 text-left">Вийти</button>
+                    ) : (
+                      <button onClick={() => setIsAuthModalOpen(true)} className="text-[9px] font-black uppercase text-[var(--primary)] text-left">Увійти в хмару</button>
+                    )}
+                 </div>
               </div>
-              <button onClick={() => setShowMobileMenu(false)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark text-lg"></i></button>
+              <div className="flex gap-2">
+                 <button 
+                    onClick={() => { setActiveTab('settings'); setShowMobileMenu(false); }} 
+                    className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all"
+                 >
+                    <i className="fa-solid fa-gear text-lg"></i>
+                 </button>
+                 <button onClick={() => setShowMobileMenu(false)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)]"><i className="fa-solid fa-xmark text-lg"></i></button>
+              </div>
            </header>
            <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-main)]">
-              <div className="grid grid-cols-3 gap-4 pb-20">
+              <div className="grid grid-cols-3 gap-4 pb-10">
                  {primaryItems.concat(widgetItems).concat(bottomItems).map(item => {
                    if (sidebarSettings && sidebarSettings[item.id] === false) return null;
                    const isActive = activeTab === item.id;
