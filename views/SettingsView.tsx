@@ -47,6 +47,15 @@ const SettingsView: React.FC = () => {
     setTimeout(() => setFeedbackSent(false), 3000);
   };
 
+  const handleFullReset = () => {
+    if (confirm('Видалити ВСІ дані? Ця дія незворотна.')) {
+      localStorage.clear();
+      // Явно встановлюємо режим гостя для чистого рестарту
+      localStorage.setItem('12tr_guest_mode', 'true');
+      window.location.reload();
+    }
+  };
+
   const sections = [
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
     { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
@@ -236,7 +245,7 @@ const SettingsView: React.FC = () => {
 
              <Card padding="md" className="border-rose-100 bg-rose-50/20">
                 <Typography variant="h2" className="text-rose-600 mb-2 text-sm">Очищення</Typography>
-                <button onClick={() => {if(confirm('Видалити ВСІ дані?')) {localStorage.clear(); window.location.reload();}}} className="w-full py-3 rounded bg-white text-rose-500 border border-rose-100 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">ОЧИСТИТИ ЛОКАЛЬНЕ СХОВИЩЕ</button>
+                <button onClick={handleFullReset} className="w-full py-3 rounded bg-white text-rose-500 border border-rose-100 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">ОЧИСТИТИ ЛОКАЛЬНЕ СХОВИЩЕ</button>
              </Card>
           </div>
         );

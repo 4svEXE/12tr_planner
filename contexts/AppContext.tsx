@@ -110,35 +110,38 @@ const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [
   return Array.from(map.values());
 };
 
-const ensureDefaults = (state: any): StoreState => ({
-  ...state,
-  tasks: state.tasks || [],
-  projects: state.projects || [],
-  people: state.people || [],
-  relationshipTypes: state.relationshipTypes || DEFAULT_REL_TYPES,
-  tags: state.tags || [],
-  hobbies: state.hobbies || [],
-  diary: state.diary || [],
-  inboxCategories: state.inboxCategories || DEFAULT_CATEGORIES,
-  sidebarSettings: state.sidebarSettings || {},
-  timeBlocks: state.timeBlocks || [],
-  blockHistory: state.blockHistory || {},
-  routinePresets: state.routinePresets || [],
-  reportTemplate: state.reportTemplate || [],
-  shoppingStores: state.shoppingStores || [],
-  shoppingItems: state.shoppingItems || [],
-  character: state.character || {
-    name: 'Мандрівник', 
-    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
-    bio: '', vision: '', 
-    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Guest`, 
-    energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-    preferences: { focusBlockers: [] }, skills: [], achievements: [], 
-    stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 },
-    updatedAt: 0
-  },
-  cycle: state.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0, updatedAt: 0 }
-});
+const ensureDefaults = (state: any): StoreState => {
+  const s = state || {}; // Гарантуємо, що s не null
+  return {
+    ...s,
+    tasks: s.tasks || [],
+    projects: s.projects || [],
+    people: s.people || [],
+    relationshipTypes: s.relationshipTypes || DEFAULT_REL_TYPES,
+    tags: s.tags || [],
+    hobbies: s.hobbies || [],
+    diary: s.diary || [],
+    inboxCategories: s.inboxCategories || DEFAULT_CATEGORIES,
+    sidebarSettings: s.sidebarSettings || {},
+    timeBlocks: s.timeBlocks || [],
+    blockHistory: s.blockHistory || {},
+    routinePresets: s.routinePresets || [],
+    reportTemplate: s.reportTemplate || [],
+    shoppingStores: s.shoppingStores || [],
+    shoppingItems: s.shoppingItems || [],
+    character: s.character || {
+      name: 'Мандрівник', 
+      race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+      bio: '', vision: '', 
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Guest`, 
+      energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+      preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+      stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 },
+      updatedAt: 0
+    },
+    cycle: s.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0, updatedAt: 0 }
+  };
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }> = ({ children, userId }) => {
   const { user } = useAuth();
@@ -146,7 +149,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(() => {
     const saved = localStorage.getItem(LAST_SYNC_KEY);
-    return saved ? parseInt(saved) : null;
+    if (!saved) return null;
+    const parsed = parseInt(saved);
+    return isNaN(parsed) ? null : parsed;
   });
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -178,7 +183,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   useEffect(() => {
     const init = async () => {
       let localDataRaw = localStorage.getItem(DATA_STORAGE_KEY);
-      let localData = localDataRaw ? ensureDefaults(JSON.parse(localDataRaw)) : null;
+      let localData = null;
+      try {
+        if (localDataRaw) {
+          const parsed = JSON.parse(localDataRaw);
+          if (parsed) localData = ensureDefaults(parsed);
+        }
+      } catch(e) {
+        console.error("Local data parse error", e);
+      }
 
       if (user) {
         setIsSyncing(true);
