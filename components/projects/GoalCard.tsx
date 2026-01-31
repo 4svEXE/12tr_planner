@@ -35,18 +35,25 @@ const GoalCard: React.FC<GoalCardProps> = ({
   const [activeTab, setActiveTab] = useState<'actions' | 'subprojects' | 'habits'>('actions');
   const [inlineInputValue, setInlineInputValue] = useState('');
   
+  // Animation handling
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  
   const subProjects = projects.filter(p => p.parentFolderId === goal.id && p.status === 'active');
   
   const visibleGoalActions = useMemo(() => {
     const directTasks = tasks.filter(t => !t.isDeleted && t.projectId === goal.id && t.projectSection !== 'habits' && (!t.recurrence || t.recurrence === 'none'));
     const subProjectNextActions = subProjects.map(sp => {
-      const spTasks = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && t.projectId === sp.id && t.projectSection !== 'habits').sort((a, b) => a.createdAt - b.createdAt);
-      return spTasks.length > 0 ? [spTasks[0]] : [];
+      const spTasks = tasks.filter(t => !t.isDeleted && t.projectId === sp.id && t.projectSection !== 'habits').sort((a, b) => a.createdAt - b.createdAt);
+      // Keep completed task visible if it is in the process of being struck out
+      const relevant = spTasks.filter(t => t.status !== TaskStatus.DONE || completingIds.has(t.id));
+      return relevant.length > 0 ? [relevant[0]] : [];
     }).flat();
-    return [...directTasks, ...subProjectNextActions];
-  }, [tasks, goal.id, subProjects]);
+    
+    // Filter out completed tasks that are not being animated
+    const result = [...directTasks, ...subProjectNextActions].filter(t => t.status !== TaskStatus.DONE || completingIds.has(t.id));
+    return result;
+  }, [tasks, goal.id, subProjects, completingIds]);
 
-  // Об'єднуємо звички та повторювані завдання з планувальника
   const goalHabits = useMemo(() => {
     return tasks.filter(t => 
       !t.isDeleted && 
@@ -55,13 +62,32 @@ const GoalCard: React.FC<GoalCardProps> = ({
     );
   }, [tasks, goal.id]);
 
-  // Розрахунок KPI саме на основі Планувальника (Tactical Execution)
   const plannerEfficiency = useMemo(() => {
     const plannerItems = tasks.filter(t => !t.isDeleted && t.projectId === goal.id && t.projectSection === 'planner');
     if (plannerItems.length === 0) return goal.progress || 0;
     const done = plannerItems.filter(t => t.status === TaskStatus.DONE).length;
     return Math.round((done / plannerItems.length) * 100);
   }, [tasks, goal.id, goal.progress]);
+
+  const handleToggleTaskWithDelay = (task: Task) => {
+    if (task.status !== TaskStatus.DONE) {
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.add(task.id);
+        return next;
+      });
+      setTimeout(() => {
+        toggleTaskStatus(task);
+        setCompletingIds(prev => {
+          const next = new Set(prev);
+          next.delete(task.id);
+          return next;
+        });
+      }, 700);
+    } else {
+      toggleTaskStatus(task);
+    }
+  };
 
   const handleInlineSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,15 +168,18 @@ const GoalCard: React.FC<GoalCardProps> = ({
               <div className="flex flex-col gap-1">
                  {activeTab === 'actions' && visibleGoalActions.map(task => {
                    const tProject = projects.find(p => p.id === task.projectId);
+                   const isCompleting = completingIds.has(task.id);
+                   const isDone = task.status === TaskStatus.DONE;
                    const isDoing = task.status === TaskStatus.DOING;
+                   
                    return (
                     <div key={task.id} draggable onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)} onClick={() => onTaskClick(task.id)}
-                      className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-theme group transition-all cursor-pointer ${isDoing ? 'opacity-50 grayscale' : 'hover:border-primary/30'}`}>
-                       <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-card border-theme group-hover:border-primary'}`}>
-                          {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[7px]"></i>}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-theme group transition-all cursor-pointer ${isDoing ? 'opacity-50 grayscale' : 'hover:border-primary/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
+                       <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-card border-theme group-hover:border-primary'}`}>
+                          {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
                        </button>
                        <div className="flex-1 min-w-0">
-                         <div className={`text-[12px] font-bold truncate ${task.status === TaskStatus.DONE ? 'text-muted line-through opacity-50' : 'text-main'}`}>{task.title}</div>
+                         <div className={`text-[12px] font-bold truncate strike-anim ${isDone || isCompleting ? 'is-striking text-muted line-through opacity-50' : 'text-main'}`}>{task.title}</div>
                          {tProject && tProject.type === 'subproject' && <span className="text-[7px] font-black uppercase text-primary opacity-60"># {tProject.name}</span>}
                        </div>
                        <i className="fa-solid fa-chevron-right text-[8px] text-muted opacity-0 group-hover:opacity-100 transition-all"></i>
@@ -178,7 +207,7 @@ const GoalCard: React.FC<GoalCardProps> = ({
                          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[9px]"><i className={`fa-solid ${h.recurrence && h.recurrence !== 'none' ? 'fa-calendar-day' : 'fa-repeat'}`}></i></div>
                          <div className="flex flex-col">
                             <span className="text-[12px] font-bold text-main leading-none mb-1">{h.title}</span>
-                            {h.recurrence && h.recurrence !== 'none' && <span className="text-[6px] font-black text-indigo-500 uppercase">Повторюване: {h.recurrence}</span>}
+                            {h.recurrence && h.recurrence !== 'none' && <span className="text-[6px] font-black text-indigo-500 uppercase">Повторювання: {h.recurrence}</span>}
                          </div>
                       </div>
                       <Badge variant={h.recurrence && h.recurrence !== 'none' ? 'indigo' : 'emerald'} className="text-[7px] py-0 px-1">{h.recurrence && h.recurrence !== 'none' ? 'PLANNER' : 'DAILY'}</Badge>

@@ -24,6 +24,9 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   
+  // Local state for delayed completion animation
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  
   const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
 
   useEffect(() => {
@@ -68,7 +71,10 @@ const Dashboard: React.FC = () => {
 
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
-      if (t.isDeleted || t.status === TaskStatus.DONE) return false;
+      if (t.isDeleted) return false;
+      // Allow tasks that are currently being animated to stay in the list
+      if (t.status === TaskStatus.DONE && !completingIds.has(t.id)) return false;
+      
       if (t.projectSection === 'habits' || t.category === 'note') return false;
       const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp;
       if (taskFilter === 'calendar') return isScheduledForToday;
@@ -80,7 +86,30 @@ const Dashboard: React.FC = () => {
         const pWeight = { [Priority.UI]: 4, [Priority.UNI]: 3, [Priority.NUI]: 2, [Priority.NUNI]: 1 };
         return (pWeight[b.priority] || 0) - (pWeight[a.priority] || 0);
     });
-  }, [tasks, todayTimestamp, taskFilter]);
+  }, [tasks, todayTimestamp, taskFilter, completingIds]);
+
+  const handleToggleTaskWithDelay = (task: Task) => {
+    if (task.status !== TaskStatus.DONE) {
+      // Animation START
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.add(task.id);
+        return next;
+      });
+      
+      // Delay before store update (giving time for strike-through animation)
+      setTimeout(() => {
+        toggleTaskStatus(task);
+        setCompletingIds(prev => {
+          const next = new Set(prev);
+          next.delete(task.id);
+          return next;
+        });
+      }, 700);
+    } else {
+      toggleTaskStatus(task);
+    }
+  };
 
   const randomInsight = useMemo(() => {
     const insights = tasks.filter(t => !t.isDeleted && t.tags.includes('insight'));
@@ -166,17 +195,22 @@ const Dashboard: React.FC = () => {
                             </div>
                          </div>
                          <div className="grid grid-cols-1 gap-1">
-                            {filteredQuests.map(task => (
-                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className={`flex items-center gap-2.5 px-2.5 py-1.5 transition-none cursor-pointer shadow-sm rounded-lg group border ${selectedTaskId === task.id ? 'bg-blue-50/50 border-blue-200 shadow-md' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}>
-                                <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
-                                  <i className="fa-solid fa-check text-[7px]"></i>
-                                </button>
-                                <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                                   <div className={`text-[11px] font-bold truncate leading-tight ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] opacity-40 line-through' : 'text-[var(--text-main)]'}`}>{task.title}</div>
-                                   {task.content && task.content !== '[]' && <i className="fa-regular fa-file-lines text-slate-300 text-[9px]"></i>}
-                                </div>
-                              </Card>
-                            ))}
+                            {filteredQuests.map(task => {
+                              const isCompleting = completingIds.has(task.id);
+                              const isDone = task.status === TaskStatus.DONE;
+                              
+                              return (
+                                <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className={`flex items-center gap-2.5 px-2.5 py-1.5 transition-all cursor-pointer shadow-sm rounded-lg group border ${selectedTaskId === task.id ? 'bg-blue-50/50 border-blue-200 shadow-md' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
+                                  <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
+                                    {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
+                                  </button>
+                                  <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
+                                     <div className={`text-[11px] font-bold truncate leading-tight strike-anim ${isDone || isCompleting ? 'is-striking text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>{task.title}</div>
+                                     {task.content && task.content !== '[]' && <i className="fa-regular fa-file-lines text-slate-300 text-[9px]"></i>}
+                                  </div>
+                                </Card>
+                              );
+                            })}
                          </div>
                       </section>
 

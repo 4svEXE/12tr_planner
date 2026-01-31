@@ -76,6 +76,33 @@
     /* Hide scrollbar for PWA feel */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* STRIKE ANIMATION */
+    .strike-anim {
+      position: relative;
+      display: inline-block;
+      transition: opacity 0.5s ease;
+    }
+    .strike-anim::after {
+      content: '';
+      position: absolute;
+      top: 55%;
+      left: -2%;
+      width: 0;
+      height: 2px;
+      background: currentColor;
+      border-radius: 4px;
+      transform: rotate(-1deg);
+      transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .strike-anim.is-striking::after {
+      width: 104%;
+    }
+    .strike-anim.is-striking {
+      opacity: 0.5;
+    }
   </style>
 <script type="importmap">
 {

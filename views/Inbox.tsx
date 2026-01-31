@@ -22,6 +22,9 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
+  // Animation handling
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({ pinned: false, unsorted: false, history: false });
 
   useEffect(() => {
@@ -37,14 +40,32 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const handleQuickAdd = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!quickTaskTitle.trim()) return;
-    // Додаємо таск без автоматичного вибору (щоб не перебивати потік вводу)
     addTask(quickTaskTitle.trim(), showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
     setQuickTaskTitle('');
   };
 
   const handleFabAdd = () => {
-    // Швидке додавання без відкриття деталей
     addTask("Нове завдання", showNextActions ? 'tasks' : 'unsorted', undefined, 'actions', false, undefined, undefined, targetStatus);
+  };
+
+  const handleToggleTaskWithDelay = (task: Task) => {
+    if (!showCompleted && task.status !== TaskStatus.DONE) {
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.add(task.id);
+        return next;
+      });
+      setTimeout(() => {
+        toggleTaskStatus(task);
+        setCompletingIds(prev => {
+          const next = new Set(prev);
+          next.delete(task.id);
+          return next;
+        });
+      }, 700);
+    } else {
+      toggleTaskStatus(task);
+    }
   };
 
   const handleAiProcess = async () => {
@@ -61,13 +82,12 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const sections = showCompleted ? [
     { id: 'history', title: 'Архів перемог', filter: (t: Task) => t.status === TaskStatus.DONE }
   ] : [
-    { id: 'pinned', title: 'Закріплено', filter: (t: Task) => t.isPinned },
-    { id: 'unsorted', title: 'Вхідні', filter: (t: Task) => !t.isPinned }
+    { id: 'pinned', title: 'Закріплено', filter: (t: Task) => t.isPinned || (completingIds.has(t.id) && t.isPinned) },
+    { id: 'unsorted', title: 'Вхідні', filter: (t: Task) => !t.isPinned || (completingIds.has(t.id) && !t.isPinned) }
   ];
 
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)] transition-colors duration-300">
-      {/* CENTRAL TASK LIST */}
       <div className={`flex flex-col flex-1 min-w-0 z-10 transition-all ${isMobile && selectedTaskId ? 'hidden' : 'h-full'}`}>
         <header className="px-6 pt-10 pb-4 max-w-4xl mx-auto w-full flex flex-col gap-6">
           <div className="flex items-center justify-between">
@@ -101,7 +121,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                 onSelectTag={() => {}} 
                 onEnter={handleQuickAdd} 
                 placeholder="Додати нове завдання..." 
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.2rem] py-3.5 pl-12 pr-4 text-[14px] font-medium focus:ring-4 focus:ring-[var(--primary)]/10 transition-all outline-none placeholder:text-[var(--text-muted)] placeholder:opacity-40 shadow-sm text-[var(--text-main)]" 
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.2rem] py-3 pl-12 pr-4 text-[13px] font-medium focus:ring-4 focus:ring-[var(--primary)]/10 transition-all outline-none placeholder:text-[var(--text-muted)] placeholder:opacity-40 shadow-sm text-[var(--text-main)]" 
               />
             </form>
           )}
@@ -109,8 +129,16 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 max-w-4xl mx-auto w-full pb-32">
           {sections.map(section => {
-            // FIX: Врахування фільтрації нотаток (category !== 'note')
-            const sectionTasks = tasks.filter(t => !t.isDeleted && t.status === targetStatus && t.category !== 'note' && section.filter(t));
+            const sectionTasks = tasks.filter(t => {
+              if (t.isDeleted) return false;
+              if (t.category === 'note') return false;
+              
+              // Keep tasks logically alive during animation
+              const isLogicallyActive = showCompleted ? (t.status === TaskStatus.DONE) : (t.status === targetStatus || completingIds.has(t.id));
+              
+              return isLogicallyActive && section.filter(t);
+            });
+            
             if (sectionTasks.length === 0 && section.id === 'pinned') return null;
             const isCollapsed = collapsed[section.id];
 
@@ -126,35 +154,39 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                 </div>
                 
                 {!isCollapsed && (
-                  <div className="space-y-px mt-1 border-t border-[var(--border-color)] opacity-50">
+                  <div className="space-y-1 mt-1 border-t border-[var(--border-color)]/50 pt-2">
                     {sectionTasks.map(task => {
                       const isSelected = selectedTaskId === task.id;
+                      const isCompleting = completingIds.has(task.id);
+                      const isDone = task.status === TaskStatus.DONE;
                       const hasContent = task.content && task.content !== "[]" && task.content !== "";
                       
                       return (
                         <div 
                           key={task.id}
                           onClick={() => setSelectedTaskId(task.id)}
-                          className={`flex items-center gap-4 px-3 py-3.5 cursor-pointer group relative border-b border-[var(--border-color)]/30 transition-all
-                            ${isSelected ? (showCompleted ? 'bg-emerald-50 border-emerald-100' : 'bg-[var(--primary)]/5 border-[var(--primary)]/20') : 'hover:bg-black/5'}`}
+                          className={`flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer group relative border rounded-lg transition-all shadow-sm
+                            ${isSelected ? (showCompleted ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50/50 border-blue-200') : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}
                         >
                           <button 
-                            onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} 
-                            className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--primary)]'}`}
+                            onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} 
+                            className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-[var(--border-color)] bg-black/5 hover:border-[var(--primary)]'}`}
                           >
-                            {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[10px]"></i>}
+                            {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
                           </button>
                           
-                          <span className={`text-[14px] font-medium flex-1 truncate tracking-tight transition-colors ${task.status === TaskStatus.DONE ? 'text-[var(--text-muted)] opacity-60 line-through' : 'text-[var(--text-main)]'}`}>
-                            {task.title}
-                          </span>
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
+                             <span className={`text-[11px] font-bold truncate leading-tight tracking-tight transition-colors strike-anim ${isDone || isCompleting ? 'is-striking text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>
+                                {task.title}
+                             </span>
 
-                          {hasContent && (
-                            <i className="fa-regular fa-file-lines text-[var(--text-muted)] opacity-30 text-xs"></i>
-                          )}
+                             {hasContent && (
+                                <i className="fa-regular fa-file-lines text-[var(--text-muted)] opacity-30 text-[9px]"></i>
+                             )}
+                          </div>
                           
                           {task.completedAt && (
-                             <span className="text-[8px] font-black text-[var(--text-muted)] opacity-40 uppercase tabular-nums">
+                             <span className="text-[7px] font-black text-[var(--text-muted)] opacity-40 uppercase tabular-nums">
                                {new Date(task.completedAt).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}
                              </span>
                           )}
@@ -166,14 +198,6 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
               </div>
             );
           })}
-          
-          {tasks.filter(t => !t.isDeleted && t.status === targetStatus && t.category !== 'note').length === 0 && (
-             <div className="py-20 text-center flex flex-col items-center opacity-10 grayscale select-none">
-                <i className={`fa-solid ${showCompleted ? 'fa-flag-checkered' : 'fa-mountain-sun'} text-7xl mb-6`}></i>
-                <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Тут порожньо</Typography>
-                <Typography variant="body" className="mt-2 text-xs font-bold uppercase">Час створювати нові перемоги</Typography>
-             </div>
-          )}
         </div>
 
         {aiEnabled && !showCompleted && (
@@ -185,7 +209,6 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
           </div>
         )}
 
-        {/* FAB + BUTTON */}
         {!showCompleted && (
           <button 
             onClick={handleFabAdd}
@@ -196,7 +219,6 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
         )}
       </div>
 
-      {/* TASK DETAILS VIEW with Dynamic Resizer */}
       <div 
         className={`bg-[var(--bg-card)] shrink-0 relative transition-none border-l border-[var(--border-color)] flex flex-col ${selectedTaskId ? '' : 'hidden lg:flex'}`}
         style={!isMobile ? { width: detailsWidth } : { width: '100vw', position: 'fixed', inset: 0, zIndex: 100 }}
