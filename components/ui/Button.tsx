@@ -17,7 +17,7 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props 
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-black transition-none active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
+  const baseClasses = 'inline-flex items-center justify-center gap-2 rounded font-black transition-none active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
   
   const variants = {
     primary: 'bg-[var(--primary)] text-white shadow-lg',

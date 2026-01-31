@@ -69,12 +69,12 @@ const EditableBlock: React.FC<{
       <div className="absolute -left-8 top-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity z-20">
         <button 
           onClick={() => setShowInlineMenu(!showInlineMenu)}
-          className="w-7 h-7 rounded-lg bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--primary)] flex items-center justify-center border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all"
+          className="w-7 h-7 rounded bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--primary)] flex items-center justify-center border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all"
         >
           <i className="fa-solid fa-plus text-xs"></i>
         </button>
         {showInlineMenu && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-[var(--bg-card)] shadow-xl border border-[var(--border-color)] rounded-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-full left-0 mt-1 w-48 bg-[var(--bg-card)] shadow-xl border border-[var(--border-color)] rounded py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
             <div className="px-3 py-1 text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-50">Текст</div>
             <button onClick={() => { onAddBlock('text'); setShowInlineMenu(false); }} className="w-full text-left px-3 py-1.5 hover:bg-[var(--primary)]/10 text-xs font-bold text-[var(--text-main)] flex items-center gap-2 transition-colors"><i className="fa-solid fa-font opacity-40"></i> Текст</button>
             <button onClick={() => { onAddBlock('heading'); setShowInlineMenu(false); }} className="w-full text-left px-3 py-1.5 hover:bg-[var(--primary)]/10 text-xs font-bold text-[var(--text-main)] flex items-center gap-2 transition-colors"><i className="fa-solid fa-heading opacity-40"></i> Заголовок 1</button>
@@ -90,7 +90,7 @@ const EditableBlock: React.FC<{
       <div className="flex-1 min-w-0 flex items-start gap-3">
         {block.type === 'task' && (
           <button onClick={() => onUpdate({ checked: !block.checked })} 
-            className={`w-4 h-4 rounded border mt-1.5 shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--primary)]'}`}>
+            className={`w-4 h-4 rounded border mt-1.5 shrink-0 transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'border-[var(--border-color)] bg-[var(--bg-input)] hover:border-[var(--primary)]'}`}>
             {block.checked && <i className="fa-solid fa-check text-[9px]"></i>}
           </button>
         )}
@@ -122,7 +122,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   
   const saveTimeoutRef = useRef<number | null>(null);
 
-  // Sync internal ID with prop ID to handle switching entries
   useEffect(() => {
     setCurrentId(id);
   }, [id]);
@@ -145,7 +144,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
       else if (line.startsWith('> ')) { type = 'quote'; content = line.replace('> ', ''); }
       else if (line === '---') { type = 'divider'; content = ''; }
 
-      // Форматуємо жирний текст та курсив у HTML для відображення в editor
       content = content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>');
@@ -246,12 +244,12 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
     <div className="h-full flex flex-col bg-[var(--bg-card)] relative transition-colors duration-300">
       {toolbarPos && (
         <div 
-          className="fixed z-[200] flex bg-slate-900 text-white p-1 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10"
+          className="fixed z-[200] flex bg-slate-900 text-white p-1 rounded shadow-2xl animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10"
           style={{ top: toolbarPos.top, left: toolbarPos.left }}
         >
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('bold'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg"><i className="fa-solid fa-bold text-xs"></i></button>
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('italic'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg"><i className="fa-solid fa-italic text-xs"></i></button>
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('strikethrough'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg"><i className="fa-solid fa-strikethrough text-xs"></i></button>
+          <button onMouseDown={(e) => { e.preventDefault(); formatText('bold'); }} className="w-8 h-8 hover:bg-white/10 rounded"><i className="fa-solid fa-bold text-xs"></i></button>
+          <button onMouseDown={(e) => { e.preventDefault(); formatText('italic'); }} className="w-8 h-8 hover:bg-white/10 rounded"><i className="fa-solid fa-italic text-xs"></i></button>
+          <button onMouseDown={(e) => { e.preventDefault(); formatText('strikethrough'); }} className="w-8 h-8 hover:bg-white/10 rounded"><i className="fa-solid fa-strikethrough text-xs"></i></button>
         </div>
       )}
 

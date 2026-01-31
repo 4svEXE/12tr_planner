@@ -28,7 +28,7 @@ const Card: React.FC<CardProps> = ({
     : 'bg-[var(--bg-card)]';
   
   const borderClasses = 'border-[var(--border-color)]';
-  const radiusClasses = 'rounded-[var(--radius)]';
+  const radiusClasses = 'rounded'; // Уніфіковано до 4px
   const hoverClasses = hover ? 'hover:shadow-lg hover:border-[var(--primary)]/30' : 'shadow-sm';
   
   const paddings = {

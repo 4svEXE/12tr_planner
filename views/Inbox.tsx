@@ -89,7 +89,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)] transition-colors duration-300">
       <div className={`flex flex-col flex-1 min-w-0 z-10 transition-all ${isMobile && selectedTaskId ? 'hidden' : 'h-full'}`}>
-        <header className="px-6 pt-10 pb-4 max-w-4xl mx-auto w-full flex flex-col gap-6">
+        <header className="px-6 pt-4 max-w-4xl mx-auto w-full flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${showCompleted ? 'bg-emerald-500' : 'bg-[var(--primary)]'}`}>
@@ -111,9 +111,9 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
           </div>
           
           {!showCompleted && (
-            <form onSubmit={handleQuickAdd} className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-50 group-focus-within:text-[var(--primary)] group-focus-within:opacity-100 transition-all">
-                <i className="fa-solid fa-plus text-sm"></i>
+            <form onSubmit={handleQuickAdd} className="relative group flex items-center">
+              <div className="absolute left-3 z-10 text-[var(--text-muted)] opacity-50 group-focus-within:text-[var(--primary)] group-focus-within:opacity-100 transition-all">
+                <i className="fa-solid fa-plus text-[10px]"></i>
               </div>
               <HashtagAutocomplete 
                 value={quickTaskTitle} 
@@ -121,7 +121,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                 onSelectTag={() => {}} 
                 onEnter={handleQuickAdd} 
                 placeholder="Додати нове завдання..." 
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.2rem] py-3 pl-12 pr-4 text-[13px] font-medium focus:ring-4 focus:ring-[var(--primary)]/10 transition-all outline-none placeholder:text-[var(--text-muted)] placeholder:opacity-40 shadow-sm text-[var(--text-main)]" 
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded py-0 pl-10 pr-4 focus:ring-4 focus:ring-[var(--primary)]/10 transition-all outline-none placeholder:text-[var(--text-muted)] placeholder:opacity-40 shadow-sm text-[var(--text-main)]" 
               />
             </form>
           )}

@@ -92,7 +92,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex items-center overflow-visible">
+    <div className="relative w-full flex items-center overflow-visible">
       <input
         ref={inputRef}
         type="text"
@@ -108,7 +108,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
             }, 200);
         }}
         placeholder={placeholder}
-        className={`${className} outline-none`}
+        className={`${className} outline-none h-6 w-full`}
       />
       
       {showPopover && (

@@ -23,49 +23,73 @@
       --bg-main: #f8fafc;
       --bg-sidebar: #ffffff;
       --bg-card: #ffffff;
+      --bg-input: #f1f5f9;
       --text-main: #1e293b;
       --text-muted: #64748b;
-      --border-color: #f1f5f9;
-      --radius: 1.5rem;
+      --border-color: #e2e8f0;
+      --radius: 4px; /* Уніфіковано до 4px */
     }
     /* 30 ТЕМ */
-    [data-theme="classic"] { --primary: #f97316; --bg-main: #f8fafc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #1e293b; --text-muted: #64748b; --border-color: #f1f5f9; }
-    [data-theme="midnight"] { --primary: #10b981; --bg-main: #020617; --bg-sidebar: #0f172a; --bg-card: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; --border-color: #334155; }
-    [data-theme="obsidian"] { --primary: #8b5cf6; --bg-main: #000000; --bg-sidebar: #0a0a0a; --bg-card: #171717; --text-main: #e5e5e5; --text-muted: #737373; --border-color: #262626; }
-    [data-theme="cyberpunk"] { --primary: #fef08a; --bg-main: #09090b; --bg-sidebar: #18181b; --bg-card: #27272a; --text-main: #00ff9f; --text-muted: #d946ef; --border-color: #3f3f46; }
-    [data-theme="dracula"] { --primary: #ff79c6; --bg-main: #282a36; --bg-sidebar: #1e1f29; --bg-card: #44475a; --text-main: #f8f8f2; --text-muted: #6272a4; --border-color: #44475a; }
-    [data-theme="nordic-dark"] { --primary: #88c0d0; --bg-main: #2e3440; --bg-sidebar: #242933; --bg-card: #3b4252; --text-main: #eceff4; --text-muted: #4c566a; --border-color: #434c5e; }
-    [data-theme="sakura"] { --primary: #ec4899; --bg-main: #fff1f2; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #831843; --text-muted: #db2777; --border-color: #ffe4e6; }
-    [data-theme="ocean"] { --primary: #0ea5e9; --bg-main: #f0f9ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #0c4a6e; --text-muted: #0284c7; --border-color: #e0f2fe; }
-    [data-theme="forest"] { --primary: #166534; --bg-main: #f0fdf4; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #064e3b; --text-muted: #15803d; --border-color: #dcfce7; }
-    [data-theme="lavender"] { --primary: #8b5cf6; --bg-main: #faf5ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #4c1d95; --text-muted: #7c3aed; --border-color: #f3e8ff; }
-    [data-theme="desert"] { --primary: #d97706; --bg-main: #fffbeb; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #78350f; --text-muted: #b45309; --border-color: #fef3c7; }
-    [data-theme="mars"] { --primary: #ef4444; --bg-main: #450a0a; --bg-sidebar: #7f1d1d; --bg-card: #991b1b; --text-main: #fee2e2; --text-muted: #fca5a5; --border-color: #b91c1c; }
-    [data-theme="slate"] { --primary: #475569; --bg-main: #f8fafc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0; }
-    [data-theme="coffee"] { --primary: #92400e; --bg-main: #fffaf0; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #451a03; --text-muted: #78350f; --border-color: #ffedd5; }
-    [data-theme="gold"] { --primary: #fbbf24; --bg-main: #1e1b4b; --bg-sidebar: #312e81; --bg-card: #3730a3; --text-main: #ffffff; --text-muted: #fbbf24; --border-color: #4338ca; }
-    [data-theme="matrix"] { --primary: #00ff41; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #0d0d0d; --text-main: #00ff41; --text-muted: #003b00; --border-color: #00ff41; }
-    [data-theme="glass"] { --primary: #ffffff; --bg-main: #6366f1; --bg-sidebar: rgba(255,255,255,0.1); --bg-card: rgba(255,255,255,0.2); --text-main: #ffffff; --text-muted: rgba(255,255,255,0.6); --border-color: rgba(255,255,255,0.3); }
-    [data-theme="toxic"] { --primary: #ccff00; --bg-main: #1a1a1a; --bg-sidebar: #000000; --bg-card: #222222; --text-main: #ccff00; --text-muted: #555555; --border-color: #333333; }
-    [data-theme="sepia"] { --primary: #704214; --bg-main: #f4ecd8; --bg-sidebar: #ede0c8; --bg-card: #e5d3b3; --text-main: #433422; --text-muted: #704214; --border-color: #d6c1a0; }
-    [data-theme="paper"] { --primary: #3b82f6; --bg-main: #f5f5f5; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #171717; --text-muted: #737373; --border-color: #d4d4d4; }
-    [data-theme="blueprint"] { --primary: #ffffff; --bg-main: #1e3a8a; --bg-sidebar: #1e40af; --bg-card: #1d4ed8; --text-main: #ffffff; --text-muted: #93c5fd; --border-color: #3b82f6; }
-    [data-theme="gameboy"] { --primary: #306230; --bg-main: #9bbc0f; --bg-sidebar: #8bac0f; --bg-card: #8bac0f; --text-main: #0f380f; --text-muted: #306230; --border-color: #306230; }
-    [data-theme="spotify"] { --primary: #1db954; --bg-main: #121212; --bg-sidebar: #000000; --bg-card: #181818; --text-main: #ffffff; --text-muted: #b3b3b3; --border-color: #282828; }
-    [data-theme="slack"] { --primary: #4a154b; --bg-main: #ffffff; --bg-sidebar: #4a154b; --bg-card: #ffffff; --text-main: #1d1c1d; --text-muted: #616061; --border-color: #e2e2e2; }
-    [data-theme="uber"] { --primary: #ffffff; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #1f1f1f; --text-main: #ffffff; --text-muted: #afafaf; --border-color: #333333; }
-    [data-theme="apple"] { --primary: #007aff; --bg-main: #f5f5f7; --bg-sidebar: rgba(255,255,255,0.8); --bg-card: #ffffff; --text-main: #1d1d1f; --text-muted: #86868b; --border-color: #d2d2d7; }
-    [data-theme="stripe"] { --primary: #635bff; --bg-main: #f6f9fc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --text-main: #1a1f36; --text-muted: #697386; --border-color: #e6ebf1; }
-    [data-theme="github"] { --primary: #2ea44f; --bg-main: #0d1117; --bg-sidebar: #010409; --bg-card: #161b22; --text-main: #c9d1d9; --text-muted: #8b949e; --border-color: #30363d; }
-    [data-theme="clay"] { --primary: #e67e22; --bg-main: #fdf2e9; --bg-sidebar: #fae5d3; --bg-card: #f5cba7; --text-main: #6e2c00; --text-muted: #a04000; --border-color: #edbb99; }
-    [data-theme="olive"] { --primary: #808000; --bg-main: #f5f5dc; --bg-sidebar: #edeade; --bg-card: #d2b48c; --text-main: #556b2f; --text-muted: #808000; --border-color: #bdb76b; }
+    [data-theme="classic"] { --primary: #f97316; --bg-main: #f8fafc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f1f5f9; --text-main: #1e293b; --text-muted: #64748b; --border-color: #e2e8f0; }
+    [data-theme="midnight"] { --primary: #10b981; --bg-main: #020617; --bg-sidebar: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --text-main: #f1f5f9; --text-muted: #94a3b8; --border-color: #334155; }
+    [data-theme="obsidian"] { --primary: #8b5cf6; --bg-main: #000000; --bg-sidebar: #0a0a0a; --bg-card: #171717; --bg-input: #0a0a0a; --text-main: #e5e5e5; --text-muted: #737373; --border-color: #262626; }
+    [data-theme="cyberpunk"] { --primary: #fef08a; --bg-main: #09090b; --bg-sidebar: #18181b; --bg-card: #27272a; --bg-input: #18181b; --text-main: #00ff9f; --text-muted: #d946ef; --border-color: #3f3f46; }
+    [data-theme="dracula"] { --primary: #ff79c6; --bg-main: #282a36; --bg-sidebar: #1e1f29; --bg-card: #44475a; --bg-input: #282a36; --text-main: #f8f8f2; --text-muted: #6272a4; --border-color: #44475a; }
+    [data-theme="nordic-dark"] { --primary: #88c0d0; --bg-main: #2e3440; --bg-sidebar: #242933; --bg-card: #3b4252; --bg-input: #242933; --text-main: #eceff4; --text-muted: #4c566a; --border-color: #434c5e; }
+    [data-theme="sakura"] { --primary: #ec4899; --bg-main: #fff1f2; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #fff1f2; --text-main: #831843; --text-muted: #db2777; --border-color: #ffe4e6; }
+    [data-theme="ocean"] { --primary: #0ea5e9; --bg-main: #f0f9ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f0f9ff; --text-main: #0c4a6e; --text-muted: #0284c7; --border-color: #e0f2fe; }
+    [data-theme="forest"] { --primary: #166534; --bg-main: #f0fdf4; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f0fdf4; --text-main: #064e3b; --text-muted: #15803d; --border-color: #dcfce7; }
+    [data-theme="lavender"] { --primary: #8b5cf6; --bg-main: #faf5ff; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #faf5ff; --text-main: #4c1d95; --text-muted: #7c3aed; --border-color: #f3e8ff; }
+    [data-theme="desert"] { --primary: #d97706; --bg-main: #fffbeb; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #fffbeb; --text-main: #78350f; --text-muted: #b45309; --border-color: #fef3c7; }
+    [data-theme="mars"] { --primary: #ef4444; --bg-main: #450a0a; --bg-sidebar: #7f1d1d; --bg-card: #991b1b; --bg-input: #450a0a; --text-main: #fee2e2; --text-muted: #fca5a5; --border-color: #b91c1c; }
+    [data-theme="slate"] { --primary: #475569; --bg-main: #f8fafc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f8fafc; --text-main: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0; }
+    [data-theme="coffee"] { --primary: #92400e; --bg-main: #fffaf0; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #fffaf0; --text-main: #451a03; --text-muted: #78350f; --border-color: #ffedd5; }
+    [data-theme="gold"] { --primary: #fbbf24; --bg-main: #1e1b4b; --bg-sidebar: #312e81; --bg-card: #3730a3; --bg-input: #1e1b4b; --text-main: #ffffff; --text-muted: #fbbf24; --border-color: #4338ca; }
+    [data-theme="matrix"] { --primary: #00ff41; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #0d0d0d; --bg-input: #000000; --text-main: #00ff41; --text-muted: #003b00; --border-color: #00ff41; }
+    [data-theme="glass"] { --primary: #ffffff; --bg-main: #6366f1; --bg-sidebar: rgba(255,255,255,0.1); --bg-card: rgba(255,255,255,0.2); --bg-input: rgba(255,255,255,0.1); --text-main: #ffffff; --text-muted: rgba(255,255,255,0.6); --border-color: rgba(255,255,255,0.3); }
+    [data-theme="toxic"] { --primary: #ccff00; --bg-main: #1a1a1a; --bg-sidebar: #000000; --bg-card: #222222; --bg-input: #1a1a1a; --text-main: #ccff00; --text-muted: #555555; --border-color: #333333; }
+    [data-theme="sepia"] { --primary: #704214; --bg-main: #f4ecd8; --bg-sidebar: #ede0c8; --bg-card: #e5d3b3; --bg-input: #f4ecd8; --text-main: #433422; --text-muted: #704214; --border-color: #d6c1a0; }
+    [data-theme="paper"] { --primary: #3b82f6; --bg-main: #f5f5f5; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f5f5f5; --text-main: #171717; --text-muted: #737373; --border-color: #d4d4d4; }
+    [data-theme="blueprint"] { --primary: #ffffff; --bg-main: #1e3a8a; --bg-sidebar: #1e40af; --bg-card: #1d4ed8; --bg-input: #1e3a8a; --text-main: #ffffff; --text-muted: #93c5fd; --border-color: #3b82f6; }
+    [data-theme="gameboy"] { --primary: #306230; --bg-main: #9bbc0f; --bg-sidebar: #8bac0f; --bg-card: #8bac0f; --bg-input: #9bbc0f; --text-main: #0f380f; --text-muted: #306230; --border-color: #306230; }
+    [data-theme="spotify"] { --primary: #1db954; --bg-main: #121212; --bg-sidebar: #000000; --bg-card: #181818; --bg-input: #121212; --text-main: #ffffff; --text-muted: #b3b3b3; --border-color: #282828; }
+    [data-theme="slack"] { --primary: #4a154b; --bg-main: #ffffff; --bg-sidebar: #4a154b; --bg-card: #ffffff; --bg-input: #f8f8f8; --text-main: #1d1c1d; --text-muted: #616061; --border-color: #e2e2e2; }
+    [data-theme="uber"] { --primary: #ffffff; --bg-main: #000000; --bg-sidebar: #000000; --bg-card: #1f1f1f; --bg-input: #000000; --text-main: #ffffff; --text-muted: #afafaf; --border-color: #333333; }
+    [data-theme="apple"] { --primary: #007aff; --bg-main: #f5f5f7; --bg-sidebar: rgba(255,255,255,0.8); --bg-card: #ffffff; --bg-input: #f5f5f7; --text-main: #1d1d1f; --text-muted: #86868b; --border-color: #d2d2d7; }
+    [data-theme="stripe"] { --primary: #635bff; --bg-main: #f6f9fc; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-input: #f6f9fc; --text-main: #1a1f36; --text-muted: #697386; --border-color: #e6ebf1; }
+    [data-theme="github"] { --primary: #2ea44f; --bg-main: #0d1117; --bg-sidebar: #010409; --bg-card: #161b22; --bg-input: #0d1117; --text-main: #c9d1d9; --text-muted: #8b949e; --border-color: #30363d; }
+    [data-theme="clay"] { --primary: #e67e22; --bg-main: #fdf2e9; --bg-sidebar: #fae5d3; --bg-card: #f5cba7; --bg-input: #fdf2e9; --text-main: #6e2c00; --text-muted: #a04000; --border-color: #edbb99; }
+    [data-theme="olive"] { --primary: #808000; --bg-main: #f5f5dc; --bg-sidebar: #edeade; --bg-card: #d2b48c; --bg-input: #f5f5dc; --text-main: #556b2f; --text-muted: #808000; --border-color: #bdb76b; }
 
     body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
     
-    /* Global styles to use variables */
-    button, input, textarea, select { color: inherit; }
+    button, input, textarea, select { color: inherit; border-radius: var(--radius) !important; }
+    
+    /* ФІКСОВАНА ВИСОТА 24PX ДЛЯ ВСІХ ІНПУТІВ */
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), 
+    select { 
+      height: 24px !important; 
+      padding-top: 0 !important; 
+      padding-bottom: 0 !important; 
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+      font-size: 11px !important;
+      line-height: 22px !important;
+      background-color: var(--bg-input) !important; 
+      color: var(--text-main) !important; 
+      border: 1px solid var(--border-color) !important;
+      box-sizing: border-box !important;
+    }
+
+    textarea { 
+      background-color: var(--bg-input) !important; 
+      color: var(--text-main) !important; 
+      border: 1px solid var(--border-color) !important; 
+      font-size: 12px !important;
+    }
+    
     .bg-card { background-color: var(--bg-card); }
     .text-primary { color: var(--primary); }
     .bg-primary { background-color: var(--primary); }
@@ -73,7 +97,10 @@
     .border-theme { border-color: var(--border-color); }
     .text-muted { color: var(--text-muted); }
 
-    /* Hide scrollbar for PWA feel */
+    .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-[2.5rem], .rounded-[1.5rem], .rounded-[1.8rem], .rounded-[2rem] { 
+      border-radius: var(--radius) !important; 
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -102,6 +129,12 @@
     }
     .strike-anim.is-striking {
       opacity: 0.5;
+    }
+    
+    /* Theme adapt for DiaryEditor and others */
+    .block-input[data-placeholder]:empty:before {
+      color: var(--text-muted);
+      opacity: 0.4;
     }
   </style>
 <script type="importmap">

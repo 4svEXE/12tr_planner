@@ -45,40 +45,39 @@ const GoalModal: React.FC<{
         <div className="space-y-4">
           <div>
             <label className="text-[8px] font-black uppercase text-muted mb-1 block tracking-widest">Назва цілі</label>
-            <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Напр: Досягти фінансової свободи" className="w-full bg-main border border-theme rounded-xl py-2.5 px-4 text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all" />
+            <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Напр: Досягти фінансової свободи" className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-bold outline-none" />
           </div>
           <div>
             <label className="text-[8px] font-black uppercase text-muted mb-1 block tracking-widest">Сфера життя</label>
             <div className="grid grid-cols-3 gap-1.5">
               {spheres.map(s => (
-                <button key={s.key} onClick={() => setSphere(s.key as any)} className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${sphere === s.key ? 'border-primary bg-primary/10 text-primary' : 'border-theme bg-main text-muted hover:border-primary/30'}`}>
-                  <i className={`fa-solid ${s.icon} text-[10px]`}></i>
-                  <span className="text-[7px] font-black uppercase">{s.label}</span>
+                <button key={s.key} onClick={() => setSphere(s.key as any)} className={`p-1 rounded border-2 transition-all flex flex-col items-center gap-0.5 ${sphere === s.key ? 'border-primary bg-primary/10 text-primary' : 'border-theme bg-main text-muted hover:border-primary/30'}`}>
+                  <i className={`fa-solid ${s.icon} text-[9px]`}></i>
+                  <span className="text-[6px] font-black uppercase">{s.label}</span>
                 </button>
               ))}
             </div>
           </div>
           <div>
             <label className="text-[8px] font-black uppercase text-muted mb-1 block tracking-widest">Візія</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Опишіть бажаний результат..." className="w-full bg-main border border-theme rounded-xl p-3 text-xs font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all h-20 resize-none" />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Опишіть бажаний результат..." className="w-full bg-main border border-theme rounded p-2 text-xs font-bold focus:ring-2 focus:ring-primary/10 outline-none transition-all h-20 resize-none" />
           </div>
           {aiEnabled && !initialData && (
-             <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-lg"><i className="fa-solid fa-wand-magic-sparkles text-xs"></i></div>
+             <div className="p-2 bg-primary/5 rounded border border-primary/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                   <div className="w-6 h-6 rounded bg-primary text-white flex items-center justify-center shadow-lg"><i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i></div>
                    <div>
-                      <div className="text-[9px] font-black uppercase text-primary leading-none">AI План</div>
-                      <div className="text-[7px] font-bold text-muted mt-0.5">Декомпозиція</div>
+                      <div className="text-[8px] font-black uppercase text-primary leading-none">AI План</div>
                    </div>
                 </div>
-                <button onClick={() => setAutoPlan(!autoPlan)} className={`w-9 h-5 rounded-full transition-all relative ${autoPlan ? 'bg-primary' : 'bg-muted/20'}`}>
-                   <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${autoPlan ? 'right-1' : 'left-1'}`}></div>
+                <button onClick={() => setAutoPlan(!autoPlan)} className={`w-8 h-4 rounded-full transition-all relative ${autoPlan ? 'bg-primary' : 'bg-muted/20'}`}>
+                   <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${autoPlan ? 'right-0.5' : 'left-0.5'}`}></div>
                 </button>
              </div>
           )}
           <div className="flex gap-3 pt-2">
-            <Button variant="white" className="flex-1 py-3 rounded-xl font-black text-[10px]" onClick={onClose}>ВІДМІНА</Button>
-            <Button disabled={!name.trim()} className="flex-[2] py-3 rounded-xl shadow-xl font-black text-[10px]" onClick={() => onSave({ name, description, color, sphere }, autoPlan)}>
+            <Button variant="white" className="flex-1 h-8 rounded font-black text-[9px]" onClick={onClose}>ВІДМІНА</Button>
+            <Button disabled={!name.trim()} className="flex-[2] h-8 rounded shadow-xl font-black text-[9px]" onClick={() => onSave({ name, description, color, sphere }, autoPlan)}>
               {initialData ? 'ЗБЕРЕГТИ' : 'ВСТАНОВИТИ ЦІЛЬ'}
             </Button>
           </div>
@@ -142,7 +141,7 @@ const SubProjectPanel: React.FC<{ subProject: Project, onClose: () => void }> = 
                  </div>
                ))}
                <form onSubmit={e => { e.preventDefault(); if(newAction.trim()){ addTask(newAction.trim(), 'tasks', subProject.id, 'actions'); setNewAction(''); }}} className="pt-1">
-                  <input value={newAction} onChange={e=>setNewAction(e.target.value)} placeholder="+ Нова дія..." className="w-full bg-main border border-theme rounded-xl px-4 py-2 text-[11px] font-bold outline-none focus:border-primary/50 transition-colors text-main" />
+                  <input value={newAction} onChange={e=>setNewAction(e.target.value)} placeholder="+ Нова дія..." className="w-full h-6 bg-main border border-theme rounded px-4 text-[11px] font-bold outline-none focus:border-primary/50 transition-colors text-main" />
                </form>
             </div>
          </section>
