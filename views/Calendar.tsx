@@ -107,20 +107,6 @@ const Calendar: React.FC = () => {
         <div className="flex-1 overflow-auto p-2 md:p-6 custom-scrollbar bg-[var(--bg-main)]">
           {renderMainView()}
         </div>
-
-        {isMobile && !showBacklogMobile && (
-          <button 
-            onClick={() => setShowBacklogMobile(true)}
-            className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--primary)] shadow-xl flex items-center justify-center z-40"
-          >
-            <i className="fa-solid fa-inbox text-xl"></i>
-            {tasks.filter(t => !t.isDeleted && !t.scheduledDate).length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-card)]">
-                {tasks.filter(t => !t.isDeleted && !t.scheduledDate).length}
-              </span>
-            )}
-          </button>
-        )}
       </main>
 
       {/* Task Details Panel */}

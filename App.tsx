@@ -33,6 +33,26 @@ const MainLayout: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme || 'classic');
   }, [theme]);
 
+  // Handle Mobile Back Button logic
+  useEffect(() => {
+    // If we are on the main tab, we don't push state to let user exit normally
+    if (activeTab === 'today') return;
+
+    // When entering any sub-tab, push a state to history
+    window.history.pushState({ tab: activeTab }, '');
+
+    const handlePopState = (event: PopStateEvent) => {
+      // Intercept back button and go to 'today'
+      setActiveTab('today');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [activeTab, setActiveTab]);
+
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)).length,
     inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && t.category !== 'note' && !t.projectId && !t.scheduledDate).length,
