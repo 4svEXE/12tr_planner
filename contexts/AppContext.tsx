@@ -99,6 +99,22 @@ const DEFAULT_CATEGORIES: InboxCategory[] = [
 
 const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquaintance'];
 
+const sanitizeForFirebase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirebase);
+  } else if (obj !== null && typeof obj === 'object') {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = obj[key];
+      if (val !== undefined) {
+        newObj[key] = sanitizeForFirebase(val);
+      }
+    });
+    return newObj;
+  }
+  return obj;
+};
+
 const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [], cloud: T[] = []): T[] => {
   const map = new Map<string, T>();
   const allItems = [...(Array.isArray(cloud) ? cloud : []), ...(Array.isArray(local) ? local : [])];
@@ -167,7 +183,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   
   const syncTimeoutRef = useRef<number | null>(null);
 
-  // Settings sync
   useEffect(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
@@ -181,7 +196,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     }
   }, []);
 
-  // Data initialization
   useEffect(() => {
     const init = async () => {
       let localDataRaw = localStorage.getItem(DATA_STORAGE_KEY);
@@ -233,7 +247,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
           } else {
             const final = localData || ensureDefaults(generateSeedData());
             setState(final);
-            await setDoc(doc(db, "users", user.uid), final);
+            try {
+              await setDoc(doc(db, "users", user.uid), sanitizeForFirebase(final));
+            } catch (e: any) {
+              if (e.code === 'permission-denied') {
+                console.error("CRITICAL: Firebase Rules deny write access. Check console instructions.");
+              }
+            }
           }
         } catch (e) {
           setState(localData || ensureDefaults(generateSeedData()));
@@ -272,12 +292,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
       syncTimeoutRef.current = window.setTimeout(async () => {
         setIsSyncing(true);
         try {
-          await setDoc(doc(db, "users", user.uid), persistentData);
+          const cleanedData = sanitizeForFirebase(persistentData);
+          await setDoc(doc(db, "users", user.uid), cleanedData);
           const syncTime = Date.now();
           setLastSyncTime(syncTime);
           localStorage.setItem(LAST_SYNC_KEY, syncTime.toString());
-        } catch (e) {
-          console.error("Cloud push failed", e);
+        } catch (e: any) {
+          console.error("Cloud push failed:", e.message);
+          if (e.code === 'permission-denied') {
+             console.warn("Firestore Permissions Error: Go to Firebase Console -> Firestore -> Rules and allow write for authenticated users.");
+          }
         }
         finally { setIsSyncing(false); }
       }, 2000);
@@ -302,15 +326,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         });
         setState(merged);
         localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(merged));
-        await setDoc(doc(db, "users", user.uid), merged);
+        await setDoc(doc(db, "users", user.uid), sanitizeForFirebase(merged));
       } else {
-        await setDoc(doc(db, "users", user.uid), state);
+        await setDoc(doc(db, "users", user.uid), sanitizeForFirebase(state));
       }
       const now = Date.now();
       setLastSyncTime(now);
       localStorage.setItem(LAST_SYNC_KEY, now.toString());
-    } catch (e) {
-      console.error("Manual sync failed", e);
+    } catch (e: any) {
+      console.error("Manual sync failed:", e.message);
+      if (e.code === 'permission-denied') {
+        alert("ПОМИЛКА ДОСТУПУ: Firebase блокує запис. \n\n1. Відкрийте Firebase Console\n2. Firestore Database -> Rules\n3. Встановіть правила (allow read, write: if request.auth != null && request.auth.uid == userId;)");
+      } else {
+        alert("Помилка синхронізації: " + e.message);
+      }
     }
     finally { setIsSyncing(false); }
   };
