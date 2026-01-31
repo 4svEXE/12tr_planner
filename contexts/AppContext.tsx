@@ -101,7 +101,9 @@ const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquainta
 
 const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [], cloud: T[] = []): T[] => {
   const map = new Map<string, T>();
-  [...cloud, ...local].forEach(item => {
+  const allItems = [...(Array.isArray(cloud) ? cloud : []), ...(Array.isArray(local) ? local : [])];
+  allItems.forEach(item => {
+    if (!item?.id) return;
     const existing = map.get(item.id);
     if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
       map.set(item.id, item);
@@ -111,24 +113,24 @@ const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [
 };
 
 const ensureDefaults = (state: any): StoreState => {
-  const s = state || {}; // Гарантуємо, що s не null
+  const s = state || {}; 
   return {
     ...s,
-    tasks: s.tasks || [],
-    projects: s.projects || [],
-    people: s.people || [],
-    relationshipTypes: s.relationshipTypes || DEFAULT_REL_TYPES,
-    tags: s.tags || [],
-    hobbies: s.hobbies || [],
-    diary: s.diary || [],
-    inboxCategories: s.inboxCategories || DEFAULT_CATEGORIES,
+    tasks: Array.isArray(s.tasks) ? s.tasks : [],
+    projects: Array.isArray(s.projects) ? s.projects : [],
+    people: Array.isArray(s.people) ? s.people : [],
+    relationshipTypes: Array.isArray(s.relationshipTypes) ? s.relationshipTypes : DEFAULT_REL_TYPES,
+    tags: Array.isArray(s.tags) ? s.tags : [],
+    hobbies: Array.isArray(s.hobbies) ? s.hobbies : [],
+    diary: Array.isArray(s.diary) ? s.diary : [],
+    inboxCategories: Array.isArray(s.inboxCategories) ? s.inboxCategories : DEFAULT_CATEGORIES,
     sidebarSettings: s.sidebarSettings || {},
-    timeBlocks: s.timeBlocks || [],
+    timeBlocks: Array.isArray(s.timeBlocks) ? s.timeBlocks : [],
     blockHistory: s.blockHistory || {},
-    routinePresets: s.routinePresets || [],
-    reportTemplate: s.reportTemplate || [],
-    shoppingStores: s.shoppingStores || [],
-    shoppingItems: s.shoppingItems || [],
+    routinePresets: Array.isArray(s.routinePresets) ? s.routinePresets : [],
+    reportTemplate: Array.isArray(s.reportTemplate) ? s.reportTemplate : [],
+    shoppingStores: Array.isArray(s.shoppingStores) ? s.shoppingStores : [],
+    shoppingItems: Array.isArray(s.shoppingItems) ? s.shoppingItems : [],
     character: s.character || {
       name: 'Мандрівник', 
       race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
@@ -164,9 +166,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
   
   const syncTimeoutRef = useRef<number | null>(null);
-  const stateRef = useRef<StoreState | null>(null);
-  stateRef.current = state;
 
+  // Settings sync
   useEffect(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
@@ -180,6 +181,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     }
   }, []);
 
+  // Data initialization
   useEffect(() => {
     const init = async () => {
       let localDataRaw = localStorage.getItem(DATA_STORAGE_KEY);
@@ -187,10 +189,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
       try {
         if (localDataRaw) {
           const parsed = JSON.parse(localDataRaw);
-          if (parsed) localData = ensureDefaults(parsed);
+          if (parsed && typeof parsed === 'object') {
+            localData = ensureDefaults(parsed);
+          }
         }
       } catch(e) {
-        console.error("Local data parse error", e);
+        console.warn("Local data parse error, starting fresh");
       }
 
       if (user) {
@@ -227,22 +231,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
             setLastSyncTime(now);
             localStorage.setItem(LAST_SYNC_KEY, now.toString());
           } else {
-            const final = localData || ensureDefaults({});
+            const final = localData || ensureDefaults(generateSeedData());
             setState(final);
+            await setDoc(doc(db, "users", user.uid), final);
           }
         } catch (e) {
-          if (localData) setState(localData);
+          setState(localData || ensureDefaults(generateSeedData()));
         } finally {
           setIsSyncing(false);
         }
       } else {
         if (!localData) {
           const seed = generateSeedData();
-          const initialSeed = ensureDefaults({
-            ...seed,
-            character: { ...seed.character, updatedAt: Date.now() },
-            cycle: { ...seed.cycle, updatedAt: Date.now() }
-          });
+          const initialSeed = ensureDefaults(seed);
           setState(initialSeed);
           localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(initialSeed));
         } else {
