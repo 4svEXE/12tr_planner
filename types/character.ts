@@ -46,4 +46,6 @@ export interface Character {
     relationships: number;
     rest: number;
   };
+  // Added updatedAt for synchronization consistency
+  updatedAt: number;
 }

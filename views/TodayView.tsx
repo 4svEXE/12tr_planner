@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { TaskStatus, Task, Priority } from '../types';
@@ -41,7 +42,7 @@ const TodayView: React.FC = () => {
 
   // Звички на сьогодні
   const dailyHabits = useMemo(() => 
-    tasks.filter(t => !t.isDeleted && (t.projectSection === 'habits' || t.tags.includes('habit'))),
+    tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))),
     [tasks]
   );
 

@@ -1,5 +1,5 @@
 
-import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock } from '../types';
+import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear } from '../types';
 
 export const generateSeedData = () => {
   const today = new Date().setHours(0, 0, 0, 0);
@@ -117,7 +117,25 @@ export const generateSeedData = () => {
     { id: 'd-5', date: new Date(today - 345600000).toISOString().split('T')[0], content: JSON.stringify([{id:'b6', type:'heading', content:'Ретро тижня'}, {id:'b7', type:'task', content:'Переглянути цілі на квартал', checked: true}]), createdAt: Date.now() - 345600000, updatedAt: Date.now() - 345600000 }
   ];
 
+  // Added character for seeding to fix AppContext type errors
+  const character: Character = {
+    name: 'Мандрівник', 
+    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+    bio: '', vision: '', 
+    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Guest`, 
+    energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+    preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+    stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 },
+    updatedAt: Date.now()
+  };
+
+  // Added cycle for seeding to fix AppContext type errors
+  const cycle: TwelveWeekYear = { 
+    id: 'c1', startDate: today, endDate: today + 86400000 * 84, 
+    currentWeek: 1, globalExecutionScore: 0, updatedAt: Date.now() 
+  };
+
   return {
-    tags, hobbies, projects, people, tasks: [...coreTasks, ...insightNotes], diary, timeBlocks
+    tags, hobbies, projects, people, tasks: [...coreTasks, ...insightNotes], diary, timeBlocks, character, cycle
   };
 };

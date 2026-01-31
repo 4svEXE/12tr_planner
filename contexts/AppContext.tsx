@@ -97,6 +97,8 @@ const DEFAULT_REL_TYPES = ['friend', 'colleague', 'family', 'mentor', 'acquainta
 
 const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [], cloud: T[] = []): T[] => {
   const map = new Map<string, T>();
+  // Порядок важливий: спочатку клауд, потім локал (або навпаки), 
+  // але виграє завжди той, у кого updatedAt більший
   [...cloud, ...local].forEach(item => {
     const existing = map.get(item.id);
     if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
@@ -106,7 +108,7 @@ const mergeItems = <T extends { id: string, updatedAt?: number }>(local: T[] = [
   return Array.from(map.values());
 };
 
-const ensureDefaults = (state: StoreState): StoreState => ({
+const ensureDefaults = (state: any): StoreState => ({
   ...state,
   tasks: state.tasks || [],
   projects: state.projects || [],
@@ -123,6 +125,17 @@ const ensureDefaults = (state: StoreState): StoreState => ({
   reportTemplate: state.reportTemplate || [],
   shoppingStores: state.shoppingStores || [],
   shoppingItems: state.shoppingItems || [],
+  character: state.character || {
+    name: 'Мандрівник', 
+    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+    bio: '', vision: '', 
+    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Guest`, 
+    energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
+    preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+    stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 },
+    updatedAt: 0
+  },
+  cycle: state.cycle || { id: 'c1', startDate: Date.now(), endDate: Date.now() + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0, updatedAt: 0 }
 });
 
 export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }> = ({ children, userId }) => {
@@ -130,6 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const [state, setState] = useState<StoreState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const [theme, setThemeState] = useState<ThemeType>('classic');
   const [isSidebarCollapsed, setSidebarCollapsedState] = useState(false);
@@ -143,6 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
   const stateRef = useRef<StoreState | null>(null);
   stateRef.current = state;
 
+  // 1. LOAD SETTINGS
   useEffect(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
@@ -152,76 +167,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         if (parsed.isSidebarCollapsed !== undefined) setSidebarCollapsedState(parsed.isSidebarCollapsed);
         if (parsed.activeTab) setActiveTabState(parsed.activeTab);
         if (parsed.detailsWidth) setDetailsWidthState(parsed.detailsWidth);
-      } catch (e) { console.error("Settings parse error"); }
+      } catch (e) {}
     }
   }, []);
 
+  // 2. INITIAL LOAD & SYNC
   useEffect(() => {
-    const localData = localStorage.getItem(DATA_STORAGE_KEY);
-    if (localData) {
-      try { 
-        const parsed = ensureDefaults(JSON.parse(localData));
-        setState(parsed);
-      } catch (e) { console.error("Data parse error"); }
-    }
-  }, []);
+    const init = async () => {
+      let localDataRaw = localStorage.getItem(DATA_STORAGE_KEY);
+      let localData = localDataRaw ? ensureDefaults(JSON.parse(localDataRaw)) : null;
 
+      if (user) {
+        setIsSyncing(true);
+        try {
+          const cloudDoc = await getDoc(doc(db, "users", user.uid));
+          if (cloudDoc.exists()) {
+            const cloudData = ensureDefaults(cloudDoc.data());
+            
+            // Якщо локальні дані є - мержимо, якщо ні - беремо клауд
+            if (localData) {
+              const merged: StoreState = ensureDefaults({
+                ...cloudData,
+                tasks: mergeItems(localData.tasks, cloudData.tasks),
+                projects: mergeItems(localData.projects, cloudData.projects),
+                people: mergeItems(localData.people, cloudData.people),
+                diary: mergeItems(localData.diary, cloudData.diary),
+                tags: mergeItems(localData.tags, cloudData.tags),
+                hobbies: mergeItems(localData.hobbies, cloudData.hobbies),
+                shoppingItems: mergeItems(localData.shoppingItems, cloudData.shoppingItems),
+                shoppingStores: mergeItems(localData.shoppingStores, cloudData.shoppingStores),
+                inboxCategories: mergeItems(localData.inboxCategories, cloudData.inboxCategories),
+                timeBlocks: mergeItems(localData.timeBlocks, cloudData.timeBlocks),
+                // Corrected: character and cycle interfaces now include updatedAt
+                character: (localData.character?.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? localData.character : cloudData.character,
+                cycle: (localData.cycle?.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? localData.cycle : cloudData.cycle,
+                aiEnabled: cloudData.aiEnabled ?? localData.aiEnabled,
+                sidebarSettings: { ...cloudData.sidebarSettings, ...localData.sidebarSettings }
+              });
+              setState(merged);
+              localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(merged));
+            } else {
+              setState(cloudData);
+              localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(cloudData));
+            }
+          } else {
+            // Клауд порожній - якщо є локал, юзаємо його, якщо ні - пустий стейт без сіду (або мінімальний)
+            const final = localData || ensureDefaults({});
+            setState(final);
+          }
+        } catch (e) {
+          console.error("Cloud init error", e);
+          if (localData) setState(localData);
+        } finally {
+          setIsSyncing(false);
+          setLastSyncTime(Date.now());
+        }
+      } else {
+        // GUEST MODE
+        if (!localData) {
+          // ТІЛЬКИ ДЛЯ ГОСТЕЙ ПРИ ПЕРШОМУ ВХОДІ ГЕНЕРУЄМО СІД
+          // generateSeedData now correctly returns character and cycle
+          const seed = generateSeedData();
+          const initialSeed = ensureDefaults({
+            ...seed,
+            character: { ...seed.character, updatedAt: Date.now() },
+            cycle: { ...seed.cycle, updatedAt: Date.now() }
+          });
+          setState(initialSeed);
+          localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(initialSeed));
+        } else {
+          setState(localData);
+        }
+      }
+      setIsInitialized(true);
+    };
+
+    init();
+  }, [user?.uid]);
+
+  // 3. PERSIST SETTINGS
   useEffect(() => {
     const settings: LocalSettings = { theme, isSidebarCollapsed, activeTab, detailsWidth };
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme, isSidebarCollapsed, activeTab, detailsWidth]);
 
-  const syncData = useCallback(async () => {
-    if (!user || !stateRef.current) return;
-    setIsSyncing(true);
-    try {
-      const cloudDoc = await getDoc(doc(db, "users", user.uid));
-      let cloudDataRaw = cloudDoc.exists() ? cloudDoc.data() as StoreState : null;
-      let cloudData = cloudDataRaw ? ensureDefaults(cloudDataRaw) : null;
-      let currentState = ensureDefaults(stateRef.current!);
-
-      if (cloudData) {
-        const mergedState: StoreState = ensureDefaults({
-          ...currentState,
-          tasks: mergeItems(currentState.tasks, cloudData.tasks),
-          projects: mergeItems(currentState.projects, cloudData.projects),
-          people: mergeItems(currentState.people, cloudData.people),
-          diary: mergeItems(currentState.diary, cloudData.diary),
-          tags: mergeItems(currentState.tags, cloudData.tags),
-          hobbies: mergeItems(currentState.hobbies, cloudData.hobbies),
-          shoppingItems: mergeItems(currentState.shoppingItems, cloudData.shoppingItems),
-          shoppingStores: mergeItems(currentState.shoppingStores, cloudData.shoppingStores),
-          character: (cloudData as any).updatedAt > (currentState as any).updatedAt ? cloudData.character : currentState.character,
-          cycle: (cloudData as any).updatedAt > (currentState as any).updatedAt ? cloudData.cycle : currentState.cycle,
-        });
-        
-        const { theme: _, activeTab: __, isSidebarCollapsed: ___, ...cleanState } = mergedState as any;
-        
-        setState(cleanState);
-        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(cleanState));
-        await setDoc(doc(db, "users", user.uid), { ...cleanState, updatedAt: Date.now() });
-      } else {
-        await setDoc(doc(db, "users", user.uid), { ...currentState, updatedAt: Date.now() });
-      }
-      setLastSyncTime(Date.now());
-    } catch (e) {
-      console.error("Sync failed", e);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && state) syncData();
-  }, [user?.uid]);
-
+  // 4. AUTO-SAVE & AUTO-SYNC
   const pushUpdate = useCallback((newState: StoreState) => {
+    if (!isInitialized) return; // Не пушимо, поки не вичитали правду
+
     const now = Date.now();
-    const updatedState = ensureDefaults(newState);
-    const stateWithTimestamp = { ...updatedState, updatedAt: now };
-    
-    const { theme: _, activeTab: __, isSidebarCollapsed: ___, ...persistentData } = stateWithTimestamp as any;
+    const persistentData = { ...ensureDefaults(newState), updatedAt: now };
     
     setState(persistentData);
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(persistentData));
@@ -233,55 +269,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
         try {
           await setDoc(doc(db, "users", user.uid), persistentData);
           setLastSyncTime(Date.now());
-        } catch (e) { console.error("Auto-sync error", e); }
+        } catch (e) { console.error("Sync error", e); }
         finally { setIsSyncing(false); }
-      }, 3000);
+      }, 2000); // 2 seconds debounced sync
     }
-  }, [user]);
+  }, [user, isInitialized]);
 
-  useEffect(() => {
-    if (state === null) {
-      const seed = generateSeedData();
-      const now = Date.now();
-      const initialState: StoreState = ensureDefaults({
-        tasks: seed.tasks.map(t => ({ ...t, updatedAt: now })),
-        projects: seed.projects.map(p => ({ ...p, updatedAt: now })),
-        people: seed.people.map(p => ({ ...p, updatedAt: now })),
-        character: {
-          name: user?.displayName || 'Мандрівник', 
-          race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
-          bio: 'Я тільки починаю свій шлях у 12TR.', vision: 'Дослідити всі можливості двигуна 12TR.', 
-          avatarUrl: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`, 
-          energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-          preferences: { focusBlockers: [] }, skills: [], achievements: [], 
-          stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 }
-        },
-        tags: seed.tags.map(t => ({ ...t, updatedAt: now })),
-        hobbies: seed.hobbies.map(h => ({ ...h, updatedAt: now })),
-        cycle: { id: 'c1', startDate: now, endDate: now + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0 },
-        diary: seed.diary.map(d => ({ ...d, updatedAt: now })),
-        aiEnabled: false,
-        timeBlocks: seed.timeBlocks, blockHistory: {}, routinePresets: [], reportTemplate: [],
-        shoppingStores: [], shoppingItems: [],
-        inboxCategories: DEFAULT_CATEGORIES, relationshipTypes: DEFAULT_REL_TYPES
-      });
-      pushUpdate(initialState);
+  const syncData = async () => {
+    if (!user || !state) return;
+    setIsSyncing(true);
+    try {
+      const cloudDoc = await getDoc(doc(db, "users", user.uid));
+      if (cloudDoc.exists()) {
+        const cloudData = ensureDefaults(cloudDoc.data());
+        const merged = ensureDefaults({
+          ...state,
+          tasks: mergeItems(state.tasks, cloudData.tasks),
+          projects: mergeItems(state.projects, cloudData.projects),
+          people: mergeItems(state.people, cloudData.people),
+          diary: mergeItems(state.diary, cloudData.diary),
+          // Corrected: character and cycle interfaces now include updatedAt
+          character: (state.character.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? state.character : cloudData.character,
+          cycle: (state.cycle.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? state.cycle : cloudData.cycle,
+        });
+        setState(merged);
+        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(merged));
+        await setDoc(doc(db, "users", user.uid), merged);
+      } else {
+        await setDoc(doc(db, "users", user.uid), state);
+      }
+      setLastSyncTime(Date.now());
+    } catch (e) {
+      console.error("Manual sync failed", e);
+    } finally {
+      setIsSyncing(false);
     }
-  }, [state, user, pushUpdate]);
+  };
 
   if (!state) return null;
 
+  // Helpers with updatedAt
   const updateTask = (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] });
   const updateProject = (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) });
-  const deleteTask = (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true, updatedAt: Date.now() } : t) });
-  
-  const addTask = (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
-    const id = Math.random().toString(36).substr(2,9);
-    const now = Date.now();
-    const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
-    pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
-    return id;
-  };
+  const updateCharacter = (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } });
+  const updateCycle = (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u, updatedAt: Date.now() } });
 
   const value = {
     ...state,
@@ -293,8 +324,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
-    updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u } }),
-    addTask, updateTask, updateProject, deleteTask,
+    updateCharacter,
+    updateTask, updateProject,
+    addTask: (title: string, categoryId = 'unsorted', projectId?: string, section: ProjectSection = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
+      const id = Math.random().toString(36).substr(2,9);
+      const now = Date.now();
+      const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section, isEvent, scheduledDate: date, personId };
+      pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
+      return id;
+    },
+    deleteTask: (id: string, perm = false) => pushUpdate({ ...state, tasks: perm ? state.tasks.filter(t => t.id !== id) : state.tasks.map(t => t.id === id ? { ...t, isDeleted: true, updatedAt: Date.now() } : t) }),
     addProject: (p: any) => { const id = Math.random().toString(36).substr(2,9); pushUpdate({ ...state, projects: [...(state.projects || []), { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] }); return id; },
     deleteProject: (id: string) => pushUpdate({ ...state, projects: (state.projects || []).filter(p => p.id !== id) }),
     restoreTask: (id: string) => pushUpdate({ ...state, tasks: (state.tasks || []).map(t => t.id === id ? { ...t, isDeleted: false, updatedAt: Date.now() } : t) }),
@@ -325,6 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     addTimeBlock: (b: any) => pushUpdate({ ...state, timeBlocks: [...(state.timeBlocks || []), { ...b, id: Math.random().toString(36).substr(2,9), updatedAt: Date.now() }] }),
     updateTimeBlock: (b: TimeBlock) => pushUpdate({ ...state, timeBlocks: (state.timeBlocks || []).map(old => old.id === b.id ? { ...b, updatedAt: Date.now() } : old) }),
     deleteTimeBlock: (id: string) => pushUpdate({ ...state, timeBlocks: (state.timeBlocks || []).filter(b => b.id !== id) }),
+    // Fix: Removed incorrect updatedAt from record to match type Record<string, Record<string, 'pending' | 'completed' | 'missed'>>
     setBlockStatus: (d: string, bid: string, s: any) => pushUpdate({ ...state, blockHistory: { ...(state.blockHistory || {}), [d]: { ...((state.blockHistory || {})?.[d] || {}), [bid]: s } } }),
     saveRoutineAsPreset: (n: string, d: number) => pushUpdate({ ...state, routinePresets: [...(state.routinePresets || []), { id: Math.random().toString(36).substr(2,9), name: n, blocks: (state.timeBlocks || []).filter(b => b.dayOfWeek === d), updatedAt: Date.now() }] }),
     applyRoutinePreset: (id: string, d: number) => {
@@ -348,7 +388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     deleteInteraction: (pid: string, iid: string) => pushUpdate({ ...state, people: (state.people || []).map(x => x.id === pid ? { ...x, interactions: (x.interactions || []).filter(i => i.id !== iid), updatedAt: Date.now() } : x) }),
     addRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: [...new Set([...(state.relationshipTypes || DEFAULT_REL_TYPES), t])] }),
     deleteRelationshipType: (t: string) => pushUpdate({ ...state, relationshipTypes: (state.relationshipTypes || DEFAULT_REL_TYPES).filter(x => x !== t) }),
-    updateCycle: (u: any) => pushUpdate({ ...state, cycle: { ...state.cycle, ...u, updatedAt: Date.now() } }),
+    updateCycle,
     addStore: (n: string, i = 'fa-shop', c = '#f97316') => pushUpdate({ ...state, shoppingStores: [...(state.shoppingStores || []), { id: Math.random().toString(36).substr(2,9), name: n, icon: i, color: c, updatedAt: Date.now() }] }),
     updateStore: (s: ShoppingStore) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).map(x => x.id === s.id ? { ...s, updatedAt: Date.now() } : x) }),
     deleteStore: (id: string) => pushUpdate({ ...state, shoppingStores: (state.shoppingStores || []).filter(x => x.id !== id), shoppingItems: (state.shoppingItems || []).filter(x => x.storeId !== id) }),

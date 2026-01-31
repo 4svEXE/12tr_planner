@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
   }, [tasks, projects, progressPeriod]);
 
   const habitCompletionRate = useMemo(() => {
-    const dailyHabits = tasks.filter(t => !t.isDeleted && (t.projectSection === 'habits' || t.tags.includes('habit')));
+    const dailyHabits = tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit')));
     if (dailyHabits.length === 0) return 0;
     const completedCount = dailyHabits.filter(h => h.habitHistory?.[dateStr]?.status === 'completed').length;
     return Math.round((completedCount / dailyHabits.length) * 100);
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
                            </button>
                          </div>
                          <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
-                            {tasks.filter(t => !t.isDeleted && t.projectSection === 'habits').map(habit => {
+                            {tasks.filter(t => !t.isDeleted && !t.isArchived && t.projectSection === 'habits').map(habit => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                                return (
                                  <button key={habit.id} onClick={() => toggleHabitStatus(habit.id, dateStr, isDone ? 'none' : 'completed')}

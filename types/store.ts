@@ -17,6 +17,8 @@ export interface TwelveWeekYear {
   globalExecutionScore: number;
   manualDailyStatus?: Record<string, boolean>;
   weeklyScores?: Record<number, { score: number; comment: string }>;
+  // Added updatedAt for synchronization logic in AppContext
+  updatedAt: number;
 }
 
 export interface StoreState {
@@ -42,4 +44,6 @@ export interface StoreState {
   reportTemplate?: ReportQuestion[];
   shoppingStores?: ShoppingStore[];
   shoppingItems?: ShoppingItem[];
+  // Added optional updatedAt for root state synchronization
+  updatedAt?: number;
 }
