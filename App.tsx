@@ -19,6 +19,7 @@ import ShoppingView from './views/ShoppingView';
 import PlannerView from './views/PlannerView';
 import StrategyMap from './views/StrategyMap';
 import DeepFocus from './views/DeepFocus';
+import ListsView from './views/ListsView';
 import AiChat from './components/AiChat';
 import AuthView from './views/AuthView';
 import { TaskStatus } from './types';
@@ -33,6 +34,19 @@ const MainLayout: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme || 'classic');
   }, [theme]);
 
+  // Handle Mobile Back Button logic
+  useEffect(() => {
+    if (activeTab === 'today') return;
+    window.history.pushState({ tab: activeTab }, '');
+    const handlePopState = (event: PopStateEvent) => {
+      setActiveTab('today');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [activeTab, setActiveTab]);
+
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)).length,
     inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && t.category !== 'note' && !t.projectId && !t.scheduledDate).length,
@@ -41,12 +55,14 @@ const MainLayout: React.FC = () => {
     calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
     planner: tasks.filter(t => !t.isDeleted && t.projectSection === 'planner' && t.status !== TaskStatus.DONE).length,
     projects: projects.filter(p => p.type === 'goal' && p.status === 'active').length,
+    lists: projects.filter(p => p.type === 'list' && p.status === 'active').length,
     trash: tasks.filter(t => t.isDeleted).length
   }), [tasks, projects, todayTimestamp]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'today': return <Dashboard />;
+      case 'dashboard': return <Dashboard />;
       case 'planner': return <PlannerView />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
@@ -60,6 +76,7 @@ const MainLayout: React.FC = () => {
       case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;
+      case 'lists': return <ListsView />;
       case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
       case 'trash': return <TrashView />;
       case 'settings': return <SettingsView />;
@@ -94,13 +111,11 @@ const MainLayout: React.FC = () => {
 
 const App: React.FC = () => {
   const { user, isAuthModalOpen, loading } = useAuth();
-
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-slate-950">
        <i className="fa-solid fa-circle-notch animate-spin text-orange-500 text-2xl"></i>
     </div>
   );
-
   return (
     <AppProvider userId={user?.uid || 'guest'}>
       <MainLayout />

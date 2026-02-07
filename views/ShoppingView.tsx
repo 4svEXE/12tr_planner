@@ -65,7 +65,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
             <input 
               value={localItem.name} 
               onChange={e => handleUpdate({ name: e.target.value })}
-              className="w-full bg-main border border-theme rounded-2xl py-3 px-5 text-lg font-black focus:ring-4 focus:ring-primary/10 outline-none transition-all text-main"
+              className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-black outline-none transition-all text-main"
             />
           </div>
           
@@ -74,19 +74,19 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
             <textarea 
               value={localItem.note || ''} 
               onChange={e => handleUpdate({ note: e.target.value })}
-              className="w-full bg-main border border-theme rounded-2xl p-4 text-sm font-medium focus:ring-4 focus:ring-primary/10 outline-none min-h-[80px] resize-none leading-relaxed text-main"
+              className="w-full bg-main border border-theme rounded p-2 text-xs font-medium focus:ring-4 focus:ring-primary/10 outline-none min-h-[80px] resize-none leading-relaxed text-main"
               placeholder="Який сорт? Важливі деталі..."
             />
           </div>
         </section>
 
         {globalBestPrice !== null && (
-          <section className="bg-primary/5 p-5 md:p-6 rounded-[2rem] border border-primary/20">
+          <section className="bg-primary/5 p-4 rounded border border-primary/20">
              <div className="flex items-center gap-2 mb-1">
                 <i className="fa-solid fa-trophy text-primary text-xs"></i>
-                <Typography variant="tiny" className="text-primary font-black uppercase tracking-widest text-[9px]">Найкраща ціна</Typography>
+                <Typography variant="tiny" className="text-primary font-black uppercase tracking-widest text-[8px]">Найкраща ціна</Typography>
              </div>
-             <p className="text-sm font-bold text-main leading-tight">В історії за "{item.name}": <br/><span className="text-xl md:text-2xl font-black text-primary underline decoration-primary/20 underline-offset-4">{globalBestPrice} ₴</span></p>
+             <p className="text-xs font-bold text-main leading-tight">В історії: <span className="text-lg font-black text-primary decoration-primary/20 underline-offset-4">{globalBestPrice} ₴</span></p>
           </section>
         )}
 
@@ -94,7 +94,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
           <Typography variant="tiny" className="text-main font-black uppercase flex items-center gap-2 text-[9px]">
             <i className="fa-solid fa-pen-nib text-primary"></i> Записати покупку
           </Typography>
-          <form onSubmit={handleAddPriceLog} className="grid grid-cols-2 gap-2 bg-main/50 p-3 rounded-2xl border border-theme">
+          <form onSubmit={handleAddPriceLog} className="grid grid-cols-2 gap-2 bg-main/50 p-2 rounded border border-theme">
              <div className="space-y-1">
                 <span className="text-[7px] font-black uppercase text-muted ml-1">Ціна</span>
                 <input 
@@ -104,7 +104,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
                   value={newPrice} 
                   onChange={e => setNewPrice(e.target.value)}
                   placeholder="0.00 ₴"
-                  className="w-full bg-card border border-theme rounded-xl py-3 px-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 text-main"
+                  className="w-full h-6 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
                 />
              </div>
              <div className="space-y-1">
@@ -114,13 +114,13 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
                   value={newStoreName} 
                   onChange={e => setNewStoreName(e.target.value)}
                   placeholder="Магазин..."
-                  className="w-full bg-card border border-theme rounded-xl py-3 px-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 text-main"
+                  className="w-full h-6 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
                 />
              </div>
              <datalist id="stores-list">
                {shoppingStores.map(s => <option key={s.id} value={s.name} />)}
              </datalist>
-             <button type="submit" className="col-span-2 mt-1 py-3 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-md">ЗБЕРЕГТИ В ЛОГ</button>
+             <button type="submit" className="col-span-2 h-7 bg-primary text-white rounded text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-md">ЗБЕРЕГТИ В ЛОГ</button>
           </form>
         </section>
 
@@ -128,20 +128,20 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
            <Typography variant="tiny" className="text-muted font-black uppercase ml-1 opacity-60">Історія записів</Typography>
            <div className="space-y-2">
               {(localItem.priceHistory || []).map(log => (
-                <div key={log.id} className="flex items-center justify-between p-3.5 bg-card rounded-2xl border border-theme group/log shadow-sm">
+                <div key={log.id} className="flex items-center justify-between p-2 bg-card rounded border border-theme group/log shadow-sm">
                    <div>
                       <div className="flex items-center gap-2">
-                         <span className="text-sm font-black text-main">{log.price} ₴</span>
-                         <Badge variant="slate" className="text-[8px] py-0 px-1.5 opacity-60">{log.storeName}</Badge>
+                         <span className="text-[11px] font-black text-main">{log.price} ₴</span>
+                         <Badge variant="slate" className="text-[7px] py-0 px-1 opacity-60">{log.storeName}</Badge>
                       </div>
-                      <div className="text-[8px] font-black text-muted uppercase mt-1 tracking-wider opacity-50">{new Date(log.date).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
+                      <div className="text-[7px] font-black text-muted uppercase tracking-wider opacity-50">{new Date(log.date).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
                    </div>
-                   <button onClick={() => deletePriceLog(log.id)} className="w-8 h-8 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center"><i className="fa-solid fa-trash-can text-xs"></i></button>
+                   <button onClick={() => deletePriceLog(log.id)} className="w-6 h-6 rounded text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
                 </div>
               ))}
               {(!localItem.priceHistory || localItem.priceHistory.length === 0) && (
-                <div className="text-center py-8 bg-main/50 rounded-2xl border border-dashed border-theme">
-                   <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Лог порожній</p>
+                <div className="text-center py-6 bg-main/50 rounded border border-dashed border-theme">
+                   <p className="text-[9px] font-bold text-muted uppercase tracking-widest">Лог порожній</p>
                 </div>
               )}
            </div>
@@ -151,11 +151,11 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
       <footer className="p-4 md:p-6 border-t border-theme bg-main/30 flex gap-3 shrink-0 mb-safe">
         <button 
           onClick={() => { if(confirm('Видалити цей товар?')) { deleteShoppingItem(item.id); onClose(); } }} 
-          className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+          className="w-10 h-10 rounded bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
         >
-          <i className="fa-solid fa-trash-can"></i>
+          <i className="fa-solid fa-trash-can text-sm"></i>
         </button>
-        <Button onClick={onClose} variant="white" className="flex-1 rounded-2xl py-3 font-black tracking-widest text-[10px]">ЗАКРИТИ</Button>
+        <Button onClick={onClose} variant="white" className="flex-1 h-10 rounded font-black tracking-widest text-[9px]">ЗАКРИТИ</Button>
       </footer>
     </div>
   );
@@ -165,29 +165,30 @@ const QuickAddShoppingModal: React.FC<{
   onClose: () => void;
   onAdd: (name: string, storeId: string) => void;
   stores: ShoppingStore[];
-}> = ({ onClose, onAdd, stores }) => {
+  defaultStoreId?: string;
+}> = ({ onClose, onAdd, stores, defaultStoreId }) => {
   const [name, setName] = useState('');
-  const [storeId, setStoreId] = useState(stores[0]?.id || '');
+  const [storeId, setStoreId] = useState(defaultStoreId || stores[0]?.id || '');
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur">
       <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-      <Card className="w-full max-w-sm relative z-10 p-8 rounded-[2.5rem] bg-card border-theme shadow-2xl">
-         <Typography variant="h2" className="mb-6 text-xl uppercase font-black">Новий товар</Typography>
-         <div className="space-y-5">
+      <Card className="w-full max-w-sm relative z-10 p-6 rounded-[2rem] bg-card border-theme shadow-2xl">
+         <Typography variant="h2" className="mb-4 text-lg uppercase font-black">Новий товар</Typography>
+         <div className="space-y-4">
            <div>
-              <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Що купити?</label>
-              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Назва..." className="w-full bg-main border border-theme rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none text-main" />
+              <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Що купити?</label>
+              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Назва..." className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-bold outline-none text-main" />
            </div>
            <div>
-              <label className="text-[9px] font-black uppercase text-muted mb-1.5 block ml-1">Де купити?</label>
-              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full bg-main border border-theme rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none text-main appearance-none">
+              <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Де купити?</label>
+              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-bold outline-none text-main appearance-none">
                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
            </div>
            <div className="flex gap-2 pt-2">
-             <Button variant="white" className="flex-1" onClick={onClose}>ВІДМІНА</Button>
-             <Button disabled={!name.trim() || !storeId} className="flex-1" onClick={() => onAdd(name, storeId)}>ДОДАТИ</Button>
+             <Button variant="white" className="flex-1 h-8 rounded text-[9px]" onClick={onClose}>ВІДМІНА</Button>
+             <Button disabled={!name.trim() || !storeId} className="flex-1 h-8 rounded text-[9px]" onClick={() => onAdd(name, storeId)}>ДОДАТИ</Button>
            </div>
          </div>
       </Card>
@@ -196,7 +197,7 @@ const QuickAddShoppingModal: React.FC<{
 };
 
 const ShoppingView: React.FC = () => {
-  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth, theme } = useApp();
+  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth } = useApp();
   const { startResizing, isResizing } = useResizer(400, 700);
 
   const [activeStoreId, setActiveStoreId] = useState<string>('all');
@@ -262,12 +263,12 @@ const ShoppingView: React.FC = () => {
   return (
     <div className="h-screen flex bg-main overflow-hidden relative text-main transition-none">
       <aside className={`w-full md:w-64 border-r border-theme bg-sidebar flex flex-col shrink-0 transition-all duration-300 ${isMobileView && isContentViewVisible ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
-         <header className="p-6 md:p-8 border-b border-theme flex justify-between items-center bg-card sticky top-0 z-10 shrink-0">
+         <header className="p-6 border-b border-theme flex justify-between items-center bg-card sticky top-0 z-10 shrink-0">
             <div>
                <Typography variant="h2" className="text-lg md:text-xl">Магазини</Typography>
                <Typography variant="tiny" className="text-muted tracking-tighter opacity-60">Price Strategy</Typography>
             </div>
-            <button onClick={() => setIsAddingStore(true)} className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm">
+            <button onClick={() => setIsAddingStore(true)} className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm">
                <i className="fa-solid fa-plus text-xs"></i>
             </button>
          </header>
@@ -275,7 +276,7 @@ const ShoppingView: React.FC = () => {
          <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
             <button 
               onClick={() => handleSelectStore('all')} 
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeStoreId === 'all' ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
+              className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === 'all' ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
             >
                <i className="fa-solid fa-layer-group text-xs w-4 text-center"></i>
                <span className="text-[11px] uppercase tracking-widest">Усі покупки</span>
@@ -286,7 +287,14 @@ const ShoppingView: React.FC = () => {
 
             {isAddingStore && (
               <form onSubmit={handleAddStore} className="px-2 mb-2 animate-in slide-in-from-top-2">
-                 <input autoFocus value={newStoreName} onChange={e => setNewStoreName(e.target.value)} onBlur={() => !newStoreName && setIsAddingStore(false)} placeholder="Назва магазину..." className="w-full bg-main border border-primary/30 rounded-xl py-3 px-4 text-[10px] font-black uppercase outline-none text-main" />
+                 <input 
+                  autoFocus 
+                  value={newStoreName} 
+                  onChange={e => setNewStoreName(e.target.value)} 
+                  onBlur={() => !newStoreName && setIsAddingStore(false)} 
+                  placeholder="Магазин..." 
+                  className="w-full h-6 bg-white text-slate-900 border border-primary/30 rounded px-2 text-[10px] font-black uppercase outline-none shadow-sm" 
+                 />
               </form>
             )}
 
@@ -294,14 +302,14 @@ const ShoppingView: React.FC = () => {
               <div key={store.id} className="group relative">
                 <button 
                   onClick={() => handleSelectStore(store.id)} 
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeStoreId === store.id ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
+                  className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === store.id ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
                 >
                    <i className={`fa-solid ${store.icon} text-xs w-4 text-center`} style={activeStoreId === store.id ? {color: 'white'} : { color: store.color }}></i>
                    <span className="text-[11px] uppercase tracking-widest truncate pr-6">{store.name}</span>
                    <span className={`ml-auto text-[8px] font-black ${activeStoreId === store.id ? 'text-white/60' : 'opacity-40'}`}>{shoppingItems.filter(i => i.storeId === store.id).length}</span>
                 </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button onClick={() => { if(confirm('Видалити магазин?')) deleteStore(store.id); }} className={`text-[10px] p-2 hover:text-rose-500 transition-colors ${activeStoreId === store.id ? 'text-white/40 hover:text-white' : 'text-muted'}`}><i className="fa-solid fa-trash"></i></button>
+                   <button onClick={() => { if(confirm('Видалити магазин?')) deleteStore(store.id); }} className={`text-[9px] p-2 hover:text-rose-500 transition-colors ${activeStoreId === store.id ? 'text-white/40 hover:text-white' : 'text-muted'}`}><i className="fa-solid fa-trash"></i></button>
                 </div>
               </div>
             ))}
@@ -309,29 +317,29 @@ const ShoppingView: React.FC = () => {
       </aside>
 
       <main className={`flex-1 flex flex-col bg-main relative min-w-0 transition-all duration-300 ${isMobileView && !isContentViewVisible ? 'translate-x-full' : 'translate-x-0'}`}>
-         <header className="px-6 md:px-10 py-5 md:py-8 border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center bg-card sticky top-0 z-10 gap-4 shrink-0">
+         <header className="px-6 md:px-10 py-4 border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center bg-card sticky top-0 z-10 gap-4 shrink-0">
             <div className="flex items-center gap-3 w-full">
               {isMobileView && (
-                <button onClick={() => setIsContentViewVisible(false)} className="w-9 h-9 rounded-xl bg-main flex items-center justify-center text-muted mr-1">
+                <button onClick={() => setIsContentViewVisible(false)} className="w-8 h-8 rounded bg-main flex items-center justify-center text-muted mr-1">
                   <i className="fa-solid fa-chevron-left"></i>
                 </button>
               )}
-              <Typography variant="h2" className="text-xl md:text-2xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
+              <Typography variant="h2" className="text-lg md:text-xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
                 <i className={`fa-solid ${activeStoreId === 'all' ? 'fa-layer-group' : 'fa-shop'} opacity-20 text-base md:text-lg`}></i>
                 {activeStoreId === 'all' ? 'Усі покупки' : (shoppingStores.find(s => s.id === activeStoreId)?.name || 'Магазин')}
               </Typography>
             </div>
             
             {activeStoreId !== 'all' && (
-              <form onSubmit={handleAddItem} className="flex gap-2 w-full md:w-auto">
-                 <input value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="Що купити?" className="flex-1 bg-main border border-theme rounded-xl px-4 py-3 md:py-2 text-[12px] font-bold outline-none md:w-64 focus:ring-2 focus:ring-primary/20 transition-all text-main" />
-                 <Button type="submit" size="sm" className="rounded-xl font-black shadow-lg shrink-0 px-5">ДОДАТИ</Button>
+              <form onSubmit={handleAddItem} className="flex gap-2 w-full md:w-auto items-center">
+                 <input value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="Що купити?" className="flex-1 h-6 bg-main border border-theme rounded px-3 text-[11px] font-bold outline-none md:w-48 focus:ring-2 focus:ring-primary/20 transition-all text-main" />
+                 <Button type="submit" size="sm" className="h-6 rounded font-black shadow-lg shrink-0 px-4 text-[9px]">ДОДАТИ</Button>
               </form>
             )}
          </header>
 
          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10 relative">
-            <div className="flex flex-col gap-2 max-w-xl mx-auto md:mx-0 pb-32">
+            <div className="flex flex-col gap-1.5 max-w-xl mx-auto md:mx-0 pb-32">
                {sortedItems.length > 0 ? sortedItems.map(item => {
                  const store = shoppingStores.find(s => s.id === item.storeId);
                  const bestP = getBestPriceFor(item.name);
@@ -342,43 +350,27 @@ const ShoppingView: React.FC = () => {
                     key={item.id} 
                     padding="none" 
                     onClick={() => setSelectedItemId(item.id)}
-                    className={`p-4 flex items-center justify-between group transition-all cursor-pointer border ${item.isBought ? 'opacity-40 grayscale bg-main/50' : 'bg-card border-theme hover:border-primary/30 shadow-sm hover:shadow-md'}`}
+                    className={`px-3 py-1 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-40 grayscale bg-main/50' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                          <button 
                            onClick={(e) => { e.stopPropagation(); toggleShoppingItem(item.id); }}
-                           className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${item.isBought ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-main hover:border-primary/50'}`}
+                           className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all ${item.isBought ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-main hover:border-primary/50'}`}
                          >
-                            {item.isBought && <i className="fa-solid fa-check text-xs"></i>}
+                            {item.isBought && <i className="fa-solid fa-check text-[10px]"></i>}
                          </button>
                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                               <span className={`text-[13px] md:text-sm font-bold truncate max-w-[150px] md:max-w-none ${item.isBought ? 'line-through text-muted' : 'text-main'}`}>{item.name}</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                               <span className={`text-[12px] font-bold truncate max-w-[150px] md:max-w-none ${item.isBought ? 'line-through text-muted' : 'text-main'}`}>{item.name}</span>
                                {lastPriceEntry && (
-                                 <Badge variant="orange" className="text-[8px] font-black">{lastPriceEntry.price} ₴</Badge>
-                               )}
-                            </div>
-                            <div className="flex items-center gap-2 md:gap-3 mt-1.5 flex-wrap">
-                               {activeStoreId === 'all' && store && (
-                                 <Badge variant="slate" className="text-[7px] py-0 px-1 uppercase opacity-60 tracking-tighter">{store.name}</Badge>
-                               )}
-                               {bestP && !item.isBought && (
-                                 <div className="flex items-center gap-1">
-                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">
-                                       Best: {bestP} ₴
-                                    </span>
-                                 </div>
-                               )}
-                               {lastPriceEntry && (
-                                  <span className="text-[7px] font-bold text-muted uppercase truncate opacity-50">Останній в: {lastPriceEntry.storeName}</span>
+                                 <Badge variant="orange" className="text-[7px] py-0 px-1 font-black">{lastPriceEntry.price} ₴</Badge>
                                )}
                             </div>
                          </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0 ml-2">
-                        {item.note && <i className="fa-solid fa-comment-dots text-primary/30 text-[10px] animate-bounce"></i>}
-                        <i className="fa-solid fa-chevron-right text-[10px] text-muted group-hover:text-primary group-hover:translate-x-0.5 transition-all"></i>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {item.note && <i className="fa-solid fa-comment-dots text-primary/30 text-[8px]"></i>}
+                        <i className="fa-solid fa-chevron-right text-[8px] text-muted group-hover:text-primary transition-all"></i>
                       </div>
                    </Card>
                  );
@@ -386,18 +378,18 @@ const ShoppingView: React.FC = () => {
                  <div className="py-20 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
                     <i className="fa-solid fa-basket-shopping text-7xl mb-6"></i>
                     <Typography variant="h2" className="text-xl">Порожній список</Typography>
-                    <Typography variant="body" className="mt-2 text-xs">Оберіть магазин та додайте товари</Typography>
                  </div>
                )}
             </div>
 
-            {/* Floating FAB for adding items in 'All' mode */}
-            {activeStoreId === 'all' && shoppingStores.length > 0 && (
+            {/* Floating Action Button for adding items */}
+            {shoppingStores.length > 0 && (
               <button 
                 onClick={() => setIsQuickAdding(true)}
-                className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all hover:scale-110"
+                className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all hover:scale-110"
+                title="Додати товар"
               >
-                <i className="fa-solid fa-plus text-xl"></i>
+                <i className="fa-solid fa-plus text-2xl"></i>
               </button>
             )}
          </div>
@@ -420,6 +412,7 @@ const ShoppingView: React.FC = () => {
       {isQuickAdding && (
         <QuickAddShoppingModal 
           stores={shoppingStores} 
+          defaultStoreId={activeStoreId !== 'all' ? activeStoreId : undefined}
           onClose={() => setIsQuickAdding(false)} 
           onAdd={handleQuickAdd} 
         />

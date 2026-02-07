@@ -73,7 +73,7 @@ const MiniCalendar: React.FC = () => {
   };
 
   return (
-    <div className="bg-[var(--bg-main)]/50 p-1 rounded-xl border border-[var(--border-color)] shadow-inner w-full">
+    <div className="p-1 w-full">
       <div className="flex justify-between items-center gap-0.5">
         {weekDays.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString();

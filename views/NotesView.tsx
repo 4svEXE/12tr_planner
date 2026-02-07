@@ -7,9 +7,11 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import TaskDetails from '../components/TaskDetails';
 import Card from '../components/ui/Card';
+import MiniCalendar from '../components/sidebar/MiniCalendar';
 
 const NotesView: React.FC = () => {
-  const { tasks, addTask, updateTask, deleteTask, detailsWidth, setDetailsWidth, addProject, updateProject, deleteProject, projects } = useApp();
+  const { tasks, addTask, updateTask, deleteTask, detailsWidth, setDetailsWidth, addProject, updateProject, deleteProject, projects, setActiveTab } = useApp();
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -112,14 +114,8 @@ const NotesView: React.FC = () => {
         'actions'
     );
     
-    // Отримуємо створену таску, щоб оновити її теги
-    if (initialTags.length > 0) {
-      // Оскільки addTask не повертає об'єкт, а оновлює state,
-      // ми покладаємося на те, що updateTask знайде її за ID в наступному циклі
-      // Або ми можемо знайти її в поточному масиві через setTimeout або в самому Context
-      const taskToUpdate = tasks.find(t => t.id === newId) || { id: newId, tags: [] };
-      updateTask({ ...taskToUpdate as Task, id: newId, title, category: 'note', projectId, tags: initialTags, status: TaskStatus.INBOX, priority: Priority.NUI, createdAt: Date.now() });
-    }
+    const taskToUpdate = tasks.find(t => t.id === newId) || { id: newId, tags: [] };
+    updateTask({ ...taskToUpdate as Task, id: newId, title, category: 'note', projectId, tags: initialTags, status: TaskStatus.INBOX, priority: Priority.NUI, createdAt: Date.now(), updatedAt: Date.now() });
     
     setSelectedTaskId(newId);
     setNewNoteTitle('');
@@ -141,20 +137,23 @@ const NotesView: React.FC = () => {
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative">
       <div className={`flex flex-1 overflow-hidden transition-all duration-300 ${isMobile && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
-        <aside className="hidden lg:flex w-56 bg-[var(--bg-card)] border-r border-[var(--border-color)] flex-col p-4 shrink-0">
-          <div className="mb-6">
-            <Typography variant="h3" className="text-base mb-1 uppercase font-black">База знань</Typography>
-            <Typography variant="tiny" className="text-[var(--text-muted)] lowercase text-[8px]">архів думок</Typography>
-          </div>
+        <aside className="hidden lg:flex w-64 bg-[var(--bg-card)] border-r border-[var(--border-color)] flex-col shrink-0">
+          <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/[0.02] shrink-0">
+            <div className="flex flex-col">
+              <Typography variant="h3" className="text-base mb-0.5 uppercase font-black">База знань</Typography>
+              <Typography variant="tiny" className="text-[var(--text-muted)] lowercase text-[8px]">архів думок</Typography>
+            </div>
+            <i onClick={() => setIsAddingFolder(true)} className="fa-solid fa-folder-plus text-[12px] text-[var(--text-muted)] hover:text-[var(--primary)] cursor-pointer"></i>
+          </header>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
             <div className="space-y-0.5">
-              <Typography variant="tiny" className="text-[var(--text-muted)] mb-2 ml-1 text-[7px] uppercase font-black opacity-50">Система</Typography>
+              <Typography variant="tiny" className="text-[var(--text-muted)] mb-1 ml-2 text-[7px] uppercase font-black opacity-50">Система</Typography>
               {systemFolders.map(f => (
                 <button
                   key={f.id}
                   onClick={() => setActiveFolder(f.id)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
                     activeFolder === f.id ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
                   }`}
                 >
@@ -165,25 +164,47 @@ const NotesView: React.FC = () => {
             </div>
 
             <div className="space-y-0.5">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <Typography variant="tiny" className="text-[var(--text-muted)] text-[7px] uppercase font-black opacity-50">Папки</Typography>
-                <i onClick={() => setIsAddingFolder(true)} className="fa-solid fa-plus-circle text-[10px] text-[var(--text-muted)] hover:text-[var(--primary)] cursor-pointer"></i>
-              </div>
+              <Typography variant="tiny" className="text-[var(--text-muted)] mb-1 ml-2 text-[7px] uppercase font-black opacity-50">Папки нотаток</Typography>
               {noteFolders.map(folder => (
                 <button
                   key={folder.id}
                   onClick={() => setActiveFolder(folder.id)}
-                  className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
                     activeFolder === folder.id ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <i className="fa-solid fa-folder w-3 text-center"></i>
+                    <i className="fa-solid fa-folder w-3 text-center opacity-40"></i>
                     <span className="truncate">{folder.name}</span>
                   </div>
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* INTEGRATED NAVIGATION & CALENDAR */}
+          <div className="mt-auto border-t border-[var(--border-color)] bg-black/[0.01] shrink-0">
+            <div className="p-3">
+              <MiniCalendar />
+            </div>
+            
+            <nav className="px-2 pb-2 space-y-0.5">
+              {[
+                { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
+                { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
+                { id: 'completed', icon: 'fa-circle-check', label: 'Готово' },
+                { id: 'trash', icon: 'fa-trash-can', label: 'Корзина' }
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:bg-black/5 transition-all"
+                >
+                  <i className={`fa-solid ${item.icon} w-3 text-center`}></i>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
         </aside>
 
@@ -302,7 +323,7 @@ const NotesView: React.FC = () => {
         </div>
       </div>
 
-      {isAddingFolder && isMobile && (
+      {isAddingFolder && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur animate-in fade-in">
           <div className="absolute inset-0 bg-black/40" onClick={() => setIsAddingFolder(false)}></div>
           <Card className="w-full max-w-sm relative z-10 p-6 rounded-3xl bg-card border-theme shadow-2xl">

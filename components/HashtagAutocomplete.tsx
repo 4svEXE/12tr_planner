@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Tag } from '../types';
 import { useApp } from '../contexts/AppContext';
@@ -35,12 +36,9 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
     const words = textBeforeCursor.split(/\s/);
     const lastWord = words[words.length - 1];
 
-    // Дозволяємо пошук навіть без решітки
+    // FIX: Показуємо підказки ТІЛЬКИ після введення решітки
     if (lastWord.startsWith('#')) {
       setFilter(lastWord.slice(1));
-      setShowPopover(true);
-    } else if (lastWord.length > 0) {
-      setFilter(lastWord);
       setShowPopover(true);
     } else {
       setShowPopover(false);
@@ -50,8 +48,8 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     const pos = e.target.selectionStart || 0;
     setCursorPos(pos);
-    setShowPopover(true); // Показуємо всі теги при фокусі
-    setFilter('');
+    // При фокусі не показуємо поповер, поки не введено #
+    updateSuggestions(value, pos);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -76,8 +74,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
     const textAfter = value.slice(cursorPos);
     const words = textBefore.split(/\s/);
     
-    const lastWord = words[words.length - 1];
-    // Замінюємо останнє слово на тег з решіткою
+    // Замінюємо останнє слово (яке починається з #) на тег з решіткою
     words[words.length - 1] = `#${tagName} `;
     
     const newVal = words.join(' ').replace(/\s\s+/g, ' ') + textAfter;
@@ -95,7 +92,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex items-center overflow-visible">
+    <div className="relative w-full flex items-center overflow-visible">
       <input
         ref={inputRef}
         type="text"
@@ -111,7 +108,7 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
             }, 200);
         }}
         placeholder={placeholder}
-        className={`${className} outline-none`}
+        className={`${className} outline-none h-6 w-full`}
       />
       
       {showPopover && (
