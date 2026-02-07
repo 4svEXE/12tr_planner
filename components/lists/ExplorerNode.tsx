@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
 import React from 'react';
 import { Project, Task, TaskStatus } from '../../types';
 import Typography from '../ui/Typography';
@@ -21,10 +17,7 @@ interface ExplorerNodeProps {
   onFinishCreation: () => void;
   onStartRename: (project: Project) => void;
   onDelete: (id: string) => void;
-<<<<<<< HEAD
   onDeleteSection: (pId: string, sId: string) => void;
-=======
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   onMoveNode: (sourceId: string, targetId: string | undefined) => void;
   onUpdateTask: (task: any) => void;
   setInputValue: (val: string) => void;
@@ -35,16 +28,10 @@ interface ExplorerNodeProps {
 }
 
 const ExplorerNode: React.FC<ExplorerNodeProps> = ({
-<<<<<<< HEAD
   // Add missing onDeleteSection to the destructured props
   project, level, expandedFolders, selectedProjectId, editingNodeId, inputValue,
   creatingIn, dragOverNodeId, onToggle, onSelect, onStartCreation, onFinishCreation, 
   onStartRename, onDelete, onDeleteSection, onMoveNode, onUpdateTask, setInputValue, 
-=======
-  project, level, expandedFolders, selectedProjectId, editingNodeId, inputValue,
-  creatingIn, dragOverNodeId, onToggle, onSelect, onStartCreation, onFinishCreation, 
-  onStartRename, onDelete, onMoveNode, onUpdateTask, setInputValue, 
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   handleRenameNode, inputRef, allTasks, allProjects
 }) => {
   const isFolder = project.type === 'folder';
@@ -87,19 +74,11 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
         }`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
-<<<<<<< HEAD
         {isFolder && (
           <div className="w-4 flex justify-center shrink-0">
             <i className={`fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[8px] opacity-60`}></i>
           </div>
         )}
-=======
-        <div className="w-4 flex justify-center shrink-0">
-          {isFolder && (
-            <i className={`fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[8px] opacity-60`}></i>
-          )}
-        </div>
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
         <i className={`fa-solid ${isFolder ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-file-lines'} text-[11px] w-4 text-center ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] opacity-70'}`}></i>
 
         {isEditing ? (
@@ -148,10 +127,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
               onFinishCreation={onFinishCreation}
               onStartRename={onStartRename}
               onDelete={onDelete}
-<<<<<<< HEAD
               onDeleteSection={onDeleteSection}
-=======
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
               onMoveNode={onMoveNode}
               onUpdateTask={onUpdateTask}
               setInputValue={setInputValue}
@@ -163,10 +139,6 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
           ))}
           {creatingIn && creatingIn.parentId === project.id && (
             <div className="flex items-center gap-2 py-2 px-3 border-l-2 border-[var(--primary)]/30 bg-[var(--primary)]/5" style={{ paddingLeft: `${(level + 1) * 12 + 8}px` }}>
-<<<<<<< HEAD
-=======
-              <div className="w-4 shrink-0" />
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
               <i className={`fa-solid ${creatingIn.type === 'folder' ? 'fa-folder' : 'fa-file-lines'} text-[11px] w-4 text-center text-[var(--primary)]/50`}></i>
               <input
                 ref={inputRef}
@@ -176,11 +148,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
                 onBlur={onFinishCreation}
                 onKeyDown={e => e.key === 'Enter' && onFinishCreation()}
                 placeholder="Назва..."
-<<<<<<< HEAD
                 className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
-=======
-                className="flex-1 bg-[var(--bg-main)] border border-[var(--primary)]/50 rounded px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
               />
             </div>
           )}
@@ -190,8 +158,4 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
   );
 };
 
-<<<<<<< HEAD
 export default ExplorerNode;
-=======
-export default ExplorerNode;
->>>>>>> 3f8a69718735605e887c800b35006f280deffd60
