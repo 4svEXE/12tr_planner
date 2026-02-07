@@ -172,7 +172,11 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
+=======
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
       <div className="w-full max-w-lg h-full md:h-auto md:max-h-[90vh] bg-[var(--bg-card)] md:rounded shadow-2xl flex flex-col overflow-hidden relative border-theme">
         
         <div className="absolute top-0 left-0 w-full h-1 bg-[var(--bg-input)]">
@@ -371,7 +375,11 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
            )}
         </div>
 
+<<<<<<< HEAD
         <footer className="p-6 pb-12 md:pb-6 border-t border-theme bg-[var(--bg-card)] flex gap-4 shrink-0">
+=======
+        <footer className="p-6 border-t border-theme bg-[var(--bg-card)] flex gap-4 shrink-0">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
            {currentStep !== 'mood' ? (
              <button onClick={() => {
                 const idx = steps.indexOf(currentStep);

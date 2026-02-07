@@ -42,9 +42,15 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, taskCount, isMobile, o
       <div className="flex gap-2">
         <Button 
           size="sm" 
+<<<<<<< HEAD
           variant="ghost" 
           icon="fa-plus" 
           className="text-[8px] h-7 rounded px-2 opacity-40 hover:opacity-100 hover:bg-black/5 transition-all font-black uppercase tracking-widest border-none" 
+=======
+          variant="white" 
+          icon="fa-plus" 
+          className="text-[8px] h-8 rounded px-3 md:h-9" 
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
           onClick={() => onAddSection(project.id, 'Нова секція')}
         >
           {!isMobile && 'СЕКЦІЯ'}

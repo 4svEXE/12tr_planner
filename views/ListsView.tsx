@@ -5,7 +5,10 @@ import { Project, Task, TaskStatus } from '../types';
 import Typography from '../components/ui/Typography';
 import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
+<<<<<<< HEAD
 import MiniCalendar from '../components/sidebar/MiniCalendar';
+=======
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
 
 // Sub-components
 import ExplorerNode from '../components/lists/ExplorerNode';
@@ -18,12 +21,19 @@ const EXPANDED_NODES_KEY = '12tr_sidebar_expanded_nodes';
 const ListsView: React.FC = () => {
   const {
     projects, tasks, addTask, updateProject, deleteProject, addProject,
+<<<<<<< HEAD
     addProjectSection, deleteProjectSection, renameProjectSection, updateTask, deleteTask, toggleTaskStatus,
     setActiveTab
   } = useApp();
 
   // Changed initial state to 'system_inbox' as requested
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('system_inbox');
+=======
+    addProjectSection, deleteProjectSection, renameProjectSection, updateTask, deleteTask, toggleTaskStatus
+  } = useApp();
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -129,7 +139,11 @@ const ListsView: React.FC = () => {
   };
 
   const handleAddTaskAndEdit = (projectId: string, sectionId: string) => {
+<<<<<<< HEAD
     const id = addTask('', 'tasks', projectId === 'system_inbox' ? undefined : projectId, sectionId);
+=======
+    const id = addTask('', 'tasks', projectId, sectionId);
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
     setEditingTaskId(id);
     setInputValue('');
     setTimeout(() => taskInputRef.current?.focus(), 50);
@@ -157,6 +171,7 @@ const ListsView: React.FC = () => {
     e.preventDefault();
     if (!quickTaskValue.trim() || !selectedProjectId) return;
 
+<<<<<<< HEAD
     if (selectedProjectId === 'system_inbox') {
       addTask(quickTaskValue.trim(), 'unsorted', undefined, 'actions');
     } else {
@@ -165,6 +180,12 @@ const ListsView: React.FC = () => {
       const targetSectionId = sections[0]?.id || 'actions';
       addTask(quickTaskValue.trim(), 'tasks', selectedProjectId, targetSectionId);
     }
+=======
+    const sections = activeProject?.sections || [{ id: 'actions', title: 'Завдання' }];
+    const targetSectionId = sections[0]?.id || 'actions';
+
+    addTask(quickTaskValue.trim(), 'tasks', selectedProjectId, targetSectionId);
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
     setQuickTaskValue('');
   };
 
@@ -203,6 +224,7 @@ const ListsView: React.FC = () => {
     setActiveMenuSection(null);
   };
 
+<<<<<<< HEAD
   const activeProject = useMemo(() => {
     if (selectedProjectId === 'system_inbox') {
       return {
@@ -223,18 +245,29 @@ const ListsView: React.FC = () => {
     return tasks.filter(t => t && t.projectId === selectedProjectId && !t.isDeleted);
   }, [tasks, selectedProjectId]);
 
+=======
+  const activeProject = projects.find(p => p && p.id === selectedProjectId);
+  const projectTasks = tasks.filter(t => t && t.projectId === selectedProjectId && !t.isDeleted);
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   const sections = activeProject?.sections || [{ id: 'actions', title: 'Завдання' }];
 
   const renderExplorer = () => (
     <aside className={`${isMobile && selectedProjectId ? 'hidden' : 'w-full md:w-64'} bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 h-full`}>
+<<<<<<< HEAD
       <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/[0.02] shrink-0">
+=======
+      <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/[0.02]">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
         <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[8px]">Провідник Списків</Typography>
         <div className="flex gap-1">
           <button onClick={() => startCreation('folder')} className="w-8 h-8 rounded hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)]" title="Нова папка"><i className="fa-solid fa-folder-plus"></i></button>
           <button onClick={() => startCreation('list')} className="w-8 h-8 rounded hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)]" title="Новий список"><i className="fa-solid fa-plus"></i></button>
         </div>
       </header>
+<<<<<<< HEAD
       
+=======
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
       <div
         className="flex-1 overflow-y-auto custom-scrollbar py-2"
         onDragOver={(e) => e.preventDefault()}
@@ -243,6 +276,7 @@ const ListsView: React.FC = () => {
           if (sourceProjectId) handleMoveNode(sourceProjectId, undefined);
         }}
       >
+<<<<<<< HEAD
         {/* SYSTEM INBOX LIST - ALWAYS PRESENT */}
         <div
           onClick={() => setSelectedProjectId('system_inbox')}
@@ -260,6 +294,8 @@ const ListsView: React.FC = () => {
           </span>
         </div>
 
+=======
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
         {folders.filter(p => !p.parentFolderId).map(rootProject => (
           <ExplorerNode
             key={rootProject.id}
@@ -277,7 +313,10 @@ const ListsView: React.FC = () => {
             onFinishCreation={handleFinishCreation}
             onStartRename={(p) => { setEditingNodeId(p.id); setInputValue(p.name); setTimeout(() => inputRef.current?.focus(), 50); }}
             onDelete={(id) => { if (confirm('Видалити?')) deleteProject(id); }}
+<<<<<<< HEAD
             onDeleteSection={deleteProjectSection}
+=======
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
             onMoveNode={handleMoveNode}
             onUpdateTask={updateTask}
             setInputValue={setInputValue}
@@ -290,6 +329,10 @@ const ListsView: React.FC = () => {
 
         {creatingIn && !creatingIn.parentId && (
           <div className="flex items-center gap-2 py-2 px-3 border-l-2 border-[var(--primary)]/30 bg-[var(--primary)]/5" style={{ paddingLeft: '8px' }}>
+<<<<<<< HEAD
+=======
+            <div className="w-4 shrink-0" />
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
             <i className={`fa-solid ${creatingIn.type === 'folder' ? 'fa-folder' : 'fa-file-lines'} text-[11px] w-4 text-center text-[var(--primary)]/50`}></i>
             <input
               ref={inputRef}
@@ -299,6 +342,7 @@ const ListsView: React.FC = () => {
               onBlur={handleFinishCreation}
               onKeyDown={e => e.key === 'Enter' && handleFinishCreation()}
               placeholder="Назва..."
+<<<<<<< HEAD
               className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
             />
           </div>
@@ -328,6 +372,16 @@ const ListsView: React.FC = () => {
             </button>
           ))}
         </nav>
+=======
+              className="flex-1 bg-[var(--bg-main)] border border-[var(--primary)]/50 rounded px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
+            />
+          </div>
+        )}
+
+        {!creatingIn && folders.length === 0 && (
+          <div className="px-6 py-10 text-center opacity-20 italic text-[10px]">Створіть свій перший список...</div>
+        )}
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
       </div>
     </aside>
   );
@@ -356,7 +410,11 @@ const ListsView: React.FC = () => {
                 onSubmit={handleQuickAddAtTop}
               />
 
+<<<<<<< HEAD
               <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 space-y-2 pb-32 pt-0">
+=======
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-8 pb-32 pt-8">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                 {sections.map(section => {
                   const sectionItems = projectTasks.filter(t => (t.projectSection as any) === section.id || (section.id === 'actions' && !t.projectSection));
                   const isCollapsed = collapsedSections.has(section.id);
@@ -365,7 +423,11 @@ const ListsView: React.FC = () => {
                   return (
                     <div
                       key={section.id}
+<<<<<<< HEAD
                       className="space-y-1"
+=======
+                      className="space-y-3"
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                       onDrop={(e) => {
                         e.preventDefault();
@@ -373,11 +435,19 @@ const ListsView: React.FC = () => {
                         const taskId = e.dataTransfer.getData('taskId');
                         if (taskId) {
                           const t = tasks.find(x => x.id === taskId);
+<<<<<<< HEAD
                           if (t) updateTask({ ...t, projectId: activeProject.id === 'system_inbox' ? undefined : activeProject.id, projectSection: section.id as any, isDeleted: false });
                         }
                       }}
                     >
                       <div className="flex items-center group/sec relative h-6 mb-1">
+=======
+                          if (t) updateTask({ ...t, projectId: activeProject.id, projectSection: section.id as any, isDeleted: false });
+                        }
+                      }}
+                    >
+                      <div className="flex items-center group/sec relative h-6">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                         <div className="flex items-center gap-2 flex-1 pl-[10px]">
                           {isSectionEditing ? (
                             <input
@@ -402,6 +472,7 @@ const ListsView: React.FC = () => {
                           >
                             <i className="fa-solid fa-plus"></i>
                           </button>
+<<<<<<< HEAD
                           {activeProject.id !== 'system_inbox' && (
                             <>
                               <button
@@ -447,11 +518,58 @@ const ListsView: React.FC = () => {
                               </div>
                             </>
                           )}
+=======
+                          <button
+                            onClick={(e) => toggleSection(section.id, e)}
+                            className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--text-muted)]"
+                            title={isCollapsed ? "Розгорнути" : "Згорнути"}
+                          >
+                            <i className={`fa-solid ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i>
+                          </button>
+                          <div className="relative" ref={activeMenuSection === section.id ? menuRef : null}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setActiveMenuSection(activeMenuSection === section.id ? null : section.id); }}
+                              className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--text-muted)]"
+                            >
+                              <i className="fa-solid fa-ellipsis"></i>
+                            </button>
+
+                            {activeMenuSection === section.id && (
+                              <div className="absolute right-0 top-full mt-1 w-32 bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl rounded-lg py-1 z-50 animate-in fade-in zoom-in-95">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInputValue(section.title);
+                                    setEditingSectionId(section.id);
+                                    setActiveMenuSection(null);
+                                    setTimeout(() => sectionInputRef.current?.focus(), 50);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-black/5 text-[9px] font-bold uppercase flex items-center gap-2"
+                                >
+                                  <i className="fa-solid fa-pencil opacity-40"></i> Назва
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSectionPrompt(activeProject.id, section.id, section.title);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-500 text-[9px] font-bold uppercase flex items-center gap-2"
+                                >
+                                  <i className="fa-solid fa-trash-can opacity-40"></i> Видалити
+                                </button>
+                              </div>
+                            )}
+                          </div>
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                         </div>
                       </div>
 
                       {!isCollapsed && (
+<<<<<<< HEAD
                         <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+=======
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                           {sectionItems.map(task => (
                             <TaskItem
                               key={task.id}

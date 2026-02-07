@@ -17,6 +17,10 @@ const HabitsView: React.FC = () => {
   const [reportText, setReportText] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
 
+<<<<<<< HEAD
+=======
+  // FIX: Added missing handleCreateHabit function
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   const handleCreateHabit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newHabitTitle.trim()) {
@@ -56,6 +60,12 @@ const HabitsView: React.FC = () => {
     const today = new Date();
     today.setHours(0,0,0,0);
 
+<<<<<<< HEAD
+=======
+    let current = new Date(today);
+    // Якщо сьогодні не виконано, але це запланований день, страйк може бути від вчора
+    // Перевіряємо задом наперед
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
@@ -66,12 +76,25 @@ const HabitsView: React.FC = () => {
       if (status === 'completed') {
         streak++;
       } else if (status === 'skipped') {
+<<<<<<< HEAD
         continue;
       } else {
         if (scheduledDays.includes(dow)) {
           if (i === 0) continue;
           break;
         } else {
+=======
+        // Пропускаємо (не збиває, але й не додає)
+        continue;
+      } else {
+        // Якщо цей день був запланований
+        if (scheduledDays.includes(dow)) {
+          // Якщо це сьогодні і ще не вечір - не збиваємо
+          if (i === 0) continue;
+          break; // Страйк перервано
+        } else {
+          // Це вихідний - просто йдемо далі
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
           continue;
         }
       }
@@ -158,10 +181,17 @@ const HabitsView: React.FC = () => {
 
                 return (
                   <tr key={habit.id} className="group hover:bg-[var(--bg-main)]/10 transition-colors">
+<<<<<<< HEAD
                     <td className="sticky left-0 z-30 bg-[var(--bg-main)] py-1.5 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] cursor-pointer w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
                           <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
+=======
+                    <td className="sticky left-0 z-30 bg-[var(--bg-main)] py-1.5 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)]/20 cursor-pointer w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                      <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
+                        <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
+                          <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2.5" />
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                           <circle cx="16" cy="16" r="14" fill="transparent" stroke={color} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - Math.min(streak, 30) / 30)} strokeLinecap="round" className="transition-all duration-700 ease-in-out" />
                         </svg>
                         <span className="absolute text-[6px] font-black flex flex-col items-center leading-none" style={{ color }}>
@@ -184,7 +214,11 @@ const HabitsView: React.FC = () => {
                       const isScheduled = scheduledDays.includes(d.dayOfWeek);
                       
                       return (
+<<<<<<< HEAD
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
+=======
+                        <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)]/20 ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                           <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-10 flex flex-col items-center justify-center transition-all group/btn ${isActive ? 'bg-[var(--bg-card)] shadow-inner' : ''}`}>
                             <div className="relative">
                               {status === 'completed' ? (
@@ -192,7 +226,11 @@ const HabitsView: React.FC = () => {
                               ) : status === 'skipped' ? (
                                 <i className="fa-solid fa-xmark text-[var(--text-muted)] text-[8px] opacity-20"></i>
                               ) : (
+<<<<<<< HEAD
                                 <span className={`text-[11px] font-light transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>?</span>
+=======
+                                <span className={`text-[8px] font-black ${isScheduled ? 'text-[var(--text-muted)]/20' : 'text-[var(--text-muted)]/5'}`}>?</span>
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                               )}
                               {hasNote && <div className="absolute -top-1 -right-1 w-1 h-1 bg-[var(--primary)] rounded-full shadow-sm"></div>}
                             </div>

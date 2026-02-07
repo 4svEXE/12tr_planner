@@ -58,6 +58,7 @@ const DiaryView: React.FC = () => {
     return groups;
   }, [sortedDiary]);
 
+<<<<<<< HEAD
   const handleDelete = (id: string) => {
     if (confirm('Видалити цей запис назавжди?')) {
       if (editingEntryId === id) setEditingEntryId(null);
@@ -65,6 +66,8 @@ const DiaryView: React.FC = () => {
     }
   };
 
+=======
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
   const handleStartAiAnalysis = async () => {
     if (!activeEntry) return;
     
@@ -366,6 +369,7 @@ const DiaryView: React.FC = () => {
                     {isMobile && (
                       <button onClick={() => setEditingEntryId(null)} className="w-8 h-8 rounded-lg bg-main flex items-center justify-center text-muted"><i className="fa-solid fa-chevron-left"></i></button>
                     )}
+<<<<<<< HEAD
                     <Typography variant="h3" className="text-xs font-black uppercase tracking-widest text-primary">Редагування</Typography>
                   </div>
                   <div className="flex items-center gap-2">
@@ -392,6 +396,28 @@ const DiaryView: React.FC = () => {
                       </button>
                     )}
                   </div>
+=======
+                    <Typography variant="h3" className="text-xs font-black uppercase tracking-widest text-primary">Перегляд запису</Typography>
+                  </div>
+                  {activeEntry && (
+                    <button 
+                      onClick={handleStartAiAnalysis}
+                      disabled={isAiAnalyzing}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+                        aiEnabled 
+                          ? 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-200/20' 
+                          : 'bg-slate-300 text-slate-500 cursor-pointer shadow-none hover:bg-slate-400'
+                      }`}
+                    >
+                      {isAiAnalyzing ? (
+                        <i className="fa-solid fa-circle-notch animate-spin"></i>
+                      ) : (
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                      )}
+                      ШІ Аналіз
+                    </button>
+                  )}
+>>>>>>> 3f8a69718735605e887c800b35006f280deffd60
                 </header>
                 <div className="flex-1 overflow-hidden">
                   <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
