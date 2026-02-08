@@ -1,9 +1,9 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Character, Task, Project, TaskStatus, Person } from "../types";
 
 // Функція для отримання актуального ключа
 const getAiClient = () => {
-  // Use named parameter { apiKey } and exclusively process.env.API_KEY as per guidelines
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
@@ -44,8 +44,75 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
     }
   });
 
-  // Use .text property directly
   return JSON.parse(response.text || '{}');
+};
+
+/**
+ * АНАЛІЗ ЩОДЕННОГО ЗВІТУ (DAILY REPORT)
+ * Витягує завдання, проєкти, звички, досягнення, нотатки та події.
+ */
+export const analyzeDailyReport = async (reportContent: string, character: Character) => {
+  const ai = getAiClient();
+  const prompt = `
+    Ти — Стратегічне Ядро ігрового двигуна життя 12TR. 
+    Проаналізуй щоденний звіт Гравця та витягни з нього корисні артефакти для системи GTD та особистого розвитку.
+    
+    КОНТЕКСТ ГЕРОЯ:
+    - Ім'я: ${character.name}
+    - Візія: ${character.vision}
+    - Поточні цілі: ${character.goals.join(", ")}
+
+    ТЕКСТ ЗВІТУ ГРАВЦЯ:
+    """
+    ${reportContent}
+    """
+
+    ТВОЄ ЗАВДАННЯ:
+    Згенеруй масив пропозицій (suggestions) для Гравця. Кожна пропозиція повинна мати тип:
+    - 'task': Конкретна фізична дія або квест, який Гравець згадав або який випливає з тексту (наприклад, "треба зателефонувати...").
+    - 'project': Велика ціль або ідея, що вимагає багатьох кроків.
+    - 'habit': Регулярна дія для прокачки дисципліни.
+    - 'achievement': Важливий успіх, який варто зафіксувати в залі слави.
+    - 'note': Цінна ідея, інсайт або знання для Бази Знань.
+    - 'event': Подія з конкретною датою або часом.
+
+    ВІДПОВІДАЙ ТІЛЬКИ УКРАЇНСЬКОЮ МОВОЮ У ФОРМАТІ JSON.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            type: { 
+              type: Type.STRING, 
+              description: "Тип артефакту: task, project, habit, achievement, note, event" 
+            },
+            title: { 
+              type: Type.STRING, 
+              description: "Коротка та влучна назва (в ігровому стилі)" 
+            },
+            description: { 
+              type: Type.STRING, 
+              description: "Детальніший опис дії або суті" 
+            },
+            reason: { 
+              type: Type.STRING, 
+              description: "Чому Стратегічне Ядро пропонує саме це? (коротке обґрунтування)" 
+            }
+          },
+          required: ["type", "title", "description", "reason"]
+        }
+      }
+    }
+  });
+
+  return JSON.parse(response.text || '[]');
 };
 
 export const analyzePersonPortrait = async (person: Person, userCharacter: Character) => {
@@ -91,7 +158,6 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
     }
   });
 
-  // Use .text property directly
   return JSON.parse(response.text || '{}');
 };
 
@@ -130,55 +196,7 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
     }
   });
 
-  // Use .text property directly
   return JSON.parse(response.text || '{}');
-};
-
-export const analyzeDailyReport = async (reportContent: string, character: Character) => {
-  const ai = getAiClient();
-  const prompt = `
-    Проаналізуй цей щоденний звіт користувача та витягни з нього корисні ідеї для системи GTD та ігрового двигуна життя.
-    Біо героя: ${character.bio}
-    Візія: ${character.vision}
-
-    Звіт користувача:
-    ${reportContent}
-
-    Твоє завдання — згенерувати пропозиції у наступних категоріях:
-    1. 'task' (Наступні дії/квести)
-    2. 'project' (Нові цілі або підпроєкти)
-    3. 'habit' (Звички, які потрібно впровадити або відновити)
-    4. 'achievement' (Досягнення за сьогодні, які варто зафіксувати)
-    5. 'note' (Цінні ідеї або мрії для бази знань)
-    6. 'event' (Заплановані події або дедлайни)
-
-    Відповідай УКРАЇНСЬКОЮ у форматі JSON (масив об'єктів).
-  `;
-
-  const response = await ai.models.generateContent({
-    // Use correct complex task model
-    model: 'gemini-3-pro-preview',
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            type: { type: Type.STRING, description: "One of: task, project, habit, achievement, note, event" },
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            reason: { type: Type.STRING, description: "Чому ти це пропонуєш на основі тексту звіту?" }
-          },
-          required: ["type", "title", "reason"]
-        }
-      }
-    }
-  });
-
-  // Use .text property directly
-  return JSON.parse(response.text || '[]');
 };
 
 export const planProjectStrategically = async (
@@ -236,7 +254,6 @@ export const planProjectStrategically = async (
     }
   });
 
-  // Use .text property directly
   return JSON.parse(response.text || '{}');
 };
 
@@ -304,6 +321,5 @@ export const processInboxWithAi = async (tasks: {id: string, title: string, cont
     }
   });
 
-  // Use .text property directly
   return JSON.parse(response.text || '[]');
 };

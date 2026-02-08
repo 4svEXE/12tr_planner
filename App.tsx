@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -22,17 +22,77 @@ import DeepFocus from './views/DeepFocus';
 import ListsView from './views/ListsView';
 import AiChat from './components/AiChat';
 import AuthView from './views/AuthView';
-import { TaskStatus } from './types';
+import NotificationToast from './components/ui/NotificationToast';
+import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
   const { activeTab, setActiveTab, tasks, projects, aiEnabled, theme } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [activeAlerts, setActiveAlerts] = useState<Task[]>([]);
+  const [notifiedTaskIds, setNotifiedTaskIds] = useState<Set<string>>(new Set());
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme || 'classic');
+    // Request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    // Preload notification sound
+    audioRef.current = new Audio('https://assets.mixkit.sh/active_storage/sfx/2358/2358-preview.mp3');
+    audioRef.current.volume = 0.4;
   }, [theme]);
+
+  // Handle Deadlines Monitoring
+  const checkDeadlines = useCallback(() => {
+    const now = Date.now();
+    
+    // Filter tasks that have a deadline in the next 24 hours and haven't been completed
+    const imminent = tasks.filter(t => 
+      !t.isDeleted && 
+      t.status !== TaskStatus.DONE && 
+      t.dueDate && 
+      t.dueDate <= now + (24 * 60 * 60 * 1000) &&
+      !dismissedAlertIds.has(t.id)
+    );
+
+    setActiveAlerts(imminent);
+
+    // Show Push & Sound for new critical alerts (less than 1 hour left)
+    imminent.forEach(task => {
+      const timeDiff = task.dueDate! - now;
+      
+      // Critical threshold: 1 hour
+      if (timeDiff < 3600000 && !notifiedTaskIds.has(task.id)) {
+        // Trigger Sound
+        audioRef.current?.play().catch(() => {});
+
+        // Trigger System Notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification("Терміновий квест!", {
+            body: `Дедлайн завдання "${task.title}" вже скоро!`,
+            icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316"
+          });
+        }
+
+        setNotifiedTaskIds(prev => new Set(prev).add(task.id));
+      }
+    });
+  }, [tasks, notifiedTaskIds, dismissedAlertIds]);
+
+  useEffect(() => {
+    checkDeadlines();
+    const interval = setInterval(checkDeadlines, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [checkDeadlines]);
+
+  const handleDismissAlert = (taskId: string) => {
+    setDismissedAlertIds(prev => new Set(prev).add(taskId));
+  };
 
   // Handle Mobile Back Button logic
   useEffect(() => {
@@ -97,6 +157,18 @@ const MainLayout: React.FC = () => {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
       <main className="flex-1 overflow-y-auto relative">
         {renderContent()}
+        
+        {/* NOTIFICATION TOASTS LAYER */}
+        <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+           {activeAlerts.slice(0, 3).map(task => (
+             <NotificationToast 
+              key={task.id} 
+              task={task} 
+              onClose={() => handleDismissAlert(task.id)} 
+             />
+           ))}
+        </div>
+
         {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
         {aiEnabled && !isAiOpen && (
           <button onClick={() => setIsAiOpen(true)} className="fixed bottom-20 md:bottom-8 right-8 w-14 h-14 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[45] hover:scale-110 active:scale-95 transition-all">

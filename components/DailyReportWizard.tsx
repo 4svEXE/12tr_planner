@@ -5,22 +5,27 @@ import Typography from './ui/Typography';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
-import { TaskStatus, Person, Task } from '../types';
+import { TaskStatus, Person, Task, AiSuggestion } from '../types';
+import { analyzeDailyReport } from '../services/geminiService';
+import DailyReportAiWizard from './DailyReportAiWizard';
 
 interface DailyReportWizardProps {
   onClose: () => void;
 }
 
-type Step = 'mood' | 'gratitude_people' | 'gratitude_self' | 'positive_events' | 'habits' | 'victory' | 'ideas';
+type Step = 'mood' | 'gratitude_people' | 'gratitude_self' | 'positive_events' | 'habits' | 'victory' | 'ideas' | 'finishing';
 
 const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
   const { 
     people, tasks, character, updateCharacter, 
-    addPerson, saveDiaryEntry, toggleHabitStatus, addInteraction
+    addPerson, saveDiaryEntry, toggleHabitStatus, addInteraction, aiEnabled
   } = useApp();
 
   const [currentStep, setCurrentStep] = useState<Step>('mood');
   const [personSearch, setPersonSearch] = useState('');
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[] | null>(null);
+  const [showAiWizard, setShowAiWizard] = useState(false);
   
   const [localNewPeople, setLocalNewPeople] = useState<Person[]>([]);
 
@@ -64,24 +69,8 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
     return allAvailablePeople.filter(p => !p.isDeleted && p.name.toLowerCase().includes(search)).slice(0, 5);
   }, [allAvailablePeople, personSearch]);
 
-  const handleFinish = () => {
-    updateCharacter({ 
-      energy: reportData.energy,
-      xp: character.xp + 150 
-    });
-
-    reportData.selectedPeople.forEach(pid => {
-       const reason = reportData.peopleGratitude[pid] || 'Дякую за цей день';
-       addInteraction(pid, {
-         summary: `[Вдячність] ${reason}`,
-         type: 'other',
-         date: Date.now(),
-         emotion: 'joy'
-       });
-    });
-
+  const generateReportContent = () => {
     const victoryTask = tasks.find(t => t.id === reportData.mainVictoryId);
-    
     let content = `### 🌟 Ретроспекція: ${new Date().toLocaleDateString('uk-UA')}\n\n`;
     content += `**Стан:** ${moodIcons[reportData.mood - 1]} | **Енергія:** ${reportData.energy}%\n\n`;
     
@@ -112,12 +101,46 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
 
     if (victoryTask) content += `#### 🏆 Перемога дня:\n${victoryTask.title}\n\n`;
     if (reportData.ideas) content += `#### 💡 Ідеї:\n${reportData.ideas}\n`;
-
-    saveDiaryEntry(todayDateStr, content);
-    onClose();
+    return content;
   };
 
-  const steps: Step[] = ['mood', 'gratitude_people', 'gratitude_self', 'positive_events', 'habits', 'victory', 'ideas'];
+  const handleFinish = async (runAi: boolean = false) => {
+    updateCharacter({ 
+      energy: reportData.energy,
+      xp: character.xp + 150 
+    });
+
+    reportData.selectedPeople.forEach(pid => {
+       const reason = reportData.peopleGratitude[pid] || 'Дякую за цей день';
+       addInteraction(pid, {
+         summary: `[Вдячність] ${reason}`,
+         type: 'other',
+         date: Date.now(),
+         emotion: 'joy'
+       });
+    });
+
+    const content = generateReportContent();
+    saveDiaryEntry(todayDateStr, content);
+
+    if (runAi && aiEnabled) {
+      setIsAiAnalyzing(true);
+      try {
+        const suggestions = await analyzeDailyReport(content, character);
+        setAiSuggestions(suggestions);
+        setShowAiWizard(true);
+      } catch (e) {
+        alert("Помилка аналізу Ядром. Звіт збережено.");
+        onClose();
+      } finally {
+        setIsAiAnalyzing(false);
+      }
+    } else {
+      onClose();
+    }
+  };
+
+  const steps: Step[] = ['mood', 'gratitude_people', 'gratitude_self', 'positive_events', 'habits', 'victory', 'ideas', 'finishing'];
   const progress = ((steps.indexOf(currentStep) + 1) / steps.length) * 100;
 
   const togglePerson = (pid: string) => {
@@ -171,6 +194,10 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
     setPersonSearch('');
   };
 
+  if (showAiWizard && aiSuggestions) {
+    return <DailyReportAiWizard suggestions={aiSuggestions} onClose={onClose} />;
+  }
+
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
       <div className="w-full max-w-lg h-full md:h-auto md:max-h-[90vh] bg-[var(--bg-card)] md:rounded shadow-2xl flex flex-col overflow-hidden relative border-theme">
@@ -190,6 +217,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                 {currentStep === 'habits' && 'Дисципліна'}
                 {currentStep === 'victory' && 'Перемога дня'}
                 {currentStep === 'ideas' && 'Ідеї'}
+                {currentStep === 'finishing' && 'Завершення циклу'}
               </Typography>
            </div>
            <button onClick={onClose} className="w-8 h-8 rounded bg-[var(--bg-input)] flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all">
@@ -259,7 +287,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                           <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
                                 <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-4 h-4 rounded-full" />
-                                <span className="text-[9px] font-black uppercase text-[var(--text-main)]">{p.name}</span>
+                                <span className="text-[10px] font-black uppercase text-[var(--text-main)]">{p.name}</span>
                              </div>
                              <button onClick={() => togglePerson(pid)} className="w-5 h-5 flex items-center justify-center rounded hover:bg-rose-500/10 text-[var(--text-muted)] hover:text-rose-500"><i className="fa-solid fa-xmark text-[10px]"></i></button>
                           </div>
@@ -369,10 +397,38 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                 />
              </div>
            )}
+
+           {currentStep === 'finishing' && (
+             <div className="flex flex-col items-center justify-center py-12 text-center space-y-6 animate-in zoom-in-95 duration-500">
+                <div className="w-24 h-24 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 text-5xl mb-4 shadow-xl shadow-orange-500/5">
+                   <i className="fa-solid fa-circle-check"></i>
+                </div>
+                <Typography variant="h3" className="text-xl font-black uppercase">Звіт готовий</Typography>
+                <p className="text-xs text-[var(--text-muted)] font-medium max-w-[240px] leading-relaxed">Система зафіксувала ваш прогрес. Ви отримаєте +150 XP.</p>
+                
+                {aiEnabled && (
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl w-full max-w-xs">
+                     <div className="flex items-center gap-3 mb-2">
+                        <i className="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>
+                        <span className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">Стратегічний ШІ</span>
+                     </div>
+                     <p className="text-[9px] text-indigo-600/80 font-bold leading-relaxed mb-3">Бажаєте, щоб Ядро проаналізувало звіт та сформувало квести на завтра?</p>
+                     <button 
+                        onClick={() => handleFinish(true)}
+                        disabled={isAiAnalyzing}
+                        className="w-full h-8 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-bolt"></i>}
+                        ПРОАНАЛІЗУВАТИ ШІ
+                      </button>
+                  </div>
+                )}
+             </div>
+           )}
         </div>
 
         <footer className="p-6 pb-12 md:pb-6 border-t border-theme bg-[var(--bg-card)] flex gap-4 shrink-0">
-           {currentStep !== 'mood' ? (
+           {currentStep !== 'mood' && currentStep !== 'finishing' ? (
              <button onClick={() => {
                 const idx = steps.indexOf(currentStep);
                 setCurrentStep(steps[idx - 1]);
@@ -381,8 +437,10 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
              <button onClick={onClose} className="flex-1 h-10 rounded font-black uppercase text-[var(--text-muted)] text-[9px] tracking-widest transition-colors">ВІДМІНА</button>
            )}
            
-           {currentStep === 'ideas' ? (
-             <Button variant="primary" className="flex-[2] h-10 shadow-xl uppercase font-black tracking-widest text-[9px]" onClick={handleFinish}>ЗАКРИТИ ДЕНЬ</Button>
+           {currentStep === 'finishing' ? (
+             <Button variant="white" className="flex-1 h-10 uppercase font-black tracking-widest text-[9px]" onClick={() => handleFinish(false)}>ТІЛЬКИ ЗБЕРЕГТИ</Button>
+           ) : currentStep === 'ideas' ? (
+             <Button variant="primary" className="flex-[2] h-10 shadow-xl uppercase font-black tracking-widest text-[9px]" onClick={() => setCurrentStep('finishing')}>ПЕРЕЙТИ ДО ЗАВЕРШЕННЯ</Button>
            ) : (
              <Button variant="primary" className="flex-[2] h-10 shadow-xl uppercase font-black tracking-widest text-[9px]" onClick={() => {
                 const idx = steps.indexOf(currentStep);

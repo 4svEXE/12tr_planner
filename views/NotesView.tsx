@@ -1,341 +1,336 @@
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Task, TaskStatus, Priority, Project } from '../types';
+import { Task, Project } from '../types';
 import Typography from '../components/ui/Typography';
-import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
 import TaskDetails from '../components/TaskDetails';
-import Card from '../components/ui/Card';
 import MiniCalendar from '../components/sidebar/MiniCalendar';
+import { useResizer } from '../hooks/useResizer';
+import NoteExplorerNode from '../components/notes/NoteExplorerNode';
+
+const EXPANDED_NOTES_FOLDERS_KEY = '12tr_notes_expanded_folders';
 
 const NotesView: React.FC = () => {
-  const { tasks, addTask, updateTask, deleteTask, detailsWidth, setDetailsWidth, addProject, updateProject, deleteProject, projects, setActiveTab } = useApp();
+  const { 
+    tasks, addTask, updateTask, deleteTask, 
+    projects, addProject, updateProject, deleteProject,
+    setActiveTab 
+  } = useApp();
 
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [activeFolder, setActiveFolder] = useState<string>('all');
-  const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
-  const [editingFolderValue, setEditingFolderValue] = useState('');
-  const [isResizing, setIsResizing] = useState(false);
-  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [creatingIn, setCreatingIn] = useState<{ parentId: string | undefined; type: 'folder' | 'note' } | null>(null);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const { detailsWidth, startResizing, isResizing } = useResizer(300, 800);
+
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem(EXPANDED_NOTES_FOLDERS_KEY);
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  useEffect(() => {
+    localStorage.setItem(EXPANDED_NOTES_FOLDERS_KEY, JSON.stringify(Array.from(expandedFolders)));
+  }, [expandedFolders]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
-  const noteFolders = useMemo(() => {
-    return projects.filter(p => !p.isStrategic || p.description?.includes('FOLDER_NOTE'));
-  }, [projects]);
 
-  const systemFolders = [
-    { id: 'all', label: 'Усі', icon: 'fa-layer-group', tag: null },
-    { id: 'insights', label: 'Інсайти', icon: 'fa-brain', tag: 'insight' },
-    { id: 'dreams', label: 'Мрії', icon: 'fa-cloud-moon', tag: 'dream' },
-    { id: 'ideas', label: 'Ідеї', icon: 'fa-lightbulb', tag: 'idea' },
-    { id: 'achievements', label: 'Ачівки', icon: 'fa-trophy', tag: 'achievement' },
-    { id: 'someday', label: 'Можливо', icon: 'fa-hourglass-start', tag: 'someday' },
-  ];
+  const noteFolders = useMemo(() => 
+    projects.filter(p => p.description === 'FOLDER_NOTE' || p.type === 'folder'), 
+  [projects]);
 
-  const allAvailableFolders = useMemo(() => [
-    ...systemFolders.map(f => ({ id: f.id, label: f.label, icon: f.icon, isSystem: true, tag: f.tag })),
-    ...noteFolders.map(f => ({ id: f.id, label: f.name, icon: 'fa-folder', isSystem: false, tag: null }))
-  ], [noteFolders]);
+  const toggleFolder = (id: string) => {
+    const next = new Set(expandedFolders);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedFolders(next);
+  };
 
-  const filteredNotes = useMemo(() => {
-    return tasks.filter(t => {
-      if (t.category !== 'note' || t.isDeleted) return false;
-      
-      const currentFolderObj = allAvailableFolders.find(f => f.id === activeFolder);
-      if (!currentFolderObj) return false;
+  const startCreation = (type: 'folder' | 'note', parentId?: string) => {
+    if (type === 'folder' && parentId) return;
+    if (parentId) {
+      const next = new Set(expandedFolders);
+      next.add(parentId);
+      setExpandedFolders(next);
+    }
+    setCreatingIn({ parentId, type });
+    setInputValue('');
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
 
-      if (activeFolder === 'all') return true;
-      
-      if (currentFolderObj.isSystem && currentFolderObj.tag) {
-        return t.tags.includes(currentFolderObj.tag);
-      }
-      
-      return t.projectId === activeFolder;
-    }).sort((a, b) => b.createdAt - a.createdAt);
-  }, [tasks, activeFolder, allAvailableFolders]);
+  const handleFinishCreation = () => {
+    if (!creatingIn || !inputValue.trim()) {
+      setCreatingIn(null);
+      return;
+    }
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  const stopResizing = useCallback(() => setIsResizing(false), []);
-
-  const resize = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 300 && newWidth < 900) setDetailsWidth(newWidth);
-  }, [isResizing, setDetailsWidth]);
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', resize);
-      window.addEventListener('mouseup', stopResizing);
+    if (creatingIn.type === 'folder') {
+      addProject({
+        name: inputValue.trim(),
+        type: 'folder',
+        color: 'var(--text-muted)',
+        isStrategic: false,
+        parentFolderId: undefined,
+        description: 'FOLDER_NOTE'
+      });
     } else {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    }
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
-
-  const handleAddNote = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const title = newNoteTitle.trim() || "Новий запис";
-    
-    const currentFolderObj = allAvailableFolders.find(f => f.id === activeFolder);
-    let projectId: string | undefined = undefined;
-    let initialTags: string[] = [];
-
-    if (currentFolderObj) {
-      if (currentFolderObj.isSystem && currentFolderObj.tag) {
-        initialTags = [currentFolderObj.tag];
-      } else if (!currentFolderObj.isSystem) {
-        projectId = currentFolderObj.id;
-      }
-    }
-    
-    const newId = addTask(
-        title,
+      const newId = addTask(
+        inputValue.trim(),
         'note',
-        projectId,
+        creatingIn.parentId,
         'actions'
-    );
-    
-    const taskToUpdate = tasks.find(t => t.id === newId) || { id: newId, tags: [] };
-    updateTask({ ...taskToUpdate as Task, id: newId, title, category: 'note', projectId, tags: initialTags, status: TaskStatus.INBOX, priority: Priority.NUI, createdAt: Date.now(), updatedAt: Date.now() });
-    
-    setSelectedTaskId(newId);
-    setNewNoteTitle('');
+      );
+      setSelectedNoteId(newId);
+    }
+    setCreatingIn(null);
   };
 
-  const handleCreateFolder = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFolderName.trim()) return;
-    addProject({
-      name: newFolderName.trim(),
-      color: 'var(--primary)',
-      isStrategic: false,
-      description: 'FOLDER_NOTE'
-    });
-    setNewFolderName('');
-    setIsAddingFolder(false);
+  const handleRename = (id: string, name: string, isFolder: boolean) => {
+    if (!name.trim()) {
+      setEditingNodeId(null);
+      return;
+    }
+    if (isFolder) {
+      const folder = projects.find(p => p.id === id);
+      if (folder) updateProject({ ...folder, name: name.trim() });
+    } else {
+      const note = tasks.find(t => t.id === id);
+      if (note) updateTask({ ...note, title: name.trim() });
+    }
+    setEditingNodeId(null);
   };
+
+  const handleMove = (sourceId: string, sourceType: 'folder' | 'note', targetFolderId: string | undefined) => {
+    if (sourceType === 'note') {
+      const note = tasks.find(t => t.id === sourceId);
+      if (note) updateTask({ ...note, projectId: targetFolderId });
+    } else {
+      if (targetFolderId) return; 
+      const folder = projects.find(p => p.id === sourceId);
+      if (folder) updateProject({ ...folder, parentFolderId: undefined });
+    }
+  };
+
+  const selectedNote = useMemo(() => tasks.find(t => t.id === selectedNoteId), [tasks, selectedNoteId]);
+  const parentFolder = useMemo(() => selectedNote?.projectId ? noteFolders.find(f => f.id === selectedNote.projectId) : null, [selectedNote, noteFolders]);
+
+  const filteredFolders = useMemo(() => {
+    if (!searchTerm) return noteFolders.filter(f => !f.parentFolderId);
+    return noteFolders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [noteFolders, searchTerm]);
+
+  const filteredRootNotes = useMemo(() => {
+    const notes = tasks.filter(t => t.category === 'note' && !t.projectId && !t.isDeleted);
+    if (!searchTerm) return notes;
+    return notes.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [tasks, searchTerm]);
 
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative">
-      <div className={`flex flex-1 overflow-hidden transition-all duration-300 ${isMobile && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
-        <aside className="hidden lg:flex w-64 bg-[var(--bg-card)] border-r border-[var(--border-color)] flex-col shrink-0">
-          <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/[0.02] shrink-0">
-            <div className="flex flex-col">
-              <Typography variant="h3" className="text-base mb-0.5 uppercase font-black">База знань</Typography>
-              <Typography variant="tiny" className="text-[var(--text-muted)] lowercase text-[8px]">архів думок</Typography>
-            </div>
-            <i onClick={() => setIsAddingFolder(true)} className="fa-solid fa-folder-plus text-[12px] text-[var(--text-muted)] hover:text-[var(--primary)] cursor-pointer"></i>
-          </header>
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
-            <div className="space-y-0.5">
-              <Typography variant="tiny" className="text-[var(--text-muted)] mb-1 ml-2 text-[7px] uppercase font-black opacity-50">Система</Typography>
-              {systemFolders.map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setActiveFolder(f.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                    activeFolder === f.id ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
-                  }`}
-                >
-                  <i className={`fa-solid ${f.icon} w-3 text-center`}></i>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-0.5">
-              <Typography variant="tiny" className="text-[var(--text-muted)] mb-1 ml-2 text-[7px] uppercase font-black opacity-50">Папки нотаток</Typography>
-              {noteFolders.map(folder => (
-                <button
-                  key={folder.id}
-                  onClick={() => setActiveFolder(folder.id)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                    activeFolder === folder.id ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <i className="fa-solid fa-folder w-3 text-center opacity-40"></i>
-                    <span className="truncate">{folder.name}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* INTEGRATED NAVIGATION & CALENDAR */}
-          <div className="mt-auto border-t border-[var(--border-color)] bg-black/[0.01] shrink-0">
-            <div className="p-3">
-              <MiniCalendar />
-            </div>
-            
-            <nav className="px-2 pb-2 space-y-0.5">
-              {[
-                { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги' },
-                { id: 'hobbies', icon: 'fa-masks-theater', label: 'Хобі' },
-                { id: 'completed', icon: 'fa-circle-check', label: 'Готово' },
-                { id: 'trash', icon: 'fa-trash-can', label: 'Корзина' }
-              ].map(item => (
-                <button 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:bg-black/5 transition-all"
-                >
-                  <i className={`fa-solid ${item.icon} w-3 text-center`}></i>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        <main className="flex-1 flex flex-col min-w-0 bg-[var(--bg-main)]">
-          <header className="bg-[var(--bg-card)] border-b border-[var(--border-color)] flex flex-col z-10 shrink-0">
-            <div className="px-4 md:px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                 <div className="flex flex-col">
-                    <Typography variant="h3" className="text-[var(--text-main)] text-sm md:text-base leading-none mb-1 font-black uppercase">
-                      {allAvailableFolders.find(f => f.id === activeFolder)?.label || 'Нотатки'}
-                    </Typography>
-                    <Typography variant="tiny" className="text-[var(--text-muted)] text-[7px] uppercase tracking-widest">{filteredNotes.length} записів</Typography>
-                 </div>
-              </div>
-              
-              {!isMobile && (
-                <form onSubmit={handleAddNote} className="flex gap-2">
-                   <input 
-                    value={newNoteTitle}
-                    onChange={(e) => setNewNoteTitle(e.target.value)}
-                    placeholder="Додати запис..."
-                    className="bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-1.5 px-4 text-[11px] font-bold outline-none focus:ring-2 focus:ring-[var(--primary)]/10 w-48 text-[var(--text-main)]"
-                  />
-                </form>
-              )}
-            </div>
-
-            <div className="lg:hidden px-4 pb-3 overflow-x-auto no-scrollbar flex items-center gap-2">
-              {allAvailableFolders.map(folder => (
-                <button
-                  key={folder.id}
-                  onClick={() => setActiveFolder(folder.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap text-[9px] font-black uppercase tracking-wider transition-all border ${
-                    activeFolder === folder.id 
-                      ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-md' 
-                      : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]'
-                  }`}
-                >
-                  <i className={`fa-solid ${folder.icon} text-[8px]`}></i>
-                  {folder.label}
-                </button>
-              ))}
-            </div>
-          </header>
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6">
-            <div className={`grid gap-2 md:gap-4 pb-32 ${selectedTaskId ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
-              {filteredNotes.map(note => {
-                const isSelected = selectedTaskId === note.id;
-                let previewText = "";
-                try {
-                   const blocks = JSON.parse(note.content || "[]");
-                   previewText = blocks.find((b: any) => b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || "";
-                } catch(e) {
-                   previewText = note.content || "";
-                }
-
-                return (
-                  <Card 
-                    key={note.id}
-                    padding="none"
-                    onClick={() => setSelectedTaskId(note.id)}
-                    className={`group bg-[var(--bg-card)] transition-all cursor-pointer flex flex-col justify-between relative p-3 rounded-xl border ${
-                      isSelected ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/5' : 'border-[var(--border-color)] hover:border-[var(--primary)]/30'
-                    } ${isMobile ? 'min-h-[80px]' : 'min-h-[120px]'}`}
-                  >
-                    <div className="flex flex-col h-full">
-                      <div className="flex justify-between items-start mb-1">
-                        <Typography variant="h3" className={`text-[var(--text-main)] leading-tight truncate pr-4 font-black uppercase ${isMobile ? 'text-[10px]' : 'text-[12px]'}`}>{note.title}</Typography>
-                        <button onClick={(e) => { e.stopPropagation(); if(confirm('Видалити?')) deleteTask(note.id); }} className="text-[var(--text-muted)] hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
-                          <i className="fa-solid fa-trash-can text-[9px]"></i>
-                        </button>
-                      </div>
-                      <p className={`font-medium text-[var(--text-muted)] line-clamp-2 leading-relaxed ${isMobile ? 'text-[9px]' : 'text-[10px]'}`}>
-                        {previewText || "Немає вмісту..."}
-                      </p>
-                      <div className="mt-auto pt-2 flex justify-between items-center opacity-40">
-                        <span className="text-[6px] font-black uppercase">{new Date(note.createdAt).toLocaleDateString('uk-UA')}</span>
-                        <div className="flex gap-1">
-                           {note.tags.map(t => <span key={t} className="text-[6px] font-black text-[var(--primary)] uppercase">#{t}</span>)}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-              
-              {filteredNotes.length === 0 && (
-                <div className="col-span-full py-20 flex flex-col items-center opacity-10 grayscale pointer-events-none">
-                   <i className="fa-solid fa-note-sticky text-6xl mb-4"></i>
-                   <Typography variant="h2" className="text-sm uppercase font-black tracking-widest">Тут порожньо</Typography>
-                </div>
-              )}
+      {/* EXPLORER ASIDE */}
+      <aside className={`${isMobile && selectedNoteId ? 'hidden' : 'w-full md:w-72'} bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+        <header className="p-4 border-b border-[var(--border-color)] space-y-3 bg-black/[0.01]">
+          <div className="flex justify-between items-center">
+            <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-[0.2em] text-[8px]">Дослідник знань</Typography>
+            <div className="flex gap-0.5">
+              <button onClick={() => startCreation('folder')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Нова папка"><i className="fa-solid fa-folder-plus"></i></button>
+              <button onClick={() => startCreation('note')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Новий документ"><i className="fa-solid fa-file-circle-plus"></i></button>
             </div>
           </div>
           
-          {isMobile && !selectedTaskId && (
-            <button 
-              onClick={() => handleAddNote()}
-              className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[140] active:scale-90 transition-all"
-            >
-              <i className="fa-solid fa-plus text-xl"></i>
-            </button>
+          <div className="relative group">
+            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-muted)] opacity-40 group-focus-within:opacity-100 transition-opacity"></i>
+            <input 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Пошук нотаток..." 
+              className="w-full h-7 bg-black/[0.03] border border-transparent focus:border-[var(--primary)]/30 focus:bg-white rounded-lg pl-8 pr-3 text-[11px] font-medium outline-none transition-all"
+            />
+          </div>
+        </header>
+
+        <div 
+          className="flex-1 overflow-y-auto custom-scrollbar py-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const sourceId = e.dataTransfer.getData('nodeId');
+            const sourceType = e.dataTransfer.getData('nodeType') as 'folder' | 'note';
+            if (sourceId) handleMove(sourceId, sourceType, undefined);
+          }}
+        >
+          {filteredFolders.map(folder => (
+            <NoteExplorerNode 
+              key={folder.id}
+              id={folder.id}
+              name={folder.name}
+              type="folder"
+              level={0}
+              expandedFolders={expandedFolders}
+              selectedId={selectedNoteId}
+              editingId={editingNodeId}
+              inputValue={inputValue}
+              creatingIn={creatingIn}
+              onToggle={toggleFolder}
+              onSelect={setSelectedNoteId}
+              onStartCreation={startCreation}
+              onFinishCreation={handleFinishCreation}
+              onStartRename={(id, name) => { setEditingNodeId(id); setInputValue(name); setTimeout(() => inputRef.current?.focus(), 50); }}
+              onFinishRename={(id, name) => handleRename(id, name, true)}
+              onDelete={(id) => { if(confirm('Видалити папку?')) deleteProject(id); }}
+              onMove={handleMove}
+              setInputValue={setInputValue}
+              inputRef={inputRef}
+              allNotes={tasks.filter(t => t.category === 'note' && !t.isDeleted)}
+              allFolders={noteFolders}
+            />
+          ))}
+
+          {filteredRootNotes.map(note => (
+            <NoteExplorerNode 
+              key={note.id}
+              id={note.id}
+              name={note.title}
+              type="note"
+              level={0}
+              expandedFolders={expandedFolders}
+              selectedId={selectedNoteId}
+              editingId={editingNodeId}
+              inputValue={inputValue}
+              creatingIn={creatingIn}
+              onToggle={() => {}}
+              onSelect={setSelectedNoteId}
+              onStartCreation={startCreation}
+              onFinishCreation={handleFinishCreation}
+              onStartRename={(id, name) => { setEditingNodeId(id); setInputValue(name); setTimeout(() => inputRef.current?.focus(), 50); }}
+              onFinishRename={(id, name) => handleRename(id, name, false)}
+              onDelete={(id) => { if(confirm('Видалити нотатку?')) deleteTask(id); }}
+              onMove={handleMove}
+              setInputValue={setInputValue}
+              inputRef={inputRef}
+              allNotes={[]}
+              allFolders={[]}
+            />
+          ))}
+
+          {creatingIn && !creatingIn.parentId && (
+            <div className="flex items-center gap-2 py-1 px-3 border-l-2 border-[var(--primary)] animate-in slide-in-from-left-1 duration-200" style={{ paddingLeft: '20px' }}>
+              <i className={`fa-solid ${creatingIn.type === 'folder' ? 'fa-folder' : 'fa-note-sticky'} text-[11px] w-4 text-center text-[var(--primary)]`}></i>
+              <input
+                ref={inputRef}
+                autoFocus
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onBlur={handleFinishCreation}
+                onKeyDown={e => e.key === 'Enter' && handleFinishCreation()}
+                placeholder="Назва..."
+                className="flex-1 bg-white border border-[var(--border-color)] rounded-md px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
+              />
+            </div>
           )}
-        </main>
-      </div>
-
-      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedTaskId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
-        {!isMobile && (
-          <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
-        )}
-        <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] relative flex flex-col">
-          {selectedTaskId ? (
-            <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
-          ) : null}
         </div>
-      </div>
 
-      {isAddingFolder && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur animate-in fade-in">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setIsAddingFolder(false)}></div>
-          <Card className="w-full max-w-sm relative z-10 p-6 rounded-3xl bg-card border-theme shadow-2xl">
-             <Typography variant="h2" className="mb-6 text-xl uppercase font-black">Нова папка</Typography>
-             <form onSubmit={handleCreateFolder} className="space-y-4">
-               <input autoFocus value={newFolderName} onChange={e => setNewFolderName(e.target.value)} placeholder="Назва..." className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none" />
-               <div className="flex gap-2">
-                 <Button variant="white" className="flex-1" onClick={() => setIsAddingFolder(false)}>ВІДМІНА</Button>
-                 <Button type="submit" className="flex-1">СТВОРИТИ</Button>
+        {/* BOTTOM WIDGET AREA */}
+        <div className="mt-auto border-t border-[var(--border-color)] bg-black/[0.01] shrink-0">
+          <div className="p-3">
+            <MiniCalendar />
+          </div>
+          <nav className="px-2 pb-3 space-y-0.5">
+            {[
+              { id: 'hashtags', icon: 'fa-hashtag', label: 'Всі теги' },
+              { id: 'trash', icon: 'fa-trash-can', label: 'Корзина' }
+            ].map(item => (
+              <button 
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)] transition-all"
+              >
+                <i className={`fa-solid ${item.icon} w-3 text-center opacity-60`}></i>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      {/* EDITOR AREA */}
+      <main className={`flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full transition-all duration-300 ${isMobile && !selectedNoteId ? 'hidden' : 'flex'}`}>
+        {selectedNoteId ? (
+          <div className="h-full flex flex-col animate-in fade-in duration-500">
+            {/* Breadcrumbs Header */}
+            <header className="h-10 border-b border-[var(--border-color)] bg-white/50 backdrop-blur-sm px-6 flex items-center gap-2 shrink-0">
+              {isMobile && (
+                <button onClick={() => setSelectedNoteId(null)} className="w-8 h-8 rounded-lg hover:bg-black/5 flex items-center justify-center text-slate-400 mr-2"><i className="fa-solid fa-chevron-left text-xs"></i></button>
+              )}
+              <div className="flex items-center gap-1.5 text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                <i className="fa-solid fa-database opacity-40"></i>
+                <i className="fa-solid fa-chevron-right text-[6px] opacity-30"></i>
+                {parentFolder && (
+                  <>
+                    <span className="hover:text-[var(--primary)] cursor-pointer transition-colors" onClick={() => setSelectedNoteId(null)}>{parentFolder.name}</span>
+                    <i className="fa-solid fa-chevron-right text-[6px] opacity-30"></i>
+                  </>
+                )}
+                <span className="text-[var(--text-main)] truncate max-w-[200px]">{selectedNote?.title}</span>
+              </div>
+            </header>
+            <div className="flex-1 overflow-hidden">
+              <TaskDetails 
+                task={selectedNote!} 
+                onClose={() => setSelectedNoteId(null)} 
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center select-none pointer-events-none grayscale opacity-10">
+            <div className="relative mb-10">
+               <i className="fa-solid fa-note-sticky text-[160px]"></i>
+               <div className="absolute inset-0 flex items-center justify-center translate-y-4">
+                  <i className="fa-solid fa-brain text-4xl text-white"></i>
                </div>
-             </form>
-          </Card>
+            </div>
+            <Typography variant="h2" className="text-3xl font-black uppercase tracking-[0.3em]">Knowledge Base</Typography>
+            <Typography variant="body" className="mt-4 text-xs font-bold uppercase tracking-[0.1em] opacity-60">Оберіть знання або створіть нові для архівації досвіду</Typography>
+          </div>
+        )}
+      </main>
+
+      {/* RESIZABLE INSPECTOR */}
+      {!isMobile && !selectedNoteId && (
+        <div className="hidden lg:flex flex-col border-l border-[var(--border-color)] bg-[var(--bg-card)] shadow-[-4px_0_24px_rgba(0,0,0,0.01)]" style={{ width: detailsWidth }}>
+          <div className="h-full w-full flex flex-col p-8 space-y-8 overflow-y-auto custom-scrollbar">
+             <section className="space-y-4">
+                <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[9px]">Статистика Бази</Typography>
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="bg-[var(--bg-main)] p-4 rounded-2xl border border-[var(--border-color)] text-center">
+                      <div className="text-2xl font-black text-[var(--text-main)] leading-none mb-1">{tasks.filter(t => t.category === 'note' && !t.isDeleted).length}</div>
+                      <div className="text-[7px] font-black uppercase text-[var(--text-muted)] opacity-60">Нотаток</div>
+                   </div>
+                   <div className="bg-[var(--bg-main)] p-4 rounded-2xl border border-[var(--border-color)] text-center">
+                      <div className="text-2xl font-black text-[var(--text-main)] leading-none mb-1">{noteFolders.length}</div>
+                      <div className="text-[7px] font-black uppercase text-[var(--text-muted)] opacity-60">Папок</div>
+                   </div>
+                </div>
+             </section>
+
+             <section className="space-y-4">
+                <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[9px]">Недавні зміни</Typography>
+                <div className="space-y-2">
+                   {tasks.filter(t => t.category === 'note' && !t.isDeleted).sort((a,b) => b.updatedAt - a.updatedAt).slice(0, 5).map(note => (
+                     <div key={note.id} onClick={() => setSelectedNoteId(note.id)} className="p-3 bg-[var(--bg-main)] hover:bg-white rounded-xl border border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-all cursor-pointer group flex items-center gap-3">
+                        <i className="fa-solid fa-file-lines text-[10px] text-[var(--text-muted)] group-hover:text-[var(--primary)]"></i>
+                        <span className="text-[10px] font-bold text-[var(--text-main)] truncate flex-1 uppercase tracking-tight">{note.title}</span>
+                     </div>
+                   ))}
+                </div>
+             </section>
+          </div>
         </div>
       )}
     </div>

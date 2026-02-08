@@ -94,6 +94,15 @@ const Dashboard: React.FC = () => {
     });
   }, [tasks, todayTimestamp, taskFilter, completingIds]);
 
+  const urgentDeadlines = useMemo(() => {
+    return tasks.filter(t => 
+      !t.isDeleted && 
+      t.status !== TaskStatus.DONE && 
+      t.dueDate && 
+      t.dueDate <= todayTimestamp + (7 * 24 * 60 * 60 * 1000)
+    ).sort((a, b) => (a.dueDate || 0) - (b.dueDate || 0)).slice(0, 3);
+  }, [tasks, todayTimestamp]);
+
   const handleToggleTaskWithDelay = (task: Task) => {
     if (task.status !== TaskStatus.DONE) {
       // Animation START
@@ -144,7 +153,7 @@ const Dashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Typography variant="h1" className="text-xl font-black text-[var(--text-main)]">Сьогодні</Typography>
-                <div className="text-[10px] font-black text-[var(--text-muted)] opacity-50 uppercase tracking-widest pt-1">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+                <div className="text-[10px] font-black text-[var(--text-muted)] opacity-50 uppercase tracking-widest pt-1">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short' , day: 'numeric', month: 'short' })}</div>
               </div>
               <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
                  <button onClick={() => setMainTab('tasks')} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
@@ -247,6 +256,46 @@ const Dashboard: React.FC = () => {
                    <div className="lg:col-span-4 space-y-6">
                       <section className="space-y-2">
                          <div className="flex justify-between items-center px-1">
+                            <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Гарячі дедлайни</Typography>
+                            <i className="fa-solid fa-flag-checkered text-rose-500 text-[10px]"></i>
+                         </div>
+                         <div className="space-y-1">
+                            {urgentDeadlines.map(ev => {
+                              const isOverdue = ev.dueDate! < Date.now();
+                              const isCritical = ev.dueDate! < Date.now() + 3 * 3600000; // Less than 3 hours
+
+                              return (
+                                <Card 
+                                  key={ev.id} 
+                                  padding="none" 
+                                  onClick={() => setSelectedTaskId(ev.id)} 
+                                  className={`p-1.5 bg-[var(--bg-card)] border-l-4 border-theme rounded flex items-center gap-2.5 shadow-sm cursor-pointer transition-all group ${isOverdue ? 'border-l-rose-600 bg-rose-50/30' : 'border-l-rose-500 hover:bg-rose-50'}`}
+                                >
+                                   <div className="min-w-0 flex-1">
+                                      <div className={`text-[10px] font-black truncate uppercase text-[var(--text-main)] flex items-center gap-2`}>
+                                        {ev.title}
+                                        {isCritical && <i className="fa-solid fa-triangle-exclamation text-rose-500 animate-pulse text-[8px]"></i>}
+                                      </div>
+                                      <div className={`text-[7px] font-bold uppercase ${isOverdue ? 'text-rose-700 animate-pulse' : 'text-rose-600'}`}>
+                                        {isOverdue ? 'ПРОТЕРМІНОВАНО: ' : 'Термін: '} 
+                                        {new Date(ev.dueDate!).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})} 
+                                        {' '}
+                                        {new Date(ev.dueDate!).toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}
+                                      </div>
+                                   </div>
+                                </Card>
+                              );
+                            })}
+                            {urgentDeadlines.length === 0 && (
+                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest">
+                                Жодних дедлайнів на горизонті
+                              </div>
+                            )}
+                         </div>
+                      </section>
+
+                      <section className="space-y-2">
+                         <div className="flex justify-between items-center px-1">
                             <Typography variant="tiny" className="font-black uppercase text-[8px] tracking-[0.2em] text-[var(--text-muted)] opacity-70">Радар подій</Typography>
                             <button onClick={() => { setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
                                <i className="fa-solid fa-calendar-days text-[10px]"></i>
@@ -267,11 +316,6 @@ const Dashboard: React.FC = () => {
                                  </div>
                               </Card>
                             ))}
-                            {tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).length === 0 && (
-                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest">
-                                Горизонт чистий
-                              </div>
-                            )}
                          </div>
                       </section>
                    </div>
