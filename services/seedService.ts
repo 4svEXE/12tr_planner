@@ -2,7 +2,14 @@
 import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory } from '../types';
 
 export const generateSeedData = () => {
-  const today = new Date().setHours(0, 0, 0, 0);
+  const now = new Date();
+  const day = now.getDay();
+  // Коригуємо до понеділка: якщо неділя (0), віднімаємо 6 днів, інакше (day-1)
+  const diff = now.getDate() - (day === 0 ? 6 : day - 1);
+  const startMonday = new Date(now.setDate(diff));
+  startMonday.setHours(0, 0, 0, 0);
+  
+  const todayTimestamp = startMonday.getTime();
 
   // 1. Мінімальні теги
   const tags: Tag[] = [
@@ -62,7 +69,7 @@ export const generateSeedData = () => {
   };
 
   const cycle: TwelveWeekYear = { 
-    id: 'c1', startDate: today, endDate: today + 86400000 * 84, 
+    id: 'c1', startDate: todayTimestamp, endDate: todayTimestamp + 86400000 * 84, 
     currentWeek: 1, globalExecutionScore: 0, updatedAt: Date.now() 
   };
 

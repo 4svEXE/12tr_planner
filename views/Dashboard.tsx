@@ -25,7 +25,6 @@ const Dashboard: React.FC = () => {
   const [showInsight, setShowInsight] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
-  // Local state for delayed completion animation
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   
   const { detailsWidth, startResizing, isResizing } = useResizer(350, 900);
@@ -68,19 +67,20 @@ const Dashboard: React.FC = () => {
     return { kpi, doneCount: doneTasks.length, totalCount: periodTasks.length, spheres };
   }, [tasks, projects, progressPeriod]);
 
+  const habitTasks = useMemo(() => 
+    tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))),
+  [tasks]);
+
   const habitCompletionRate = useMemo(() => {
-    const dailyHabits = tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit')));
-    if (dailyHabits.length === 0) return 0;
-    const completedCount = dailyHabits.filter(h => h.habitHistory?.[dateStr]?.status === 'completed').length;
-    return Math.round((completedCount / dailyHabits.length) * 100);
-  }, [tasks, dateStr]);
+    if (habitTasks.length === 0) return 0;
+    const completedCount = habitTasks.filter(h => h.habitHistory?.[dateStr]?.status === 'completed').length;
+    return Math.round((completedCount / habitTasks.length) * 100);
+  }, [habitTasks, dateStr]);
 
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
       if (t.isDeleted) return false;
-      // Allow tasks that are currently being animated to stay in the list
       if (t.status === TaskStatus.DONE && !completingIds.has(t.id)) return false;
-      
       if (t.projectSection === 'habits' || t.category === 'note') return false;
       const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp;
       if (taskFilter === 'calendar') return isScheduledForToday;
@@ -103,16 +103,17 @@ const Dashboard: React.FC = () => {
     ).sort((a, b) => (a.dueDate || 0) - (b.dueDate || 0)).slice(0, 3);
   }, [tasks, todayTimestamp]);
 
+  const upcomingRadarEvents = useMemo(() => {
+    return tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).slice(0, 3);
+  }, [tasks, todayTimestamp]);
+
   const handleToggleTaskWithDelay = (task: Task) => {
     if (task.status !== TaskStatus.DONE) {
-      // Animation START
       setCompletingIds(prev => {
         const next = new Set(prev);
         next.add(task.id);
         return next;
       });
-      
-      // Delay before store update (giving time for strike-through animation)
       setTimeout(() => {
         toggleTaskStatus(task);
         setCompletingIds(prev => {
@@ -210,7 +211,7 @@ const Dashboard: React.FC = () => {
                             </div>
                          </div>
                          <div className="grid grid-cols-1 gap-1">
-                            {filteredQuests.map(task => {
+                            {filteredQuests.length > 0 ? filteredQuests.map(task => {
                               const isCompleting = completingIds.has(task.id);
                               const isDone = task.status === TaskStatus.DONE;
                               const isSelected = selectedTaskId === task.id;
@@ -226,7 +227,13 @@ const Dashboard: React.FC = () => {
                                   </div>
                                 </Card>
                               );
-                            })}
+                            }) : (
+                              <div className="py-12 bg-black/[0.02] border-2 border-dashed border-theme rounded-2xl flex flex-col items-center justify-center opacity-40 grayscale select-none">
+                                 <i className="fa-solid fa-mountain-sun text-4xl mb-3"></i>
+                                 <Typography variant="tiny" className="font-black">Горизонт чистий</Typography>
+                                 <p className="text-[9px] font-bold mt-1">Додайте нові квести у вхідні або перегляньте беклог.</p>
+                              </div>
+                            )}
                          </div>
                       </section>
 
@@ -238,7 +245,7 @@ const Dashboard: React.FC = () => {
                            </button>
                          </div>
                          <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
-                            {tasks.filter(t => !t.isDeleted && !t.isArchived && t.projectSection === 'habits').map(habit => {
+                            {habitTasks.length > 0 ? habitTasks.map(habit => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                                return (
                                  <button key={habit.id} onClick={() => toggleHabitStatus(habit.id, dateStr, isDone ? 'none' : 'completed')}
@@ -249,7 +256,12 @@ const Dashboard: React.FC = () => {
                                    <span className="text-[6px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
                                  </button>
                                );
-                            })}
+                            }) : (
+                              <button onClick={() => setActiveTab('habits')} className="flex-1 py-4 border-2 border-dashed border-theme rounded-2xl flex flex-col items-center justify-center opacity-30 group hover:opacity-100 hover:border-primary/50 transition-all">
+                                 <i className="fa-solid fa-plus text-xs mb-1"></i>
+                                 <span className="text-[7px] font-black uppercase tracking-widest">Створити ритуал</span>
+                              </button>
+                            )}
                          </div>
                       </section>
                    </div>
@@ -260,9 +272,9 @@ const Dashboard: React.FC = () => {
                             <i className="fa-solid fa-flag-checkered text-rose-500 text-[10px]"></i>
                          </div>
                          <div className="space-y-1">
-                            {urgentDeadlines.map(ev => {
+                            {urgentDeadlines.length > 0 ? urgentDeadlines.map(ev => {
                               const isOverdue = ev.dueDate! < Date.now();
-                              const isCritical = ev.dueDate! < Date.now() + 3 * 3600000; // Less than 3 hours
+                              const isCritical = ev.dueDate! < Date.now() + 3 * 3600000;
 
                               return (
                                 <Card 
@@ -285,9 +297,8 @@ const Dashboard: React.FC = () => {
                                    </div>
                                 </Card>
                               );
-                            })}
-                            {urgentDeadlines.length === 0 && (
-                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest">
+                            }) : (
+                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest border border-dashed border-theme rounded-lg">
                                 Жодних дедлайнів на горизонті
                               </div>
                             )}
@@ -302,7 +313,7 @@ const Dashboard: React.FC = () => {
                             </button>
                          </div>
                          <div className="space-y-1">
-                            {tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).slice(0, 3).map(ev => (
+                            {upcomingRadarEvents.length > 0 ? upcomingRadarEvents.map(ev => (
                               <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded flex items-center gap-2.5 shadow-sm cursor-pointer hover:border-[var(--primary)]/30 group">
                                  <button 
                                     onClick={(e) => { e.stopPropagation(); toggleTaskStatus(ev); }} 
@@ -315,7 +326,11 @@ const Dashboard: React.FC = () => {
                                     <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.scheduledDate!).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
                                  </div>
                               </Card>
-                            ))}
+                            )) : (
+                              <div className="py-4 text-center opacity-20 italic text-[8px] font-black uppercase tracking-widest border border-dashed border-theme rounded-lg">
+                                Тиждень без великих подій
+                              </div>
+                            )}
                          </div>
                       </section>
                    </div>

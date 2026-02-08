@@ -53,4 +53,5 @@ export interface Task {
   plannerWeek?: number;
   plannerDay?: number; // 0-6 (Mon-Sun)
   plannerComment?: string;
+  order?: number; // Порядок відображення
 }

@@ -138,7 +138,7 @@ const NotesView: React.FC = () => {
       <aside className={`${isMobile && selectedNoteId ? 'hidden' : 'w-full md:w-72'} bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
         <header className="p-4 border-b border-[var(--border-color)] space-y-3 bg-black/[0.01]">
           <div className="flex justify-between items-center">
-            <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-[0.2em] text-[8px]">Дослідник знань</Typography>
+            <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[8px]">Дослідник знань</Typography>
             <div className="flex gap-0.5">
               <button onClick={() => startCreation('folder')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Нова папка"><i className="fa-solid fa-folder-plus"></i></button>
               <button onClick={() => startCreation('note')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Новий документ"><i className="fa-solid fa-file-circle-plus"></i></button>
@@ -260,7 +260,7 @@ const NotesView: React.FC = () => {
       </aside>
 
       {/* EDITOR AREA */}
-      <main className={`flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full transition-all duration-300 ${isMobile && !selectedNoteId ? 'hidden' : 'flex'}`}>
+      <main className={`flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full transition-all duration-300 relative ${isMobile && !selectedNoteId ? 'hidden' : 'flex'}`}>
         {selectedNoteId ? (
           <div className="h-full flex flex-col animate-in fade-in duration-500">
             {/* Breadcrumbs Header */}
@@ -298,6 +298,17 @@ const NotesView: React.FC = () => {
             <Typography variant="h2" className="text-3xl font-black uppercase tracking-[0.3em]">Knowledge Base</Typography>
             <Typography variant="body" className="mt-4 text-xs font-bold uppercase tracking-[0.1em] opacity-60">Оберіть знання або створіть нові для архівації досвіду</Typography>
           </div>
+        )}
+
+        {/* Floating Action Button for Notes */}
+        {!selectedNoteId && (
+          <button
+            onClick={() => startCreation('note')}
+            className="fixed bottom-24 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all border-4 border-white"
+            title="Нова нотатка"
+          >
+            <i className="fa-solid fa-plus text-2xl"></i>
+          </button>
         )}
       </main>
 

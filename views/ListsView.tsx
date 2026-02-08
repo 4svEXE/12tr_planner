@@ -225,6 +225,17 @@ const ListsView: React.FC = () => {
 
   const sections = activeProject?.sections || [{ id: 'actions', title: 'Завдання' }];
 
+  const handleFabClick = () => {
+    if (selectedProjectId) {
+      const activeProject = projects.find(p => p.id === selectedProjectId);
+      const sections = activeProject?.sections || [{ id: 'actions', title: 'Завдання' }];
+      const targetSectionId = sections[0]?.id || 'actions';
+      handleAddTaskAndEdit(selectedProjectId, targetSectionId);
+    } else {
+      startCreation('list');
+    }
+  };
+
   const renderExplorer = () => (
     <aside className={`${isMobile && selectedProjectId ? 'hidden' : 'w-full md:w-64'} bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 h-full`}>
       <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/[0.02] shrink-0">
@@ -482,6 +493,17 @@ const ListsView: React.FC = () => {
             </div>
           )}
         </main>
+
+        {/* Floating Action Button for Lists/Tasks */}
+        {!selectedTaskId && (
+          <button
+            onClick={handleFabClick}
+            className="fixed bottom-24 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all border-4 border-white"
+            title={selectedProjectId ? "Додати квест" : "Створити список"}
+          >
+            <i className="fa-solid fa-plus text-2xl"></i>
+          </button>
+        )}
       </div>
 
       <div

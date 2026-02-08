@@ -44,14 +44,11 @@ const GoalCard: React.FC<GoalCardProps> = ({
     const directTasks = tasks.filter(t => !t.isDeleted && t.projectId === goal.id && t.projectSection !== 'habits' && (!t.recurrence || t.recurrence === 'none'));
     const subProjectNextActions = subProjects.map(sp => {
       const spTasks = tasks.filter(t => !t.isDeleted && t.projectId === sp.id && t.projectSection !== 'habits').sort((a, b) => a.createdAt - b.createdAt);
-      // Keep completed task visible if it is in the process of being struck out
       const relevant = spTasks.filter(t => t.status !== TaskStatus.DONE || completingIds.has(t.id));
       return relevant.length > 0 ? [relevant[0]] : [];
     }).flat();
     
-    // Filter out completed tasks that are not being animated
-    const result = [...directTasks, ...subProjectNextActions].filter(t => t.status !== TaskStatus.DONE || completingIds.has(t.id));
-    return result;
+    return [...directTasks, ...subProjectNextActions].filter(t => t.status !== TaskStatus.DONE || completingIds.has(t.id));
   }, [tasks, goal.id, subProjects, completingIds]);
 
   const goalHabits = useMemo(() => {
@@ -123,7 +120,15 @@ const GoalCard: React.FC<GoalCardProps> = ({
                <Typography variant="h3" className="text-xs md:text-[14px] font-black uppercase tracking-tight truncate leading-none">{goal.name}</Typography>
                <div className="text-[7px] font-black py-0 px-1.5 rounded-full bg-primary/10 text-primary" title="Tactic KPI">{plannerEfficiency}%</div>
              </div>
-             <div className="text-[7px] font-black text-muted uppercase tracking-widest">{goal.sphere || 'General'}</div>
+             <div className="flex gap-2 items-center">
+                <div className="text-[7px] font-black text-muted uppercase tracking-widest">{goal.sphere || 'General'}</div>
+                {goal.lagMeasure && (
+                  <div className="flex items-center gap-1 text-[7px] font-black text-rose-500 uppercase">
+                    <div className="w-1 h-1 rounded-full bg-rose-500"></div>
+                    Lag: {goal.lagMeasure}
+                  </div>
+                )}
+             </div>
           </div>
           <div className="flex gap-2">
             {goal.status === 'active' ? (
@@ -145,6 +150,25 @@ const GoalCard: React.FC<GoalCardProps> = ({
 
       {isExpanded && (
         <div className="px-3 md:px-4 pb-4 pt-1 bg-black/5 border-t border-theme animate-in slide-in-from-top-2 duration-300">
+           
+           {/* 12TR METRICS AREA */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-3">
+              <div className="bg-white/60 p-2 rounded-xl border border-emerald-100 flex items-center gap-3">
+                 <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-[8px] shadow-sm"><i className="fa-solid fa-forward"></i></div>
+                 <div>
+                    <div className="text-[6px] font-black text-emerald-600 uppercase">Lead Measure (Дія)</div>
+                    <div className="text-[9px] font-bold text-slate-700 leading-tight">{goal.leadMeasure || 'Не вказано'}</div>
+                 </div>
+              </div>
+              <div className="bg-white/60 p-2 rounded-xl border border-rose-100 flex items-center gap-3">
+                 <div className="w-6 h-6 rounded-lg bg-rose-500 text-white flex items-center justify-center text-[8px] shadow-sm"><i className="fa-solid fa-bullseye"></i></div>
+                 <div>
+                    <div className="text-[6px] font-black text-rose-600 uppercase">Lag Measure (Результат)</div>
+                    <div className="text-[9px] font-bold text-slate-700 leading-tight">{goal.lagMeasure || 'Не вказано'}</div>
+                 </div>
+              </div>
+           </div>
+
            <div className="flex justify-between items-center mb-3 overflow-x-auto no-scrollbar pb-1 pt-2">
               <div className="flex gap-1 bg-main p-1 rounded-xl border border-theme shrink-0">
                 {[{ id: 'actions', label: 'Дії', icon: 'fa-bolt' }, { id: 'subprojects', label: 'Етапи', icon: 'fa-layer-group' }, { id: 'habits', label: 'Звички', icon: 'fa-repeat' }].map(t => (
@@ -170,11 +194,10 @@ const GoalCard: React.FC<GoalCardProps> = ({
                    const tProject = projects.find(p => p.id === task.projectId);
                    const isCompleting = completingIds.has(task.id);
                    const isDone = task.status === TaskStatus.DONE;
-                   const isDoing = task.status === TaskStatus.DOING;
                    
                    return (
                     <div key={task.id} draggable onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)} onClick={() => onTaskClick(task.id)}
-                      className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-theme group transition-all cursor-pointer ${isDoing ? 'opacity-50 grayscale' : 'hover:border-primary/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-theme group transition-all cursor-pointer ${isDone ? 'opacity-50 grayscale' : 'hover:border-primary/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
                        <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-card border-theme group-hover:border-primary'}`}>
                           {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
                        </button>
@@ -182,7 +205,6 @@ const GoalCard: React.FC<GoalCardProps> = ({
                          <div className={`text-[12px] font-bold truncate strike-anim ${isDone || isCompleting ? 'is-striking text-muted line-through opacity-50' : 'text-main'}`}>{task.title}</div>
                          {tProject && tProject.type === 'subproject' && <span className="text-[7px] font-black uppercase text-primary opacity-60"># {tProject.name}</span>}
                        </div>
-                       <i className="fa-solid fa-chevron-right text-[8px] text-muted opacity-0 group-hover:opacity-100 transition-all"></i>
                     </div>
                  )})}
 
@@ -207,7 +229,6 @@ const GoalCard: React.FC<GoalCardProps> = ({
                          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[9px]"><i className={`fa-solid ${h.recurrence && h.recurrence !== 'none' ? 'fa-calendar-day' : 'fa-repeat'}`}></i></div>
                          <div className="flex flex-col">
                             <span className="text-[12px] font-bold text-main leading-none mb-1">{h.title}</span>
-                            {h.recurrence && h.recurrence !== 'none' && <span className="text-[6px] font-black text-indigo-500 uppercase">Повторювання: {h.recurrence}</span>}
                          </div>
                       </div>
                       <Badge variant={h.recurrence && h.recurrence !== 'none' ? 'indigo' : 'emerald'} className="text-[7px] py-0 px-1">{h.recurrence && h.recurrence !== 'none' ? 'PLANNER' : 'DAILY'}</Badge>

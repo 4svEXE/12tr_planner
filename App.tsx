@@ -26,7 +26,7 @@ import NotificationToast from './components/ui/NotificationToast';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, setActiveTab, tasks, projects, aiEnabled, theme } = useApp();
+  const { activeTab, setActiveTab, tasks, projects, aiEnabled, theme, plannerProjectId, setPlannerProjectId } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [activeAlerts, setActiveAlerts] = useState<Task[]>([]);
@@ -123,7 +123,7 @@ const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'today': return <Dashboard />;
       case 'dashboard': return <Dashboard />;
-      case 'planner': return <PlannerView />;
+      case 'planner': return <PlannerView projectId={plannerProjectId} onExitProjectMode={() => setPlannerProjectId(undefined)} />;
       case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;

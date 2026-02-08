@@ -29,6 +29,7 @@ interface AppContextType extends StoreState {
   addTask: (title: string, category?: string, projectId?: string, projectSection?: string, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
   addProject: (project: Omit<Project, 'id' | 'progress' | 'status' | 'updatedAt'>) => string;
   updateTask: (task: Task) => void;
+  reorderTasks: (activeId: string, overId: string) => void;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
   deleteTask: (taskId: string, permanent?: boolean) => void;
@@ -87,6 +88,8 @@ interface AppContextType extends StoreState {
   lastSyncTime: number | null;
   calendarDate: number;
   calendarViewMode: CalendarViewMode;
+  plannerProjectId: string | undefined;
+  setPlannerProjectId: (id: string | undefined) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -180,6 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
 
   const [calendarDate, setCalendarDate] = useState<number>(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
+  const [plannerProjectId, setPlannerProjectId] = useState<string | undefined>(undefined);
   
   const syncTimeoutRef = useRef<number | null>(null);
 
@@ -321,8 +325,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
           projects: mergeItems(state.projects, cloudData.projects),
           people: mergeItems(state.people, cloudData.people),
           diary: mergeItems(state.diary, cloudData.diary),
-          character: (state.character.updatedAt || 0) > (cloudData.character.updatedAt || 0) ? state.character : cloudData.character,
-          cycle: (state.cycle.updatedAt || 0) > (cloudData.cycle.updatedAt || 0) ? state.cycle : cloudData.cycle,
+          character: (state.character.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? state.character : cloudData.character,
+          cycle: (state.cycle.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? state.cycle : cloudData.cycle,
         });
         setState(merged);
         localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(merged));
@@ -354,15 +358,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     detailsWidth, setDetailsWidth: setDetailsWidthState,
     isSyncing, lastSyncTime, syncData,
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
+    plannerProjectId, setPlannerProjectId,
     setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
     updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } }),
     updateTask: (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] }),
+    reorderTasks: (activeId: string, overId: string) => {
+      const tasks = [...state.tasks];
+      const activeIdx = tasks.findIndex(t => t.id === activeId);
+      const overIdx = tasks.findIndex(t => t.id === overId);
+      if (activeIdx === -1 || overIdx === -1) return;
+      const [removed] = tasks.splice(activeIdx, 1);
+      tasks.splice(overIdx, 0, removed);
+      // Оновлюємо поле order для всіх або лише змінених
+      const updatedTasks = tasks.map((t, i) => ({ ...t, order: i, updatedAt: Date.now() }));
+      pushUpdate({ ...state, tasks: updatedTasks });
+    },
     updateProject: (p: Project) => pushUpdate({ ...state, projects: state.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) }),
     addTask: (title: string, categoryId = 'unsorted', projectId?: string, section: string = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
       const id = Math.random().toString(36).substr(2,9);
       const now = Date.now();
-      const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section as any, isEvent, scheduledDate: date, personId };
+      // Порядок - на початок (0) або кінець списку
+      const order = state.tasks.length;
+      const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section as any, isEvent, scheduledDate: date, personId, order };
       pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });
       return id;
     },
