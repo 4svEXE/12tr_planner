@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus } from '../types';
@@ -16,6 +17,8 @@ const HabitsView: React.FC = () => {
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [touchTargetId, setTouchTargetId] = useState<string | null>(null);
+  
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const handleCreateHabit = (e: React.FormEvent) => {
@@ -27,7 +30,6 @@ const HabitsView: React.FC = () => {
     }
   };
 
-  // Фільтрація та сортування звичок (враховуючи поле order)
   const habits = useMemo(() => 
     tasks.filter(t => 
       !t.isDeleted && 
@@ -46,7 +48,7 @@ const HabitsView: React.FC = () => {
         date: d.getDate(),
         dateStr: d.toISOString().split('T')[0],
         timestamp: d.getTime(),
-        dayOfWeek: (d.getDay() + 6) % 7 // 0=Mon, 6=Sun
+        dayOfWeek: (d.getDay() + 6) % 7
       };
     });
   }, []);
@@ -96,24 +98,25 @@ const HabitsView: React.FC = () => {
     setActiveCell(null);
   };
 
-  // Drag and Drop handlers
+  // Logic remains for background sorting, but UI is removed
   const onDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.setData('habitId', id);
     e.dataTransfer.effectAllowed = 'move';
-    // Visual ghost tweak
     const ghost = e.currentTarget as HTMLElement;
-    setTimeout(() => ghost.style.opacity = '0.3', 0);
+    setTimeout(() => ghost.classList.add('opacity-40'), 0);
   };
 
   const onDragEnd = (e: React.DragEvent) => {
     setDraggedId(null);
+    setTouchTargetId(null);
     const ghost = e.currentTarget as HTMLElement;
-    ghost.style.opacity = '1';
+    ghost.classList.remove('opacity-40');
   };
 
-  const onDragOver = (e: React.DragEvent) => {
+  const onDragOver = (e: React.DragEvent, id: string) => {
     e.preventDefault();
+    if (id !== touchTargetId) setTouchTargetId(id);
     e.dataTransfer.dropEffect = 'move';
   };
 
@@ -123,11 +126,33 @@ const HabitsView: React.FC = () => {
     if (sourceId && sourceId !== targetId) {
       reorderTasks(sourceId, targetId);
     }
+    setTouchTargetId(null);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggedId) return;
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const row = target?.closest('tr');
+    if (row && row.getAttribute('data-id')) {
+      const overId = row.getAttribute('data-id');
+      if (overId !== touchTargetId) {
+        setTouchTargetId(overId);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggedId && touchTargetId && draggedId !== touchTargetId) {
+      reorderTasks(draggedId, touchTargetId);
+      if (navigator.vibrate) navigator.vibrate([10, 30]);
+    }
+    setDraggedId(null);
+    setTouchTargetId(null);
   };
 
   const selectedHabit = useMemo(() => tasks.find(h => h.id === selectedHabitId), [tasks, selectedHabitId]);
 
-  // FIX: Added activeHabitForModal to handle habit data in the center modal
   const activeHabitForModal = useMemo(() => {
     if (!activeCell) return null;
     return tasks.find(h => h.id === activeCell.habitId);
@@ -182,18 +207,26 @@ const HabitsView: React.FC = () => {
                 const streak = calculateSmartStreak(habit);
                 const color = getHabitColor(habit);
                 const scheduledDays = habit.daysOfWeek || [0,1,2,3,4,5,6];
+                const isItemDragged = draggedId === habit.id;
+                const isTarget = touchTargetId === habit.id;
 
                 return (
                   <tr 
                     key={habit.id} 
+                    data-id={habit.id}
                     draggable 
                     onDragStart={(e) => onDragStart(e, habit.id)}
                     onDragEnd={onDragEnd}
-                    onDragOver={onDragOver}
+                    onDragOver={(e) => onDragOver(e, habit.id)}
                     onDrop={(e) => onDrop(e, habit.id)}
-                    className={`group hover:bg-[var(--bg-main)]/10 transition-all cursor-move ${draggedId === habit.id ? 'opacity-30' : ''}`}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className={`group transition-all duration-200 ${
+                      isItemDragged ? 'z-50 bg-white shadow-2xl scale-[1.02] border-y-2 border-[var(--primary)]' : 
+                      isTarget ? 'border-t-4 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
+                    }`}
                   >
-                    <td className="sticky left-0 z-30 bg-[var(--bg-main)] py-1.5 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] cursor-pointer w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                    <td className="sticky left-0 z-30 bg-inherit py-2 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
                           <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
@@ -203,11 +236,10 @@ const HabitsView: React.FC = () => {
                           <span>{streak}</span>
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <i className="fa-solid fa-grip-vertical text-[8px] text-slate-300 opacity-0 group-hover:opacity-100"></i>
-                        <div className="text-[14px] font-light text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-bold text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
                           {habit.title}
-                          {streak >= 3 && <span className="text-[var(--primary)] text-[7px]">🔥</span>}
+                          {streak >= 3 && <span className="text-[var(--primary)] text-[7px] animate-pulse">🔥</span>}
                         </div>
                       </div>
                     </td>
@@ -220,16 +252,18 @@ const HabitsView: React.FC = () => {
                       
                       return (
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
-                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-10 flex flex-col items-center justify-center transition-all group/btn`}>
+                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-12 flex flex-col items-center justify-center transition-all group/btn`}>
                             <div className="relative">
                               {status === 'completed' ? (
-                                <i className="fa-solid fa-check text-sm" style={{ color: color }}></i>
+                                <div className="w-6 h-6 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
+                                   <i className="fa-solid fa-check text-white text-[10px]"></i>
+                                </div>
                               ) : status === 'skipped' ? (
                                 <i className="fa-solid fa-xmark text-[var(--text-muted)] text-[8px] opacity-20"></i>
                               ) : (
-                                <span className={`text-[11px] font-light transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>?</span>
+                                <span className={`text-[11px] font-black transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
                               )}
-                              {hasNote && <div className="absolute -top-1 -right-1 w-1 h-1 bg-[var(--primary)] rounded-full shadow-sm"></div>}
+                              {hasNote && <div className="absolute -top-1.5 -right-1.5 w-1.5 h-1.5 bg-[var(--primary)] rounded-full border-2 border-white shadow-sm"></div>}
                             </div>
                           </button>
                         </td>
@@ -251,10 +285,8 @@ const HabitsView: React.FC = () => {
         </div>
       </div>
 
-      {/* CENTERED FILLING MODAL */}
-      {/* FIX: Use activeHabitForModal instead of habit */}
       {activeCell && activeHabitForModal && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 tiktok-blur">
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 tiktok-blur">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveCell(null)}></div>
           <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
             <header className="flex justify-between items-center mb-6">
@@ -325,7 +357,7 @@ const HabitsView: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 tiktok-blur">
+        <div className="fixed inset-0 z-[750] flex items-center justify-center p-4 tiktok-blur">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAdding(false)}></div>
           <div className="bg-[var(--bg-card)] w-full max-w-xs rounded-[2rem] border border-[var(--border-color)] p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>
@@ -344,7 +376,7 @@ const HabitsView: React.FC = () => {
       )}
 
       {selectedHabit && (
-        <div className="fixed top-0 right-0 h-full w-[340px] max-w-full bg-[var(--bg-sidebar)] border-l border-[var(--border-color)] z-[110] shadow-[-10px_0_40px_rgba(0,0,0,0.05)]">
+        <div className="fixed top-0 right-0 h-full w-full md:w-[340px] bg-[var(--bg-sidebar)] border-l border-[var(--border-color)] z-[800] shadow-[-10px_0_40px_rgba(0,0,0,0.2)] animate-in slide-in-from-right duration-300">
           <HabitStatsSidebar 
             habit={selectedHabit} 
             onClose={() => setSelectedHabitId(null)}

@@ -5,7 +5,7 @@ import Typography from './ui/Typography';
 
 interface Block {
   id: string;
-  type: 'h1' | 'h2' | 'h3' | 'text' | 'task' | 'quote' | 'bullet' | 'divider' | 'callout';
+  type: 'h1' | 'h2' | 'h3' | 'text' | 'task' | 'quote' | 'bullet' | 'number' | 'divider' | 'callout';
   content: string;
   checked?: boolean;
   metadata?: {
@@ -23,14 +23,17 @@ interface DiaryEditorProps {
 }
 
 const BLOCK_TYPES = [
-  { id: 'text', label: 'Текст', icon: 'fa-font', desc: 'Просто пишіть...' },
   { id: 'h1', label: 'Заголовок 1', icon: 'fa-heading', desc: 'Великий розділ' },
   { id: 'h2', label: 'Заголовок 2', icon: 'fa-heading', desc: 'Середній розділ', size: 'text-[10px]' },
-  { id: 'task', label: 'To-do список', icon: 'fa-square-check', desc: 'Відстежуйте завдання' },
-  { id: 'bullet', label: 'Список', icon: 'fa-list-ul', desc: 'Простий список' },
-  { id: 'quote', label: 'Цитата', icon: 'fa-quote-left', desc: 'Виділіть думку' },
-  { id: 'callout', label: 'Callout', icon: 'fa-lightbulb', desc: 'Важливе зауваження' },
-  { id: 'divider', label: 'Розділювач', icon: 'fa-minus', desc: 'Лінія розділу' },
+  { id: 'h3', label: 'Заголовок 3', icon: 'fa-heading', desc: 'Малий розділ', size: 'text-[8px]' },
+  { id: 'bullet', label: 'Маркований список', icon: 'fa-list-ul', desc: 'Класичний список' },
+  { id: 'number', label: 'Нумерований список', icon: 'fa-list-ol', desc: 'Порядковий список' },
+  { id: 'task', label: 'Перевірте елемент', icon: 'fa-square-check', desc: 'Чек-ліст підзадач' },
+  { id: 'quote', label: 'Цитата', icon: 'fa-quote-left', desc: 'Виділити текстом' },
+  { id: 'divider', label: 'Горизонтальна лінія', icon: 'fa-minus', desc: 'Роздільник блоків' },
+  { id: 'attachment', label: 'Вкладення', icon: 'fa-paperclip', desc: 'Додати файл', action: 'attach' },
+  { id: 'subtask', label: 'Підзадача', icon: 'fa-diagram-predecessor', desc: 'Додати внутрішню дію', action: 'subtask' },
+  { id: 'tag', label: 'Мітка', icon: 'fa-tag', desc: 'Прив\'язати тег', action: 'tag' },
 ];
 
 const EditableBlock: React.FC<{
@@ -55,7 +58,6 @@ const EditableBlock: React.FC<{
   useEffect(() => {
     if (isFocused && contentRef.current) {
       contentRef.current.focus();
-      // Move cursor to end
       const range = document.createRange();
       const sel = window.getSelection();
       range.selectNodeContents(contentRef.current);
@@ -69,20 +71,12 @@ const EditableBlock: React.FC<{
     const html = e.currentTarget.innerHTML;
     onUpdate({ content: html });
 
-    // Slash command detection
     if (html.endsWith('/')) {
       setShowSlashMenu(true);
       setSelectedIndex(0);
     } else if (showSlashMenu && !html.includes('/')) {
       setShowSlashMenu(false);
     }
-
-    // Markdown detection
-    if (html === '#&nbsp;' || html === '# ') onUpdate({ type: 'h1', content: '' });
-    if (html === '##&nbsp;' || html === '## ') onUpdate({ type: 'h2', content: '' });
-    if (html === '[]&nbsp;' || html === '[] ') onUpdate({ type: 'task', content: '' });
-    if (html === '-&nbsp;' || html === '- ') onUpdate({ type: 'bullet', content: '' });
-    if (html === '&gt;&nbsp;' || html === '> ') onUpdate({ type: 'quote', content: '' });
   };
 
   const selectBlockType = (type: Block['type']) => {
@@ -93,104 +87,82 @@ const EditableBlock: React.FC<{
 
   const internalKeyDown = (e: React.KeyboardEvent) => {
     if (showSlashMenu) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % BLOCK_TYPES.length);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev - 1 + BLOCK_TYPES.length) % BLOCK_TYPES.length);
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        selectBlockType(BLOCK_TYPES[selectedIndex].id as Block['type']);
-        return;
-      }
-      if (e.key === 'Escape') {
-        setShowSlashMenu(false);
-        return;
-      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % BLOCK_TYPES.length); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => (prev - 1 + BLOCK_TYPES.length) % BLOCK_TYPES.length); return; }
+      if (e.key === 'Enter') { e.preventDefault(); selectBlockType(BLOCK_TYPES[selectedIndex].id as Block['type']); return; }
+      if (e.key === 'Escape') { setShowSlashMenu(false); return; }
     }
     onKeyDown(e, block, contentRef.current?.innerHTML || '');
   };
 
   const getBlockStyle = () => {
     switch (block.type) {
-      case 'h1': return "text-3xl font-black mb-4 mt-6 text-[var(--text-main)] tracking-tight";
-      case 'h2': return "text-2xl font-black mb-3 mt-5 text-[var(--text-main)] tracking-tight";
-      case 'h3': return "text-xl font-bold mb-2 mt-4 text-[var(--text-main)]";
-      case 'quote': return "border-l-4 border-[var(--primary)]/30 pl-5 italic text-lg opacity-90 my-4 text-[var(--text-main)] py-1";
-      case 'callout': return "bg-[var(--primary)]/5 border border-[var(--primary)]/10 p-4 rounded-2xl my-4 flex gap-4 text-[var(--text-main)] font-medium";
-      case 'task': return `text-[15px] font-medium flex items-center gap-3 py-1 ${block.checked ? 'line-through opacity-30' : 'text-[var(--text-main)]'}`;
-      case 'bullet': return "text-[15px] font-medium flex items-start gap-3 py-1 text-[var(--text-main)]";
-      case 'divider': return "h-px bg-[var(--border-color)] my-6 w-full";
-      default: return "text-[16px] font-medium leading-relaxed text-[var(--text-main)] py-1.5";
+      case 'h1': return "text-[18px] font-bold mb-2 mt-4 text-slate-900";
+      case 'h2': return "text-[16px] font-bold mb-1.5 mt-3 text-slate-800";
+      case 'h3': return "text-[14px] font-bold mb-1 mt-2 text-slate-700";
+      case 'quote': return "border-l-[3px] border-slate-200 pl-4 italic text-slate-500 my-3 py-1 bg-slate-50/50 rounded-r-lg";
+      case 'task': return `text-[13px] font-medium flex items-center gap-3 py-1 ${block.checked ? 'line-through text-slate-300' : 'text-slate-700'}`;
+      case 'bullet': return "text-[13px] font-medium flex items-start gap-3 py-1 text-slate-700";
+      case 'number': return "text-[13px] font-medium flex items-start gap-3 py-1 text-slate-700";
+      case 'divider': return "h-px bg-slate-100 my-6 w-full";
+      default: return "text-[13px] font-medium leading-relaxed text-slate-600 py-1";
     }
   };
 
   return (
     <div className={`relative group/block w-full flex items-start ${isFocused ? 'z-30' : 'z-10'}`}>
-      {/* Side Controls (Notion Style) */}
-      <div className="absolute -left-12 top-1.5 flex items-center opacity-0 group-hover/block:opacity-100 transition-opacity">
-        <button onClick={() => onAddBlock('text')} className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)]">
-          <i className="fa-solid fa-plus text-[10px]"></i>
+      <div className="absolute -left-6 top-1.5 flex items-center opacity-0 group-hover/block:opacity-100 transition-opacity">
+        <button onClick={() => onAddBlock('text')} className="w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-300 hover:text-slate-600 transition-colors">
+          <i className="fa-solid fa-plus text-[9px]"></i>
         </button>
-        <div className="w-6 h-6 flex items-center justify-center text-[var(--text-muted)] cursor-grab active:cursor-grabbing opacity-40">
-          <i className="fa-solid fa-grip-vertical text-[10px]"></i>
-        </div>
       </div>
 
-      <div className={`flex-1 min-w-0 ${block.type === 'callout' ? getBlockStyle() : ''}`}>
-        {block.type === 'callout' && (
-          <div className="shrink-0 text-xl pt-0.5">💡</div>
-        )}
-        
-        <div className="flex items-start gap-3 w-full">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2 w-full">
           {block.type === 'task' && (
             <button 
               onClick={() => onUpdate({ checked: !block.checked })} 
-              className={`w-5 h-5 rounded border mt-0.5 shrink-0 transition-all flex items-center justify-center ${block.checked ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-sm' : 'border-[var(--border-color)] bg-[var(--bg-input)] hover:border-[var(--primary)]'}`}
+              className={`w-4 h-4 rounded border mt-1 shrink-0 transition-all flex items-center justify-center ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white hover:border-emerald-400'}`}
             >
-              {block.checked && <i className="fa-solid fa-check text-[10px]"></i>}
+              {block.checked && <i className="fa-solid fa-check text-[8px]"></i>}
             </button>
           )}
           
           {block.type === 'bullet' && (
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]/40 mt-3 shrink-0" />
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0" />
+          )}
+
+          {block.type === 'number' && (
+            <span className="text-[11px] font-black text-slate-300 mt-1.5 shrink-0 w-4">{index + 1}.</span>
           )}
 
           <div 
             ref={contentRef} 
             contentEditable 
             suppressContentEditableWarning 
-            data-placeholder={block.type === 'text' ? "Пишіть '/' для команд..." : "Пусто..."} 
+            data-placeholder={block.type === 'text' ? "Додати опис... ('/' для меню)" : ""} 
             onInput={handleInput} 
             onKeyDown={internalKeyDown} 
             onFocus={onFocus}
-            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)] empty:before:opacity-20 block-input ${block.type === 'callout' ? 'bg-transparent' : getBlockStyle()}`}
+            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 empty:before:italic block-input ${getBlockStyle()}`}
           />
         </div>
       </div>
 
       {showSlashMenu && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-2xl py-2 z-[100] animate-in fade-in zoom-in-95 duration-200 tiktok-blur overflow-hidden">
-          <div className="px-3 py-1.5 text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-50">Базові блоки</div>
-          <div className="max-h-72 overflow-y-auto custom-scrollbar">
+        <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="px-4 py-1 text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Форматування</div>
+          <div className="max-h-72 overflow-y-auto no-scrollbar">
             {BLOCK_TYPES.map((t, i) => (
               <button 
                 key={t.id} 
                 onClick={() => selectBlockType(t.id as Block['type'])}
                 onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full text-left px-3 py-2 flex items-center gap-3 transition-colors ${selectedIndex === i ? 'bg-[var(--primary)]/10' : 'hover:bg-black/5'}`}
+                className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-colors ${selectedIndex === i ? 'bg-slate-50' : ''}`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] shadow-sm ${selectedIndex === i ? 'text-[var(--primary)] border-[var(--primary)]/20' : ''}`}>
-                  <i className={`fa-solid ${t.icon} text-xs ${t.size || ''}`}></i>
-                </div>
-                <div>
-                   <div className="text-[11px] font-black text-[var(--text-main)] leading-none mb-1">{t.label}</div>
-                   <div className="text-[9px] font-medium text-[var(--text-muted)] leading-none">{t.desc}</div>
+                <i className={`fa-solid ${t.icon} w-4 text-center text-slate-400 text-[10px] ${selectedIndex === i ? 'text-indigo-500' : ''}`}></i>
+                <div className="flex-1 min-w-0">
+                   <div className={`text-[12px] font-bold truncate ${selectedIndex === i ? 'text-indigo-600' : 'text-slate-700'}`}>{t.label}</div>
                 </div>
               </button>
             ))}
@@ -207,7 +179,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
-  const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null);
   
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -267,34 +238,9 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
     if (blocks.length === 0) return;
     setIsSaving(true);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = window.setTimeout(handleManualSave, 1500);
+    saveTimeoutRef.current = window.setTimeout(handleManualSave, 1000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [blocks]);
-
-  useEffect(() => {
-    const handleSelection = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.isCollapsed || !selection.toString().trim()) {
-        setToolbarPos(null);
-        return;
-      }
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setToolbarPos({ top: rect.top - 50 + window.scrollY, left: rect.left + rect.width / 2 - 60 + window.scrollX });
-    };
-    document.addEventListener('mouseup', handleSelection);
-    return () => document.removeEventListener('mouseup', handleSelection);
-  }, []);
-
-  const formatText = (cmd: string) => {
-    document.execCommand(cmd, false);
-    if (focusedBlockId) {
-      const el = document.activeElement as HTMLElement;
-      if (el && el.contentEditable === 'true') {
-        setBlocks(prev => prev.map(b => b.id === focusedBlockId ? { ...b, content: el.innerHTML } : b));
-      }
-    }
-  };
 
   const addBlock = (afterId: string, type: Block['type'] = 'text') => {
     const newBlock: Block = { id: Math.random().toString(36).substr(2, 9), type, content: '', checked: false };
@@ -308,8 +254,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   const handleKeyDown = (e: React.KeyboardEvent, block: Block, currentHTML: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // If we are in a list, continue the list
-      const nextType = (block.type === 'bullet' || block.type === 'task') ? block.type : 'text';
+      const nextType = (block.type === 'bullet' || block.type === 'task' || block.type === 'number') ? block.type : 'text';
       addBlock(block.id, nextType);
     }
     if (e.key === 'Backspace' && (currentHTML === '' || currentHTML === '<br>')) {
@@ -322,33 +267,20 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
         setBlocks(p => p.filter(b => b.id !== block.id));
       }
     }
-    if (e.key === 'ArrowUp' && (window.getSelection()?.anchorOffset === 0)) {
+    if (e.key === 'ArrowUp') {
         const idx = blocks.findIndex(b => b.id === block.id);
         if (idx > 0) { e.preventDefault(); setFocusedBlockId(blocks[idx-1].id); }
     }
-    if (e.key === 'ArrowDown' && (window.getSelection()?.anchorOffset === block.content.length)) {
+    if (e.key === 'ArrowDown') {
         const idx = blocks.findIndex(b => b.id === block.id);
         if (idx < blocks.length - 1) { e.preventDefault(); setFocusedBlockId(blocks[idx+1].id); }
     }
   };
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-card)] relative transition-colors duration-300">
-      {toolbarPos && (
-        <div 
-          className="fixed z-[200] flex bg-slate-900 text-white p-1.5 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10 tiktok-blur"
-          style={{ top: toolbarPos.top, left: toolbarPos.left }}
-        >
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('bold'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg transition-colors"><i className="fa-solid fa-bold text-xs"></i></button>
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('italic'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg transition-colors"><i className="fa-solid fa-italic text-xs"></i></button>
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('strikethrough'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg transition-colors"><i className="fa-solid fa-strikethrough text-xs"></i></button>
-          <div className="w-px h-4 bg-white/20 mx-1 self-center"></div>
-          <button onMouseDown={(e) => { e.preventDefault(); formatText('underline'); }} className="w-8 h-8 hover:bg-white/10 rounded-lg transition-colors"><i className="fa-solid fa-underline text-xs"></i></button>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-16 pt-10 pb-40">
-        <div className="max-w-4xl mx-auto space-y-1">
+    <div className="h-full flex flex-col bg-white relative">
+      <div className="flex-1 overflow-y-auto no-scrollbar py-2">
+        <div className="space-y-0.5">
           {blocks.map((block, idx) => (
             <EditableBlock 
               key={block.id} 
@@ -363,18 +295,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
           ))}
         </div>
       </div>
-      
-      <footer className="px-6 py-3 border-t border-[var(--border-color)] flex items-center justify-between shrink-0 bg-[var(--bg-card)]/80 backdrop-blur z-20">
-        <div className="flex items-center gap-3">
-           <div className={`w-2 h-2 rounded-full ${isSaving ? 'bg-[var(--primary)] animate-pulse' : 'bg-emerald-400 opacity-40'}`}></div>
-           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50">{isSaving ? 'Синхронізація...' : 'Збережено локально'}</span>
-        </div>
-        <div className="flex items-center gap-4 text-[9px] font-black text-[var(--text-muted)] opacity-30 uppercase tracking-widest">
-           <span>{blocks.length} блоків</span>
-           <div className="w-px h-3 bg-[var(--border-color)]"></div>
-           <span>Markdown Ready</span>
-        </div>
-      </footer>
     </div>
   );
 };

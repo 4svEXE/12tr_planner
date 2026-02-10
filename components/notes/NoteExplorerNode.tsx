@@ -106,7 +106,7 @@ const NoteExplorerNode: React.FC<NoteExplorerNodeProps> = ({
             onClick={e => e.stopPropagation()}
           />
         ) : (
-          <span className={`text-[11px] font-bold truncate flex-1 uppercase tracking-tight transition-opacity ${isFolder ? 'opacity-80' : ''} ${isSelected ? 'opacity-100' : 'group-hover:opacity-100'}`}>{name}</span>
+          <span className={`text-[11px] font-bold truncate flex-1 tracking-tight transition-opacity ${isFolder ? 'opacity-80' : ''} ${isSelected ? 'opacity-100' : 'group-hover:opacity-100'}`}>{name}</span>
         )}
 
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-all">

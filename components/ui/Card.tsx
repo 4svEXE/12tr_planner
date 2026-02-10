@@ -8,6 +8,8 @@ interface CardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
+  // Added onContextMenu prop to allow right-click handlers on Card components
+  onContextMenu?: React.MouseEventHandler<HTMLDivElement>;
   draggable?: boolean;
   onDragStart?: React.DragEventHandler<HTMLDivElement>;
 }
@@ -19,6 +21,7 @@ const Card: React.FC<CardProps> = ({
   padding = 'md',
   hover = false,
   onClick,
+  onContextMenu,
   draggable,
   onDragStart
 }) => {
@@ -42,6 +45,7 @@ const Card: React.FC<CardProps> = ({
     <div 
       className={`${baseClasses} ${themeClasses} ${borderClasses} ${radiusClasses} ${hoverClasses} ${paddings[padding]} ${className}`}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       draggable={draggable}
       onDragStart={onDragStart}
       style={{ color: 'var(--text-main)' }}

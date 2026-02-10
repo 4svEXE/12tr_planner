@@ -13,7 +13,9 @@ const SettingsView: React.FC = () => {
   const { 
     theme, setTheme, aiEnabled, setAiEnabled, sidebarSettings, 
     updateSidebarSetting, character, updateCharacter,
-    isSyncing, syncData, lastSyncTime
+    isSyncing, syncData, lastSyncTime,
+    diaryNotificationEnabled, setDiaryNotificationEnabled,
+    diaryNotificationTime, setDiaryNotificationTime
   } = useApp();
   const { user } = useAuth();
   
@@ -50,7 +52,6 @@ const SettingsView: React.FC = () => {
   const handleFullReset = () => {
     if (confirm('Видалити ВСІ дані? Ця дія незворотна.')) {
       localStorage.clear();
-      // Явно встановлюємо режим гостя для чистого рестарту
       localStorage.setItem('12tr_guest_mode', 'true');
       window.location.reload();
     }
@@ -60,6 +61,7 @@ const SettingsView: React.FC = () => {
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
     { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
+    { id: 'notifications', icon: 'fa-bell', label: 'Сповіщення', color: 'text-rose-500', desc: 'Push & Ритми' },
     { id: 'sidebar', icon: 'fa-bars-staggered', label: 'Навігація', color: 'text-amber-500', desc: 'Бокова панель' },
     { id: 'data', icon: 'fa-database', label: 'Хмара & Сховище', color: 'text-rose-500', desc: 'Синхронізація даних' },
     { id: 'feedback', icon: 'fa-comment-dots', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
@@ -144,6 +146,45 @@ const SettingsView: React.FC = () => {
                   </button>
                 ))}
              </div>
+          </div>
+        );
+      case 'notifications':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             <Card className="border-[var(--border-color)] p-6 shadow-sm bg-white">
+                <div className="flex items-center justify-between mb-6">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded bg-rose-500/10 flex items-center justify-center text-rose-500 text-lg shadow-sm">
+                        <i className="fa-solid fa-book-open"></i>
+                      </div>
+                      <div>
+                        <Typography variant="h3" className="text-[14px] font-black uppercase leading-tight">Підсумки дня</Typography>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">Push-сповіщення щоденника</p>
+                      </div>
+                   </div>
+                   <button 
+                      onClick={() => setDiaryNotificationEnabled(!diaryNotificationEnabled)}
+                      className={`w-10 h-5 rounded-full relative transition-all duration-300 ${diaryNotificationEnabled ? 'bg-rose-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 ${diaryNotificationEnabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                    </button>
+                </div>
+
+                <div className={`space-y-4 transition-all ${diaryNotificationEnabled ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                   <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Час сповіщення</label>
+                      <input 
+                        type="time" 
+                        value={diaryNotificationTime}
+                        onChange={e => setDiaryNotificationTime(e.target.value)}
+                        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-rose-500/20"
+                      />
+                   </div>
+                   <p className="text-[9px] font-medium text-slate-500 italic px-1">
+                      Система нагадає вам заповнити щоденник, щоб не втратитиXP та серію продуктивності.
+                   </p>
+                </div>
+             </Card>
           </div>
         );
       case 'ai':
@@ -276,7 +317,6 @@ const SettingsView: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden relative bg-[var(--bg-main)]">
-      {/* ЛІВА ПАНЕЛЬ: СПИСОК СЕКЦІЙ */}
       <div className={`flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300 ${isMobile && selectedSectionId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
         <header className="px-6 py-6 bg-[var(--bg-card)] border-b border-[var(--border-color)] sticky top-0 z-20 shrink-0">
           <Typography variant="h1" className="text-xl md:text-2xl font-black tracking-tight uppercase">Налаштування</Typography>
@@ -306,7 +346,6 @@ const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* ПРАВА ПАНЕЛЬ: ДЕТАЛІ */}
       <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedSectionId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
         {!isMobile && (
           <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg(--primary) z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>

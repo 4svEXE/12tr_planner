@@ -52,6 +52,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
   const uncompletedHabits = useMemo(() => 
     tasks.filter(t => 
       !t.isDeleted && 
+      !t.isArchived && // Фільтруємо архівні звички
       (t.projectSection === 'habits' || t.tags.includes('habit')) &&
       t.habitHistory?.[todayDateStr]?.status !== 'completed'
     ),
@@ -199,7 +200,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-0 md:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
       <div className="w-full max-w-lg h-full md:h-auto md:max-h-[90vh] bg-[var(--bg-card)] md:rounded shadow-2xl flex flex-col overflow-hidden relative border-theme">
         
         <div className="absolute top-0 left-0 w-full h-1 bg-[var(--bg-input)]">
@@ -427,7 +428,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
            )}
         </div>
 
-        <footer className="p-6 pb-12 md:pb-6 border-t border-theme bg-[var(--bg-card)] flex gap-4 shrink-0">
+        <footer className="p-6 pb-12 md:p-6 border-t border-theme bg-[var(--bg-card)] flex gap-4 shrink-0 no-print">
            {currentStep !== 'mood' && currentStep !== 'finishing' ? (
              <button onClick={() => {
                 const idx = steps.indexOf(currentStep);

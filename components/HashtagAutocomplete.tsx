@@ -12,10 +12,11 @@ interface HashtagAutocompleteProps {
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
+  mode?: 'text' | 'tags'; // 'text' потребує #, 'tags' - ні
 }
 
 const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({ 
-  value, onChange, onSelectTag, onEnter, onBlur, placeholder, className, autoFocus = false
+  value, onChange, onSelectTag, onEnter, onBlur, placeholder, className, autoFocus = false, mode = 'text'
 }) => {
   const { tags, addTag } = useApp();
   const [showPopover, setShowPopover] = useState(false);
@@ -32,11 +33,20 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   };
 
   const updateSuggestions = (val: string, pos: number) => {
+    if (mode === 'tags') {
+      if (val.trim().length > 0) {
+        setFilter(val.trim().replace(/^#/, ''));
+        setShowPopover(true);
+      } else {
+        setShowPopover(false);
+      }
+      return;
+    }
+
     const textBeforeCursor = val.slice(0, pos);
     const words = textBeforeCursor.split(/\s/);
     const lastWord = words[words.length - 1];
 
-    // FIX: Показуємо підказки ТІЛЬКИ після введення решітки
     if (lastWord.startsWith('#')) {
       setFilter(lastWord.slice(1));
       setShowPopover(true);
@@ -48,7 +58,6 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     const pos = e.target.selectionStart || 0;
     setCursorPos(pos);
-    // При фокусі не показуємо поповер, поки не введено #
     updateSuggestions(value, pos);
   };
 
@@ -70,13 +79,18 @@ const HashtagAutocomplete: React.FC<HashtagAutocompleteProps> = ({
   const filteredTags = tags.filter(t => t.name.toLowerCase().includes(filter.toLowerCase()));
 
   const selectTag = (tagName: string) => {
+    if (mode === 'tags') {
+      onSelectTag(tagName);
+      onChange('');
+      setShowPopover(false);
+      return;
+    }
+
     const textBefore = value.slice(0, cursorPos);
     const textAfter = value.slice(cursorPos);
     const words = textBefore.split(/\s/);
     
-    // Замінюємо останнє слово (яке починається з #) на тег з решіткою
     words[words.length - 1] = `#${tagName} `;
-    
     const newVal = words.join(' ').replace(/\s\s+/g, ' ') + textAfter;
     
     onChange(newVal);

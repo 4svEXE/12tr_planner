@@ -29,9 +29,10 @@ const GoalInput: React.FC<{
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      // Fix: Cast e.currentTarget to HTMLInputElement to access blur() method
+      (e.currentTarget as HTMLInputElement).blur();
     }
   };
 

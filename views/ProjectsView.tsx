@@ -155,10 +155,7 @@ const ProjectsView: React.FC = () => {
       setEditingGoal(null);
     } else {
       const newId = addProject({ ...data, type: 'goal', isStrategic: true });
-      // AI planning only if enabled and selected
-      if (autoPlan && aiEnabled) {
-         // Logical call to planProjectStrategically would go here if integrated
-      }
+      // AI planning logic...
     }
     setIsAdding(false);
   };
@@ -171,18 +168,34 @@ const ProjectsView: React.FC = () => {
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative">
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        <header className="p-6 md:p-8 bg-[var(--bg-card)] border-b border-[var(--border-color)] flex justify-between items-center shrink-0">
-          <div>
-            <Typography variant="h1" className="text-2xl md:text-3xl font-black uppercase tracking-tight">Стратегічні Цілі</Typography>
-            <div className="flex bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-color)] mt-2">
-               <button onClick={() => setActiveTabLocal('active')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Активні</button>
-               <button onClick={() => setActiveTabLocal('archived')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Архів</button>
+        <header className="p-4 md:p-8 bg-[var(--bg-card)] border-b border-[var(--border-color)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+          <div className="w-full sm:w-auto">
+            <Typography variant="h1" className="text-xl md:text-3xl font-black uppercase tracking-tighter leading-tight">Стратегічні Цілі</Typography>
+            <div className="flex bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-color)] mt-3 w-max">
+               <button 
+                onClick={() => setActiveTabLocal('active')} 
+                className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
+               >
+                 Активні
+               </button>
+               <button 
+                onClick={() => setActiveTabLocal('archived')} 
+                className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
+               >
+                 Архів
+               </button>
             </div>
           </div>
-          <Button onClick={() => setIsAdding(true)} icon="fa-plus">НОВА ЦІЛЬ</Button>
+          <Button 
+            onClick={() => setIsAdding(true)} 
+            icon="fa-plus" 
+            className="w-full sm:w-auto rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest py-3.5 shadow-xl shadow-orange-500/20"
+          >
+            НОВА ЦІЛЬ
+          </Button>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
           <div className="max-w-4xl mx-auto grid grid-cols-1 gap-4 pb-32">
             {goals.map(goal => (
               <GoalCard 
@@ -202,7 +215,7 @@ const ProjectsView: React.FC = () => {
             {goals.length === 0 && (
                <div className="py-20 text-center opacity-10 flex flex-col items-center">
                   <i className="fa-solid fa-flag-checkered text-7xl mb-6"></i>
-                  <Typography variant="h2" className="text-xl">Цілей не знайдено</Typography>
+                  <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Цілей не знайдено</Typography>
                </div>
             )}
           </div>

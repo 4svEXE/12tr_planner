@@ -42,6 +42,9 @@ const Dashboard: React.FC = () => {
   const todayTimestamp = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
   const dateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
+  // Перевірка вечірнього часу (після 21:00)
+  const isEveningReviewTime = useMemo(() => currentTime.getHours() >= 21, [currentTime]);
+
   const stats = useMemo(() => {
     const activeTasks = tasks.filter(t => !t.isDeleted && t.projectSection !== 'habits');
     const getPeriodLimit = () => {
@@ -179,6 +182,33 @@ const Dashboard: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-4 pb-32">
             {mainTab === 'tasks' ? (
               <>
+                {/* ВЕЧІРНЯ РЕТРОСПЕКЦІЯ - З'ЯВЛЯЄТЬСЯ ПІСЛЯ 21:00 */}
+                {isEveningReviewTime && (
+                  <Card 
+                    padding="none" 
+                    className="bg-white border border-[var(--border-color)] p-5 md:p-6 rounded-[2rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden relative"
+                  >
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--primary)]/5 blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    
+                    <div className="flex items-center gap-4 relative z-10 text-center md:text-left flex-col md:flex-row">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center text-2xl shrink-0 text-[var(--primary)]">
+                        <i className="fa-solid fa-moon"></i>
+                      </div>
+                      <div>
+                        <Typography variant="h2" className="text-[var(--primary)] text-lg md:text-xl !tracking-normal mb-0.5">Час підбити підсумки</Typography>
+                        <p className="text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-wider">Заповніть щоденник, щоб зафіксувати прогрес та отримати XP</p>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setActiveTab('diary')}
+                      className="relative z-10 px-8 py-3 bg-[var(--primary)] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
+                    >
+                      Заповнити щоденник
+                    </button>
+                  </Card>
+                )}
+
                 <Card 
                   padding="none" 
                   onClick={handleOpenNowInCalendar}

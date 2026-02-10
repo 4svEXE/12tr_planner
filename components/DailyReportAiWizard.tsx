@@ -59,7 +59,7 @@ const DailyReportAiWizard: React.FC<DailyReportAiWizardProps> = ({ suggestions, 
   };
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-4 tiktok-blur">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-0 md:p-4 tiktok-blur">
       <div className="absolute inset-0 bg-slate-950/60" onClick={onClose}></div>
       <Card className="w-full max-w-2xl h-full md:h-auto md:max-h-[85vh] bg-white border-none shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300 md:rounded-[2.5rem]">
         <header className="p-8 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">

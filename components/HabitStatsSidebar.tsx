@@ -4,6 +4,7 @@ import { Task, HabitDayData, RecurrenceType } from '../types';
 import Typography from './ui/Typography';
 import Button from './ui/Button';
 import Card from './ui/Card';
+import { useApp } from '../contexts/AppContext';
 
 interface HabitStatsSidebarProps {
   habit: Task;
@@ -13,6 +14,7 @@ interface HabitStatsSidebarProps {
 }
 
 const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, onUpdate, onToggleStatus }) => {
+  const { deleteTask } = useApp();
   const [activeView, setActiveView] = useState<'week' | 'month' | 'year'>('month');
   const [editingTitle, setEditingTitle] = useState(habit.title);
   const [selectedColor, setSelectedColor] = useState(habit.color || '#f97316');
@@ -193,6 +195,13 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
               </div>
             </div>
             <div className="flex gap-1 shrink-0">
+               <button 
+                 onClick={() => { if(confirm('Видалити звичку?')) { deleteTask(habit.id); onClose(); } }}
+                 className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"
+                 title="Видалити звичку"
+               >
+                 <i className="fa-solid fa-trash-can text-[11px]"></i>
+               </button>
                <button 
                  onClick={() => onUpdate({ isArchived: !habit.isArchived })}
                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${habit.isArchived ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-indigo-500'}`}

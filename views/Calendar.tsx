@@ -12,6 +12,7 @@ import MonthView from '../components/calendar/MonthView';
 import WeekView from '../components/calendar/WeekView';
 import DayView from '../components/calendar/DayView';
 import YearView from '../components/calendar/YearView';
+import { DaySchedule } from '../components/calendar/DayView'; 
 
 const Calendar: React.FC = () => {
   const { 
@@ -23,6 +24,7 @@ const Calendar: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
   const [showBacklogMobile, setShowBacklogMobile] = useState(false);
+  const [showScheduleMobile, setShowScheduleMobile] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
@@ -32,6 +34,9 @@ const Calendar: React.FC = () => {
   }, []);
 
   const currentDate = useMemo(() => new Date(calendarDate), [calendarDate]);
+
+  // Сайдбар відкритий, якщо обрано таск АБО (режим дня і не мобілка) АБО (режим дня і примусово на мобілці)
+  const isSidebarOpen = selectedTaskId || (calendarViewMode === 'day' && (!isMobile || showScheduleMobile));
 
   const handleNavigate = (direction: number) => {
     const next = new Date(currentDate);
@@ -72,7 +77,7 @@ const Calendar: React.FC = () => {
 
   const renderMainView = () => {
     switch (calendarViewMode) {
-      case 'day': return <DayView currentDate={currentDate} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} />;
+      case 'day': return <DayView currentDate={currentDate} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} onShowScheduleMobile={() => setShowScheduleMobile(true)} />;
       case 'week': return <WeekView currentDate={currentDate} dragOverDay={dragOverDay} onDragOver={(e, ts) => { e.preventDefault(); setDragOverDay(ts); }} onDragLeave={() => setDragOverDay(null)} onDrop={onDrop} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} />;
       case 'month': return <MonthView currentDate={currentDate} dragOverDay={dragOverDay} onDragOver={(e, ts) => { e.preventDefault(); setDragOverDay(ts); }} onDragLeave={() => setDragOverDay(null)} onDrop={onDrop} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} />;
       case 'year': return <YearView currentDate={currentDate} />;
@@ -82,7 +87,7 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
-      {/* Backlog Sidebar - Adaptive */}
+      {/* Backlog Sidebar */}
       <div className={`${isMobile ? (showBacklogMobile ? 'fixed inset-0 z-[150] w-full translate-x-0' : 'fixed inset-0 z-[150] w-full -translate-x-full') : 'relative'} transition-transform duration-300 h-full`}>
         <BacklogSidebar onSelectTask={handleSelectTask} />
         {isMobile && showBacklogMobile && (
@@ -109,26 +114,30 @@ const Calendar: React.FC = () => {
         </div>
       </main>
 
-      {/* Task Details Panel */}
+      {/* Dynamic Right Sidebar: Task Details OR Day Schedule */}
       <div 
-        className={`h-full border-l border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 ease-in-out shrink-0 relative z-[200] ${
-          selectedTaskId ? 'translate-x-0' : 'translate-x-full absolute'
+        className={`h-full border-l border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 ease-in-out shrink-0 relative z-[100] ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full absolute'
         }`}
-        style={{ width: selectedTaskId ? (isMobile ? '100vw' : detailsWidth) : 0 }}
+        style={{ width: isSidebarOpen ? (isMobile ? '100vw' : detailsWidth) : 0 }}
       >
-        {selectedTaskId && (
+        {isSidebarOpen && (
            <>
               {!isMobile && (
                 <div 
                   onMouseDown={startResizing} 
-                  className={`absolute left-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[var(--primary)] z-[50] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent'}`}
+                  className={`absolute left-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[var(--primary)] z-[150] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent'}`}
                 ></div>
               )}
-              <div className="h-full w-full overflow-hidden">
-                <TaskDetails 
-                  task={tasks.find(t => t.id === selectedTaskId)!} 
-                  onClose={() => setSelectedTaskId(null)} 
-                />
+              <div className="h-full w-full overflow-hidden flex flex-col">
+                {selectedTaskId ? (
+                  <TaskDetails 
+                    task={tasks.find(t => t.id === selectedTaskId)!} 
+                    onClose={() => setSelectedTaskId(null)} 
+                  />
+                ) : (
+                  calendarViewMode === 'day' && <DaySchedule currentDate={currentDate} onBack={() => setShowScheduleMobile(false)} isMobile={isMobile} />
+                )}
               </div>
            </>
         )}

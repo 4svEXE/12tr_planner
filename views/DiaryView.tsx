@@ -166,7 +166,6 @@ const DiaryView: React.FC = () => {
             const isSelected = selectedDate === dateStr;
             const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
             
-            // КРАПКИ ТІЛЬКИ ДЛЯ ДНІВ ІЗ ЗАПИСАМИ ЩОДЕННИКА
             const hasDiaryEntry = diary.some(e => e.date === dateStr);
 
             return (
@@ -274,10 +273,18 @@ const DiaryView: React.FC = () => {
           <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-theme bg-sidebar shrink-0 overflow-y-auto custom-scrollbar">
             {renderCalendar()}
             <div className="space-y-3 pt-2">
-              <Button variant="primary" className="w-full py-4 rounded-2xl shadow-xl font-black tracking-widest uppercase text-[10px] gap-3" onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}>
+              <Button 
+                variant="primary" 
+                className="w-full h-12 rounded-2xl shadow-xl font-black tracking-widest uppercase text-[10px] gap-3" 
+                onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
+              >
                 <i className="fa-solid fa-plus text-xs"></i> НОВИЙ ЗАПИС
               </Button>
-              <Button variant="white" className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3" onClick={() => setShowReportWizard(true)}>
+              <Button 
+                variant="white" 
+                className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 shadow-sm" 
+                onClick={() => setShowReportWizard(true)}
+              >
                 <i className="fa-solid fa-chart-line text-xs text-primary"></i> ПІДСУМКИ ДНЯ
               </Button>
             </div>
@@ -288,13 +295,13 @@ const DiaryView: React.FC = () => {
               <div className="block lg:hidden">{renderCalendar(true)}</div>
               
               {!editingEntryId && isMobile && (
-                <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-50 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="fixed bottom-24 right-4 flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-4 duration-500">
                   <button 
                     onClick={() => setShowReportWizard(true)}
-                    className="w-12 h-12 rounded-full bg-card border border-theme shadow-lg flex items-center justify-center text-primary active:scale-90 transition-all"
+                    className="w-14 h-14 rounded-full bg-card border border-theme shadow-xl flex items-center justify-center text-primary active:scale-90 transition-all"
                     title="Звіт дня"
                   >
-                    <i className="fa-solid fa-chart-line text-lg"></i>
+                    <i className="fa-solid fa-chart-line text-xl"></i>
                   </button>
                   <button 
                     onClick={() => { setEditingEntryId('new'); setSelectedDate(new Date().toLocaleDateString('en-CA')); }}
@@ -354,7 +361,7 @@ const DiaryView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-theme bg-sidebar z-[60] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
+      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-theme bg-sidebar z-[2000] transition-all duration-300 ease-in-out ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
          {!isMobile && (
            <div onMouseDown={startResizing} className={`w-[1px] h-full cursor-col-resize hover:bg-primary z-[100] transition-colors ${isResizing ? 'bg-primary' : 'bg-theme'}`}></div>
          )}

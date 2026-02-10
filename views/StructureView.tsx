@@ -77,7 +77,7 @@ const TreeNode: React.FC<{
             </form>
           ) : (
             <span className={`text-[12px] truncate block tracking-tight ${
-              type === 'folder' || type === 'system' ? 'font-black uppercase' : 'font-bold'
+              type === 'folder' || type === 'system' ? 'font-black' : 'font-bold'
             }`}>
               {label}
             </span>

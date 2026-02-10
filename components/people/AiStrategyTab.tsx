@@ -4,6 +4,7 @@ import { Person } from '../../types';
 import Typography from '../ui/Typography';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import Badge from '../ui/Badge';
 
 interface AiStrategyTabProps {
   person: Person;
@@ -13,6 +14,10 @@ interface AiStrategyTabProps {
 }
 
 const AiStrategyTab: React.FC<AiStrategyTabProps> = ({ person, aiEnabled, isAnalyzing, onAnalyze }) => {
+  const karma = person.rating || 0;
+  const isAlly = karma >= 21;
+  const isLegendary = karma >= 51;
+
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
       {!aiEnabled ? (
@@ -21,62 +26,87 @@ const AiStrategyTab: React.FC<AiStrategyTabProps> = ({ person, aiEnabled, isAnal
               <i className="fa-solid fa-lock"></i>
            </div>
            <Typography variant="h3" className="mb-2 text-[var(--text-main)]">ШІ-Стратег вимкнено</Typography>
-           <p className="text-xs text-[var(--text-muted)] leading-relaxed max-w-xs opacity-70">
-             Увімкніть ШІ в налаштуваннях системи, щоб Gemini проаналізувала історію ваших взаємодій.
-           </p>
         </Card>
       ) : (
-        <section className="bg-[var(--bg-main)] rounded-[2.5rem] p-6 md:p-8 border border-[var(--border-color)] relative overflow-hidden shadow-xl">
-          {/* Градієнтний фон, що адаптується під тему через прозорість */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--primary)]/5 blur-[60px] -z-10"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/5 blur-[50px] -z-10"></div>
-          
-          <div className="relative z-10">
-            <div className="flex justify-between items-center mb-8">
-               <Typography variant="h2" className="text-xl flex items-center gap-3 font-black uppercase tracking-tight">
-                  <i className="fa-solid fa-sparkles text-[var(--primary)]"></i> AI СТРАТЕГІЯ
+        <section className="space-y-6">
+          <header className="flex justify-between items-center bg-indigo-600 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+             <div className="relative z-10">
+               <Typography variant="h2" className="text-xl font-black uppercase tracking-tight mb-1 flex items-center gap-2">
+                  <i className="fa-solid fa-sparkles"></i> AI РЕЗОНАНС
                </Typography>
-               <button 
-                 onClick={onAnalyze} 
-                 disabled={isAnalyzing} 
-                 className={`w-10 h-10 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center transition-all hover:bg-[var(--bg-main)] text-[var(--text-main)] ${isAnalyzing ? 'animate-spin' : ''}`}
-               >
-                 <i className="fa-solid fa-rotate text-xs"></i>
-               </button>
-            </div>
-            
-            {person.aiPortrait ? (
-               <div className="space-y-6">
-                  <div className="p-5 bg-[var(--bg-card)] rounded-3xl border border-[var(--border-color)] shadow-sm">
-                     <Typography variant="tiny" className="text-[var(--primary)] mb-3 block font-black uppercase tracking-widest text-[8px]">Психологічний Профіль</Typography>
-                     <p className="text-sm font-medium leading-relaxed text-[var(--text-main)] italic">"{person.aiPortrait.summary}"</p>
-                  </div>
-                  <div className="space-y-4">
-                     <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest text-[8px]">Рекомендовані теми:</Typography>
-                     <div className="space-y-2">
+               <Typography variant="tiny" className="text-white/60">Аналіз точок впливу та зближення</Typography>
+             </div>
+             <button onClick={onAnalyze} disabled={isAnalyzing} className={`w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center transition-all hover:bg-white/30 ${isAnalyzing ? 'animate-spin' : ''}`}>
+               <i className="fa-solid fa-rotate text-xs"></i>
+             </button>
+             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          </header>
+          
+          {person.aiPortrait ? (
+             <div className="space-y-5">
+                <Card padding="md" className="border-indigo-100 bg-white shadow-sm">
+                   <Badge variant="indigo" className="mb-3">Психологічне досьє</Badge>
+                   <p className="text-sm font-medium leading-relaxed italic text-slate-700">"{person.aiPortrait.summary}"</p>
+                </Card>
+
+                <div className="grid grid-cols-1 gap-4">
+                   <section>
+                      <Typography variant="tiny" className="text-slate-400 font-black uppercase mb-3 block px-1">Рекомендовані теми</Typography>
+                      <div className="flex flex-wrap gap-2">
                         {person.aiPortrait.topics?.map((t: string, i: number) => (
-                           <div key={i} className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl text-[11px] font-bold text-[var(--text-main)] flex items-center gap-4 group/item hover:border-[var(--primary)]/30 transition-all shadow-sm">
-                              <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] group-hover/item:scale-150 transition-transform"></div> {t}
-                           </div>
+                          <div key={i} className="bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                             <div className="w-1 h-1 rounded-full bg-indigo-400"></div> {t}
+                          </div>
                         ))}
-                     </div>
-                  </div>
-               </div>
-            ) : (
-               <div className="py-16 text-center space-y-6 flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-[2rem] bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-4xl text-[var(--text-muted)] opacity-20"><i className="fa-solid fa-robot"></i></div>
-                  <p className="text-sm font-bold text-[var(--text-muted)] max-w-xs leading-relaxed">ШІ проаналізує всі нотатки та історію взаємодій, щоб підказати точки впливу.</p>
-                  <Button 
-                    variant="primary" 
-                    className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-[var(--primary)]/20" 
-                    onClick={onAnalyze} 
-                    disabled={isAnalyzing}
-                  >
-                    {isAnalyzing ? 'АНАЛІЗУЮ...' : 'СФОРМУВАТИ ПОРТРЕТ'}
-                  </Button>
-               </div>
-            )}
-          </div>
+                      </div>
+                   </section>
+
+                   <section className={`p-6 rounded-[2.5rem] border-2 transition-all ${isAlly ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100 opacity-40 grayscale'}`}>
+                      <div className="flex items-center justify-between mb-4">
+                         <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md ${isAlly ? 'bg-emerald-500' : 'bg-slate-400'}`}>
+                               <i className="fa-solid fa-gift text-sm"></i>
+                            </div>
+                            <Typography variant="h3" className="text-sm font-black uppercase tracking-tight">Рівень: СОЮЗНИК</Typography>
+                         </div>
+                         {!isAlly && <div className="text-[7px] font-black text-slate-400 uppercase">Потрібно 21 Karma</div>}
+                      </div>
+                      <div className="space-y-2">
+                        <Typography variant="tiny" className="text-emerald-700/60 font-black uppercase text-[8px]">Ідеї жестів та подарунків:</Typography>
+                        <p className="text-[11px] font-bold text-emerald-900 leading-relaxed">
+                           {isAlly ? person.aiPortrait.strategy?.split('. ')[0] : 'Підвищте довіру, щоб розблокувати поради щодо жестів та подарунків.'}
+                        </p>
+                      </div>
+                   </section>
+
+                   <section className={`p-6 rounded-[2.5rem] border-2 transition-all ${isLegendary ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100 opacity-40 grayscale'}`}>
+                      <div className="flex items-center justify-between mb-4">
+                         <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md ${isLegendary ? 'bg-indigo-600' : 'bg-slate-400'}`}>
+                               <i className="fa-solid fa-handshake text-sm"></i>
+                            </div>
+                            <Typography variant="h3" className="text-sm font-black uppercase tracking-tight">Рівень: ЛЕГЕНДАРНИЙ</Typography>
+                         </div>
+                         {!isLegendary && <div className="text-[7px] font-black text-slate-400 uppercase">Потрібно 51 Karma</div>}
+                      </div>
+                      <div className="space-y-2">
+                        <Typography variant="tiny" className="text-indigo-700/60 font-black uppercase text-[8px]">Спільна стратегія:</Typography>
+                        <p className="text-[11px] font-bold text-indigo-900 leading-relaxed">
+                           {isLegendary ? (person.aiPortrait.strategy?.split('. ')[1] || person.aiPortrait.strategy) : 'Найвищий рівень довіри розблокує ідеї для стратегічного партнерства та бізнесу.'}
+                        </p>
+                      </div>
+                   </section>
+                </div>
+             </div>
+          ) : (
+             <div className="py-16 text-center space-y-6 flex flex-col items-center">
+                <div className="w-20 h-20 rounded-[2rem] bg-white border border-theme flex items-center justify-center text-4xl text-slate-200"><i className="fa-solid fa-brain"></i></div>
+                <p className="text-sm font-bold text-slate-400 max-w-xs leading-relaxed uppercase tracking-widest">Ядро очікує ініціації аналізу...</p>
+                <Button variant="primary" className="w-full py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg" onClick={onAnalyze} disabled={isAnalyzing}>
+                  {isAnalyzing ? 'АНАЛІЗУЮ ТРАНЗАКЦІЇ...' : 'СФОРМУВАТИ СТРАТЕГІЮ'}
+                </Button>
+             </div>
+          )}
         </section>
       )}
     </div>

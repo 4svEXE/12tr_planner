@@ -33,13 +33,13 @@ const PlannerHeader: React.FC<PlannerHeaderProps> = ({
         <div className="flex-1 min-w-0 flex items-center gap-4">
           <div className="flex items-center gap-2">
              <input 
-              value={monthlyProject.name === 'Planner Config' ? (monthlyProject.monthlyGoal || '') : monthlyProject.name} 
+              value={monthlyProject.id === 'planner_strategic_config' ? (monthlyProject.monthlyGoal || '') : monthlyProject.name} 
               onChange={e => {
                 if (isGlobal) onUpdateProject({ monthlyGoal: e.target.value });
                 else onUpdateProject({ name: e.target.value });
               }}
               placeholder={isGlobal ? "Ціль..." : "Проєкт..."}
-              className="text-[12px] md:text-sm font-black bg-transparent border-none p-0 focus:ring-0 w-full outline-none placeholder:opacity-20 uppercase tracking-tight"
+              className="text-[12px] md:text-sm font-black bg-transparent border-none p-0 focus:ring-0 w-full outline-none placeholder:opacity-20 tracking-tight"
               style={!isGlobal ? { color: monthlyProject.color } : {}}
             />
             <div className="relative group/date shrink-0">

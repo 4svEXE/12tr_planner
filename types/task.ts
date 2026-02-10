@@ -19,6 +19,13 @@ export interface HabitDayData {
   note?: string;
 }
 
+export interface RecurrenceConfig {
+  type: RecurrenceType;
+  interval?: number;
+  daysOfWeek?: number[]; // 0-6
+  endDate?: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -36,8 +43,8 @@ export interface Task {
   createdAt: number;
   updatedAt: number;
   dueDate?: number;
-  scheduledDate?: number; 
-  endDate?: number; 
+  scheduledDate?: number; // Start timestamp
+  endDate?: number;       // End timestamp
   isEvent?: boolean; 
   isPinned?: boolean;
   isTactic?: boolean; 
@@ -47,11 +54,14 @@ export interface Task {
   isArchived?: boolean;
   color?: string; 
   recurrence?: RecurrenceType;
-  daysOfWeek?: number[]; // 0-6 (Mon-Sun)
+  recurrenceConfig?: RecurrenceConfig;
+  reminders?: number[]; // Minutes before
+  daysOfWeek?: number[]; 
   habitHistory?: Record<string, HabitDayData>;
   completedAt?: number;
   plannerWeek?: number;
-  plannerDay?: number; // 0-6 (Mon-Sun)
+  plannerDay?: number; 
   plannerComment?: string;
-  order?: number; // Порядок відображення
+  order?: number; 
+  isAllDay?: boolean; 
 }

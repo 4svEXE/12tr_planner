@@ -24,6 +24,8 @@ interface AppContextType extends StoreState {
   setTheme: (theme: ThemeType) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setAiEnabled: (enabled: boolean) => void;
+  setDiaryNotificationEnabled: (enabled: boolean) => void;
+  setDiaryNotificationTime: (time: string) => void;
   updateSidebarSetting: (key: string, visible: boolean) => void;
   updateCharacter: (updates: Partial<Character>) => void;
   addTask: (title: string, category?: string, projectId?: string, projectSection?: string, isEvent?: boolean, scheduledDate?: number, personId?: string, status?: TaskStatus) => string;
@@ -150,6 +152,9 @@ const ensureDefaults = (state: any): StoreState => {
     reportTemplate: Array.isArray(s.reportTemplate) ? s.reportTemplate : [],
     shoppingStores: Array.isArray(s.shoppingStores) ? s.shoppingStores : [],
     shoppingItems: Array.isArray(s.shoppingItems) ? s.shoppingItems : [],
+    aiEnabled: s.aiEnabled ?? false,
+    diaryNotificationEnabled: s.diaryNotificationEnabled ?? true,
+    diaryNotificationTime: s.diaryNotificationTime ?? "21:00",
     character: s.character || {
       name: 'Мандрівник', 
       race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
@@ -237,6 +242,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
                 character: (localData.character?.updatedAt || 0) > (cloudData.character?.updatedAt || 0) ? localData.character : cloudData.character,
                 cycle: (localData.cycle?.updatedAt || 0) > (cloudData.cycle?.updatedAt || 0) ? localData.cycle : cloudData.cycle,
                 aiEnabled: cloudData.aiEnabled ?? localData.aiEnabled,
+                diaryNotificationEnabled: cloudData.diaryNotificationEnabled ?? localData.diaryNotificationEnabled,
+                diaryNotificationTime: cloudData.diaryNotificationTime ?? localData.diaryNotificationTime,
                 sidebarSettings: { ...cloudData.sidebarSettings, ...localData.sidebarSettings }
               });
               setState(merged);
@@ -360,6 +367,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
     plannerProjectId, setPlannerProjectId,
     setAiEnabled: (e: boolean) => pushUpdate({ ...state, aiEnabled: e }),
+    setDiaryNotificationEnabled: (e: boolean) => pushUpdate({ ...state, diaryNotificationEnabled: e }),
+    setDiaryNotificationTime: (t: string) => pushUpdate({ ...state, diaryNotificationTime: t }),
     updateSidebarSetting: (k: string, v: boolean) => pushUpdate({ ...state, sidebarSettings: { ...(state.sidebarSettings || {}), [k]: v } }),
     updateCharacter: (u: any) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } }),
     updateTask: (t: Task) => pushUpdate({ ...state, tasks: state.tasks.some(old => old.id === t.id) ? state.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) : [{ ...t, updatedAt: Date.now() }, ...state.tasks] }),
@@ -370,7 +379,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
       if (activeIdx === -1 || overIdx === -1) return;
       const [removed] = tasks.splice(activeIdx, 1);
       tasks.splice(overIdx, 0, removed);
-      // Оновлюємо поле order для всіх або лише змінених
       const updatedTasks = tasks.map((t, i) => ({ ...t, order: i, updatedAt: Date.now() }));
       pushUpdate({ ...state, tasks: updatedTasks });
     },
@@ -378,7 +386,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, userId: string }
     addTask: (title: string, categoryId = 'unsorted', projectId?: string, section: string = 'actions', isEvent = false, date?: number, personId?: string, status: TaskStatus = TaskStatus.INBOX) => {
       const id = Math.random().toString(36).substr(2,9);
       const now = Date.now();
-      // Порядок - на початок (0) або кінець списку
       const order = state.tasks.length;
       const newTask: Task = { id, title, status, priority: Priority.NUI, difficulty: 1, xp: 50, tags: [], createdAt: now, updatedAt: now, category: categoryId, projectId, projectSection: section as any, isEvent, scheduledDate: date, personId, order };
       pushUpdate({ ...state, tasks: [newTask, ...state.tasks] });

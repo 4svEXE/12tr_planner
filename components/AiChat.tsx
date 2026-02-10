@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { GoogleGenAI } from "@google/genai";
@@ -38,7 +39,6 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
     setIsTyping(true);
 
     try {
-      // Use named parameter { apiKey } and process.env.API_KEY exclusively as per guidelines
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const systemContext = `
@@ -62,7 +62,6 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
         ]
       });
 
-      // Use .text property directly instead of text()
       const aiText = response.text || "Магічний зв'язок перервано. Спробуй ще раз.";
       setMessages(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (error) {
@@ -75,7 +74,7 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed top-0 right-0 h-screen bg-[var(--bg-card)]/95 border-l border-[var(--border-color)] flex flex-col backdrop-blur-2xl transition-all duration-500 z-[200] shadow-2xl w-full md:w-96`}>
+    <div className={`fixed top-0 right-0 h-screen bg-[var(--bg-card)]/95 border-l border-[var(--border-color)] flex flex-col backdrop-blur-2xl transition-all duration-500 z-[650] shadow-2xl w-full md:w-96`}>
       <header className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-white/50 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--primary)] to-pink-500 flex items-center justify-center text-white shadow-lg">
@@ -89,12 +88,12 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all">
-          <i className="fa-solid fa-chevron-right text-xs"></i>
+        <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-all">
+          <i className="fa-solid fa-xmark text-sm"></i>
         </button>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 no-scrollbar">
         {messages.length === 0 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="bg-[var(--primary)]/5 p-5 rounded-3xl border border-[var(--primary)]/10 text-xs font-medium leading-relaxed italic text-slate-600">
@@ -141,13 +140,14 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
         )}
       </div>
 
-      <footer className="p-6 border-t border-[var(--border-color)] bg-white/50">
+      {/* pb-[84px] враховує висоту мобільного навбару */}
+      <footer className="p-6 border-t border-[var(--border-color)] bg-white/50 pb-[84px] md:pb-6">
         <form onSubmit={e => { e.preventDefault(); handleSend(input); }} className="flex gap-2 relative">
           <input 
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Запитати Ядро..."
-            className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3 px-4 pr-12 text-sm font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all"
+            className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3 px-4 pr-12 text-sm font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-main"
           />
           <button 
             type="submit"

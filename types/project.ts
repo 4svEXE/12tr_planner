@@ -19,8 +19,13 @@ export interface Project {
   monthlyGoal?: string;
   monthlyKpi?: number;
   monthlyKpiCurrent?: number;
-  startDate?: number; // Дата початку 12-тижневого плану для цієї цілі
-  leadMeasure?: string; // Випереджаючий показник (що робимо)
-  lagMeasure?: string;  // Запізнілий показник (що отримаємо в кінці)
+  startDate?: number; 
+  leadMeasure?: string; 
+  lagMeasure?: string;  
   updatedAt: number;
+  // Налаштування відображення
+  viewMode?: 'list' | 'kanban' | 'timeline';
+  showCompleted?: boolean;
+  showDetails?: boolean;
+  sortBy?: 'priority' | 'name' | 'date';
 }

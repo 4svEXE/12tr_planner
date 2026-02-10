@@ -37,6 +37,17 @@ export const generateSeedData = () => {
       isStrategic: false, 
       description: 'FOLDER_NOTE', 
       updatedAt: Date.now() 
+    },
+    {
+      id: 'planner_strategic_config',
+      name: 'Мій 12-тижневий план',
+      color: '#f97316',
+      status: 'active',
+      progress: 0,
+      isStrategic: true,
+      description: 'SYSTEM_PLANNER_CONFIG',
+      updatedAt: Date.now(),
+      startDate: todayTimestamp
     }
   ];
 
