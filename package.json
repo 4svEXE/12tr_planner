@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "build:exe": "npx nativefier 'https://one2tr.onrender.com' --name '12TR Engine' --single-instance --internal-urls '.*?one2tr\\.onrender\\.com.*?' --icon 'https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316'"
+    "build:exe": "npx nativefier \"https://one2tr.onrender.com\" --name \"12TR Engine\" --single-instance --internal-urls \".*?one2tr\\.onrender\\.com.*?\""
   },
   "dependencies": {
     "react": "^19.2.3",
