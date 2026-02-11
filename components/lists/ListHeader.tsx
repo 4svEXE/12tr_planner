@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Typography from '../ui/Typography';
 import { Project, Task } from '../../types';
@@ -14,7 +13,7 @@ interface ListHeaderProps {
 }
 
 const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMobile, onBack, onUpdateProject, onAddSection }) => {
-  const isSystem = project.id === 'system_inbox' || project.id === 'system_notes';
+  const isSystem = project.id === 'system_inbox' || project.id === 'system_notes' || project.id === 'system_calendar';
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -63,15 +62,19 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMo
     <header className="px-4 md:px-6 py-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex justify-between items-center shrink-0 relative z-[200] no-print">
       <div className="flex items-center gap-3 min-w-0">
         {isMobile && (
-          <button onClick={onBack} className="w-9 h-9 rounded-xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] mr-1">
-            <i className="fa-solid fa-chevron-left"></i>
+          <button onClick={onBack} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-main)] mr-1 active:scale-90 transition-all shadow-sm">
+            <i className="fa-solid fa-bars text-lg"></i>
           </button>
         )}
         <div 
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform hover:scale-105 active:scale-95" 
           style={{ backgroundColor: project.color || 'var(--primary)' }}
         >
-          <i className={`fa-solid ${project.id === 'system_inbox' ? 'fa-inbox' : project.id === 'system_notes' ? 'fa-note-sticky' : 'fa-list-check'}`}></i>
+          <i className={`fa-solid ${
+            project.id === 'system_inbox' ? 'fa-inbox' : 
+            project.id === 'system_calendar' ? 'fa-calendar-day' :
+            project.id === 'system_notes' ? 'fa-note-sticky' : 'fa-list-check'
+          }`}></i>
         </div>
         <div className="min-w-0">
           {isSystem ? (

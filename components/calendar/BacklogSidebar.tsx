@@ -1,118 +1,226 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
-import { TaskStatus, Task, Project, InboxCategory } from '../../types';
+import { TaskStatus, Task, Project } from '../../types';
 import Typography from '../ui/Typography';
 
 const TreeNode: React.FC<{ 
   id: string; 
   label: string; 
   icon: string; 
-  type: 'folder' | 'task' | 'note' | 'event' | 'system'; 
+  type: 'folder' | 'list' | 'task' | 'note' | 'system'; 
   level: number; 
   isOpen?: boolean; 
   count?: number;
   color?: string;
+  isDone?: boolean;
   onToggle?: () => void; 
-  onAdd?: (e: React.MouseEvent) => void; 
   onClick?: () => void; 
   isDraggable?: boolean; 
   onDragStart?: (e: React.DragEvent) => void; 
   children?: React.ReactNode; 
-}> = ({ label, icon, type, level, isOpen, count, color, onToggle, onAdd, onClick, isDraggable, onDragStart, children }) => (
-  <div className="flex flex-col">
-    <div 
-      draggable={isDraggable} 
-      onDragStart={onDragStart} 
-      onClick={onToggle || onClick} 
-      className={`group flex items-center gap-1.5 py-1.5 px-2 cursor-pointer hover:bg-[var(--text-main)]/5 rounded-lg transition-colors relative ${level > 0 ? 'ml-2' : ''} ${isOpen && (type === 'folder' || type === 'system') ? 'bg-[var(--text-main)]/[0.03]' : ''}`}
-    >
-      <div className="flex items-center gap-1 shrink-0">
-         {(type === 'folder' || type === 'system' || (children && React.Children.count(children) > 0)) ? (
-           <i className={`fa-solid fa-chevron-right text-[7px] text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-90 text-[var(--primary)]' : ''}`}></i>
-         ) : <div className="w-2.5"></div>}
-         <i className={`fa-solid ${icon} text-[10px] w-4 text-center ${
-           type === 'event' ? 'text-[var(--primary)]' : 
-           type === 'note' ? 'text-[var(--primary)] opacity-60' : 
-           type === 'folder' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'
-         }`} style={color ? { color } : {}}></i>
+}> = ({ label, icon, type, level, isOpen, count, color, isDone, onToggle, onClick, isDraggable, onDragStart, children }) => {
+  const isContent = type === 'task' || type === 'note';
+  
+  return (
+    <div className="flex flex-col">
+      <div 
+        draggable={isDraggable} 
+        onDragStart={onDragStart} 
+        onClick={onToggle || onClick} 
+        className={`group flex items-center gap-2 py-1.5 px-3 cursor-pointer hover:bg-black/5 rounded-xl transition-all relative ${
+          isContent ? 'mx-1' : ''
+        } ${isOpen && !isContent ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}
+        style={{ paddingLeft: `${level * 12 + 12}px` }}
+      >
+        <div className="flex items-center gap-1.5 shrink-0">
+           {(!isContent && (children || type === 'folder' || type === 'list' || type === 'system')) ? (
+             <i className={`fa-solid fa-chevron-right text-[7px] w-3 text-center transition-transform ${isOpen ? 'rotate-90 text-[var(--primary)]' : 'text-slate-300'}`}></i>
+           ) : (
+             <div className="w-3"></div>
+           )}
+           <i className={`fa-solid ${icon} text-[11px] w-4 text-center ${
+             type === 'note' ? 'text-indigo-500' : 
+             type === 'task' ? 'text-slate-400' :
+             type === 'folder' ? 'text-amber-500' : 
+             type === 'list' ? 'text-indigo-500' : 
+             label === 'Календар' ? 'text-rose-500' : 'text-blue-500'
+           }`} style={color ? { color } : {}}></i>
+        </div>
+        
+        <span className={`text-[12px] truncate flex-1 tracking-tight ${
+          isContent 
+            ? `font-bold ${isDone ? 'line-through opacity-40' : 'text-slate-700'}` 
+            : 'font-bold'
+        }`}>
+          {label}
+        </span>
+
+        {count !== undefined && count > 0 && !isOpen && (
+          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${
+            label === 'Календар' ? 'bg-rose-500/10 text-rose-500' : 'bg-black/5 text-slate-400'
+          }`}>{count}</span>
+        )}
       </div>
-      <span className={`text-[10px] truncate flex-1 uppercase tracking-tight ${
-        type === 'folder' || type === 'system' ? 'font-black text-[var(--text-main)]' : 'font-bold text-[var(--text-muted)]'
-      }`}>
-        {label}
-      </span>
-      {count !== undefined && count > 0 && (
-        <span className="text-[7px] font-black text-white bg-[var(--primary)] px-1.5 rounded-full shadow-sm">{count}</span>
-      )}
+      {isOpen && children && <div className="mt-0.5">{children}</div>}
     </div>
-    {isOpen && children && <div className="border-l border-[var(--border-color)] ml-3.5 mt-0.5 pl-1">{children}</div>}
-  </div>
-);
+  );
+};
 
 const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSelectTask }) => {
-  const { tasks, projects, inboxCategories } = useApp();
+  const { tasks, projects, setActiveTab } = useApp();
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({ 
-    'root_planned': true,
-    'root_inbox': true, 
-    'root_actions': true,
-    'root_notes': false,
-    'root_projects': true 
+    'system_inbox': false,
+    'system_calendar': false,
+    'system_notes': false,
+    'root_collections': true
   });
   
   const toggleNode = (nodeId: string) => setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
 
-  const scheduledTasks = useMemo(() => tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate), [tasks]);
-  const unscheduledTasks = useMemo(() => tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !t.scheduledDate), [tasks]);
+  // Фільтрація згідно з GTD-логікою Записника
+  const inboxTasks = useMemo(() => tasks.filter(t => !t.projectId && t.category !== 'note' && !t.isDeleted && !t.scheduledDate), [tasks]);
+  const scheduledTasks = useMemo(() => tasks.filter(t => t.scheduledDate && !t.isDeleted), [tasks]);
+  const looseNotes = useMemo(() => tasks.filter(t => !t.projectId && t.category === 'note' && !t.isDeleted && !t.scheduledDate), [tasks]);
+  const projectTasks = useMemo(() => tasks.filter(t => t.projectId && !t.isDeleted), [tasks]);
 
   const renderTaskNode = (t: Task, level: number) => (
     <TreeNode 
       key={t.id} 
       id={t.id} 
-      label={t.title} 
-      icon={t.isEvent ? 'fa-calendar-star' : t.category === 'note' ? 'fa-note-sticky' : 'fa-circle-dot'} 
-      type={t.isEvent ? 'event' : t.category === 'note' ? 'note' : 'task'} 
+      label={t.title || "Без назви"} 
+      icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-circle-dot'} 
+      type={t.category === 'note' ? 'note' : 'task'} 
       level={level} 
       onClick={() => onSelectTask(t.id)} 
       isDraggable 
-      onDragStart={(e) => e.dataTransfer.setData('taskId', t.id)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('taskId', t.id);
+        if (e.currentTarget instanceof HTMLElement) e.currentTarget.style.opacity = '0.5';
+      }}
     />
   );
 
+  const renderProjectTree = (parentId?: string, level = 0): React.ReactNode[] => {
+    return projects
+      .filter(p => p.parentFolderId === parentId && p.description !== 'SYSTEM_PLANNER_CONFIG')
+      .map(p => {
+        const nodeId = `node_${p.id}`;
+        const isFolder = p.type === 'folder';
+        const tasksInThisProject = projectTasks.filter(t => t.projectId === p.id);
+        const isOpen = expandedNodes[nodeId];
+
+        return (
+          <TreeNode 
+            key={p.id} 
+            id={p.id} 
+            label={p.name} 
+            icon={isFolder ? (isOpen ? 'fa-folder-open' : 'fa-folder') : 'fa-list-ul'} 
+            type={isFolder ? 'folder' : 'list'} 
+            level={level} 
+            isOpen={isOpen} 
+            onToggle={() => toggleNode(nodeId)}
+            color={p.color}
+            count={tasksInThisProject.length}
+          >
+            {renderProjectTree(p.id, level + 1)}
+            {!isFolder && tasksInThisProject.map(t => renderTaskNode(t, level + 1))}
+          </TreeNode>
+        );
+      });
+  };
+
   return (
-    <aside className="w-64 bg-[var(--bg-card)] border-r border-[var(--border-color)] flex flex-col hidden lg:flex shrink-0 select-none shadow-sm h-full overflow-hidden">
-      <header className="p-4 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-main)]/20">
-        <Typography variant="tiny" className="text-[var(--text-muted)] font-black tracking-widest opacity-60">Беклог Системи</Typography>
+    <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col hidden lg:flex shrink-0 select-none shadow-sm h-full overflow-hidden no-print">
+      <header className="p-4 md:p-5 border-b border-[var(--border-color)] flex items-center bg-white sticky top-0 z-10 shrink-0">
+        <Typography variant="h2" className="text-lg font-black uppercase tracking-tight text-[var(--text-main)]">Записник</Typography>
       </header>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4 bg-[var(--bg-main)]/10">
-        <TreeNode id="root_inbox" label="Вхідні" icon="fa-inbox" type="system" level={-1} isOpen={expandedNodes['root_inbox']} onToggle={() => toggleNode('root_inbox')}>
-            {inboxCategories.filter(c => c.scope === 'inbox' || c.id === 'unsorted').map(cat => (
-                <TreeNode key={cat.id} id={cat.id} label={cat.title} icon={cat.icon} type="folder" level={0} count={unscheduledTasks.filter(t => t.category === cat.id && t.status === TaskStatus.INBOX).length} isOpen={expandedNodes[`cat_${cat.id}`]} onToggle={() => toggleNode(`cat_${cat.id}`)}>
-                    {unscheduledTasks.filter(t => t.category === cat.id && t.status === TaskStatus.INBOX).map(t => renderTaskNode(t, 1))}
-                </TreeNode>
-            ))}
-        </TreeNode>
+      <div className="flex-1 overflow-y-auto custom-scrollbar py-2 px-2 space-y-6">
+        
+        {/* СИСТЕМНІ РОЗДІЛИ (ЯК У LISTS) */}
+        <section className="space-y-0.5">
+           <TreeNode 
+            id="system_inbox" 
+            label="Вхідні" 
+            icon="fa-inbox" 
+            type="system" 
+            level={0} 
+            isOpen={expandedNodes['system_inbox']} 
+            onToggle={() => toggleNode('system_inbox')}
+            count={inboxTasks.length}
+           >
+              {inboxTasks.map(t => renderTaskNode(t, 1))}
+           </TreeNode>
 
-        <TreeNode id="root_planned" label="Заплановано" icon="fa-calendar-check" type="system" level={-1} isOpen={expandedNodes['root_planned']} onToggle={() => toggleNode('root_planned')}>
-            {scheduledTasks.sort((a,b) => (a.scheduledDate||0)-(b.scheduledDate||0)).slice(0,10).map(t => renderTaskNode(t, 0))}
-        </TreeNode>
+           <TreeNode 
+            id="system_calendar" 
+            label="Календар" 
+            icon="fa-calendar-day" 
+            type="system" 
+            level={0} 
+            isOpen={expandedNodes['system_calendar']} 
+            onToggle={() => toggleNode('system_calendar')}
+            count={scheduledTasks.length}
+           >
+              {scheduledTasks.map(t => renderTaskNode(t, 1))}
+           </TreeNode>
 
-        <TreeNode id="root_projects" label="Проєкти" icon="fa-folder-tree" type="system" level={-1} isOpen={expandedNodes['root_projects']} onToggle={() => toggleNode('root_projects')}>
-            {projects.filter(p => p.type === 'goal' && p.status === 'active').map(p => (
-                <TreeNode key={p.id} id={p.id} label={p.name} icon="fa-flag-checkered" color={p.color} type="folder" level={0} isOpen={expandedNodes[`p_${p.id}`]} onToggle={() => toggleNode(`p_${p.id}`)}>
-                    {tasks.filter(t => t.projectId === p.id && !t.isDeleted && t.status !== TaskStatus.DONE).map(t => renderTaskNode(t, 1))}
-                </TreeNode>
-            ))}
-        </TreeNode>
+           <TreeNode 
+            id="system_notes" 
+            label="Нотатки" 
+            icon="fa-note-sticky" 
+            type="system" 
+            level={0} 
+            isOpen={expandedNodes['system_notes']} 
+            onToggle={() => toggleNode('system_notes')}
+            count={looseNotes.length}
+           >
+              {looseNotes.map(t => renderTaskNode(t, 1))}
+           </TreeNode>
+        </section>
+
+        {/* КОЛЕКЦІЇ */}
+        <section className="space-y-1">
+           <div 
+             onClick={() => toggleNode('root_collections')}
+             className="px-3 mb-1 flex items-center gap-2 cursor-pointer group opacity-50 hover:opacity-100 transition-opacity"
+           >
+              <i className={`fa-solid fa-chevron-right text-[7px] transition-transform ${expandedNodes['root_collections'] ? 'rotate-90' : ''}`}></i>
+              <span className="text-[8px] font-black uppercase tracking-[0.2em]">Колекції</span>
+           </div>
+           
+           {expandedNodes['root_collections'] && (
+             <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                {renderProjectTree()}
+             </div>
+           )}
+        </section>
       </div>
 
-      <footer className="p-3 bg-[var(--bg-main)]/20 border-t border-[var(--border-color)]">
-         <div className="flex items-center justify-between text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest px-1">
-            <span>Активні квести</span>
-            <span className="text-[var(--primary)] bg-[var(--primary)]/10 px-1.5 py-0.5 rounded-md">{tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE).length}</span>
-         </div>
-      </footer>
+      {/* АРХІВ (ЯК У LISTS) */}
+      <div className="mt-auto shrink-0 border-t border-[var(--border-color)] bg-black/[0.01] pt-2">
+        <div className="space-y-1 pb-4">
+          <div className="px-4 mb-1 flex items-center gap-2 opacity-30">
+            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Архів</span>
+          </div>
+          <div className="grid grid-cols-1 gap-0.5 px-2">
+            {[
+              { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги', color: 'text-amber-500' },
+              { id: 'completed', icon: 'fa-check-double', label: 'Готово', color: 'text-emerald-500' },
+              { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', color: 'text-rose-500' }
+            ].map(item => (
+              <button 
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className="w-full flex items-center gap-3 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight text-[var(--text-main)] hover:bg-black/5 transition-all"
+              >
+                <i className={`fa-solid ${item.icon} w-5 text-center ${item.color} text-[11px]`}></i>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </aside>
   );
 };

@@ -1,12 +1,78 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { ShoppingStore, ShoppingItem, PriceEntry } from '../types';
 import Typography from '../components/ui/Typography';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useResizer } from '../hooks/useResizer';
+
+const SharingModal: React.FC<{
+  store: ShoppingStore,
+  onClose: () => void,
+  onShare: (email: string) => void
+}> = ({ store, onClose, onShare }) => {
+  const [email, setEmail] = useState('');
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={onClose}></div>
+      <Card className="w-full max-w-[340px] relative z-10 p-6 rounded-[2rem] bg-card border-theme shadow-2xl animate-in zoom-in-95 duration-200">
+         <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg">
+               <i className="fa-solid fa-share-nodes"></i>
+            </div>
+            <div>
+               <Typography variant="h3" className="text-sm font-black uppercase text-main">Доступ</Typography>
+               <Typography variant="tiny" className="text-muted tracking-tight">Спільний список</Typography>
+            </div>
+         </div>
+         
+         <div className="space-y-5">
+           <div>
+              <div className="flex gap-2">
+                <input 
+                  autoFocus 
+                  type="email"
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  placeholder="Email партнера..." 
+                  className="flex-1 h-10 bg-input border border-theme rounded-xl px-4 text-xs font-bold outline-none focus:border-indigo-500 transition-all text-main shadow-inner" 
+                />
+                <button 
+                  onClick={() => { if(email.includes('@')) { onShare(email); setEmail(''); } }}
+                  className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0"
+                >
+                  <i className="fa-solid fa-plus text-xs"></i>
+                </button>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <Typography variant="tiny" className="text-muted font-black uppercase text-[7px] tracking-widest ml-1">Зараз мають доступ</Typography>
+              <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                 <div className="flex items-center gap-2.5 p-2.5 bg-indigo-50/10 rounded-xl border border-indigo-100/20">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[7px] font-black">YOU</div>
+                    <span className="text-[10px] font-bold text-main truncate">{store.ownerEmail}</span>
+                    <Badge variant="indigo" className="ml-auto text-[6px] py-0 px-1">OWNER</Badge>
+                 </div>
+                 {store.collaborators?.map(c => (
+                    <div key={c} className="flex items-center gap-2.5 p-2.5 bg-black/5 rounded-xl border border-theme">
+                       <div className="w-6 h-6 rounded-lg bg-slate-200 flex items-center justify-center text-[8px] font-black text-slate-500"><i className="fa-solid fa-user"></i></div>
+                       <span className="text-[10px] font-bold text-main truncate">{c}</span>
+                       <i className="fa-solid fa-circle-check text-emerald-500 ml-auto text-[10px]"></i>
+                    </div>
+                 ))}
+              </div>
+           </div>
+
+           <Button variant="white" className="w-full h-10 rounded-xl font-black tracking-widest text-[9px]" onClick={onClose}>ЗАКРИТИ</Button>
+         </div>
+      </Card>
+    </div>
+  );
+};
 
 const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }> = ({ item, onClose }) => {
   const { shoppingItems, shoppingStores, updateShoppingItem, deleteShoppingItem } = useApp();
@@ -65,7 +131,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
             <input 
               value={localItem.name} 
               onChange={e => handleUpdate({ name: e.target.value })}
-              className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-black outline-none transition-all text-main"
+              className="w-full h-8 bg-input border border-theme rounded px-3 text-xs font-black outline-none transition-all text-main"
             />
           </div>
           
@@ -74,7 +140,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
             <textarea 
               value={localItem.note || ''} 
               onChange={e => handleUpdate({ note: e.target.value })}
-              className="w-full bg-main border border-theme rounded p-2 text-xs font-medium focus:ring-4 focus:ring-primary/10 outline-none min-h-[80px] resize-none leading-relaxed text-main"
+              className="w-full bg-input border border-theme rounded p-3 text-xs font-medium focus:ring-4 focus:ring-primary/10 outline-none min-h-[80px] resize-none leading-relaxed text-main"
               placeholder="Який сорт? Важливі деталі..."
             />
           </div>
@@ -94,7 +160,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
           <Typography variant="tiny" className="text-main font-black uppercase flex items-center gap-2 text-[9px]">
             <i className="fa-solid fa-pen-nib text-primary"></i> Записати покупку
           </Typography>
-          <form onSubmit={handleAddPriceLog} className="grid grid-cols-2 gap-2 bg-main/50 p-2 rounded border border-theme">
+          <form onSubmit={handleAddPriceLog} className="grid grid-cols-2 gap-2 bg-input/50 p-2 rounded border border-theme">
              <div className="space-y-1">
                 <span className="text-[7px] font-black uppercase text-muted ml-1">Ціна</span>
                 <input 
@@ -104,7 +170,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
                   value={newPrice} 
                   onChange={e => setNewPrice(e.target.value)}
                   placeholder="0.00 ₴"
-                  className="w-full h-6 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
+                  className="w-full h-8 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
                 />
              </div>
              <div className="space-y-1">
@@ -114,13 +180,13 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
                   value={newStoreName} 
                   onChange={e => setNewStoreName(e.target.value)}
                   placeholder="Магазин..."
-                  className="w-full h-6 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
+                  className="w-full h-8 bg-card border border-theme rounded px-2 text-[10px] font-bold outline-none text-main"
                 />
              </div>
              <datalist id="stores-list">
                {shoppingStores.map(s => <option key={s.id} value={s.name} />)}
              </datalist>
-             <button type="submit" className="col-span-2 h-7 bg-primary text-white rounded text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-md">ЗБЕРЕГТИ В ЛОГ</button>
+             <button type="submit" className="col-span-2 h-8 bg-primary text-white rounded text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-md">ЗБЕРЕГТИ В ЛОГ</button>
           </form>
         </section>
 
@@ -128,7 +194,7 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
            <Typography variant="tiny" className="text-muted font-black uppercase ml-1 opacity-60">Історія записів</Typography>
            <div className="space-y-2">
               {(localItem.priceHistory || []).map(log => (
-                <div key={log.id} className="flex items-center justify-between p-2 bg-card rounded border border-theme group/log shadow-sm">
+                <div key={log.id} className="flex items-center justify-between p-2.5 bg-card rounded border border-theme group/log shadow-sm">
                    <div>
                       <div className="flex items-center gap-2">
                          <span className="text-[11px] font-black text-main">{log.price} ₴</span>
@@ -136,11 +202,11 @@ const ShoppingItemDetails: React.FC<{ item: ShoppingItem, onClose: () => void }>
                       </div>
                       <div className="text-[7px] font-black text-muted uppercase tracking-wider opacity-50">{new Date(log.date).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}</div>
                    </div>
-                   <button onClick={() => deletePriceLog(log.id)} className="w-6 h-6 rounded text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
+                   <button onClick={() => deletePriceLog(log.id)} className="w-7 h-7 rounded text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
                 </div>
               ))}
               {(!localItem.priceHistory || localItem.priceHistory.length === 0) && (
-                <div className="text-center py-6 bg-main/50 rounded border border-dashed border-theme">
+                <div className="text-center py-6 bg-input/50 rounded border border-dashed border-theme">
                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest">Лог порожній</p>
                 </div>
               )}
@@ -171,24 +237,24 @@ const QuickAddShoppingModal: React.FC<{
   const [storeId, setStoreId] = useState(defaultStoreId || stores[0]?.id || '');
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 tiktok-blur">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={onClose}></div>
       <Card className="w-full max-w-sm relative z-10 p-6 rounded-[2rem] bg-card border-theme shadow-2xl">
-         <Typography variant="h2" className="mb-4 text-lg uppercase font-black">Новий товар</Typography>
+         <Typography variant="h2" className="mb-4 text-lg uppercase font-black text-main">Новий товар</Typography>
          <div className="space-y-4">
            <div>
               <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Що купити?</label>
-              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Назва..." className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-bold outline-none text-main" />
+              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Назва..." className="w-full h-10 bg-input border border-theme rounded-xl px-4 text-sm font-bold outline-none text-main shadow-inner" />
            </div>
            <div>
               <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-1">Де купити?</label>
-              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full h-6 bg-main border border-theme rounded px-2 text-xs font-bold outline-none text-main appearance-none">
+              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full h-10 bg-input border border-theme rounded-xl px-4 text-sm font-bold outline-none text-main appearance-none cursor-pointer">
                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
            </div>
            <div className="flex gap-2 pt-2">
-             <Button variant="white" className="flex-1 h-8 rounded text-[9px]" onClick={onClose}>ВІДМІНА</Button>
-             <Button disabled={!name.trim() || !storeId} className="flex-1 h-8 rounded text-[9px]" onClick={() => onAdd(name, storeId)}>ДОДАТИ</Button>
+             <Button variant="white" className="flex-1 h-10 rounded text-[9px]" onClick={onClose}>ВІДМІНА</Button>
+             <Button disabled={!name.trim() || !storeId} className="flex-1 h-10 rounded text-[9px]" onClick={() => onAdd(name, storeId)}>ДОДАТИ</Button>
            </div>
          </div>
       </Card>
@@ -197,13 +263,15 @@ const QuickAddShoppingModal: React.FC<{
 };
 
 const ShoppingView: React.FC = () => {
-  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth } = useApp();
+  const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, shareStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth } = useApp();
+  const { user } = useAuth();
   const { startResizing, isResizing } = useResizer(400, 700);
 
   const [activeStoreId, setActiveStoreId] = useState<string>('all');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isAddingStore, setIsAddingStore] = useState(false);
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [showSharingModal, setShowSharingModal] = useState<ShoppingStore | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
@@ -276,7 +344,7 @@ const ShoppingView: React.FC = () => {
          <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
             <button 
               onClick={() => handleSelectStore('all')} 
-              className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === 'all' ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
+              className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === 'all' ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-black/5'}`}
             >
                <i className="fa-solid fa-layer-group text-xs w-4 text-center"></i>
                <span className="text-[11px] uppercase tracking-widest">Усі покупки</span>
@@ -293,7 +361,7 @@ const ShoppingView: React.FC = () => {
                   onChange={e => setNewStoreName(e.target.value)} 
                   onBlur={() => !newStoreName && setIsAddingStore(false)} 
                   placeholder="Магазин..." 
-                  className="w-full h-6 bg-white text-slate-900 border border-primary/30 rounded px-2 text-[10px] font-black uppercase outline-none shadow-sm" 
+                  className="w-full h-8 bg-card text-main border border-primary/30 rounded px-3 text-[10px] font-black uppercase outline-none shadow-sm" 
                  />
               </form>
             )}
@@ -302,13 +370,17 @@ const ShoppingView: React.FC = () => {
               <div key={store.id} className="group relative">
                 <button 
                   onClick={() => handleSelectStore(store.id)} 
-                  className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === store.id ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-main/50'}`}
+                  className={`w-full flex items-center gap-4 px-5 py-3 rounded transition-all ${activeStoreId === store.id ? 'bg-primary text-white shadow-lg font-black' : 'text-muted hover:bg-black/5'}`}
                 >
                    <i className={`fa-solid ${store.icon} text-xs w-4 text-center`} style={activeStoreId === store.id ? {color: 'white'} : { color: store.color }}></i>
-                   <span className="text-[11px] uppercase tracking-widest truncate pr-6">{store.name}</span>
+                   <div className="flex flex-col items-start min-w-0 flex-1">
+                      <span className="text-[11px] uppercase tracking-widest truncate pr-6 font-black">{store.name}</span>
+                      {store.isShared && <span className="text-[6px] font-black text-indigo-200 uppercase tracking-tighter flex items-center gap-1"><i className="fa-solid fa-users"></i> Shared</span>}
+                   </div>
                    <span className={`ml-auto text-[8px] font-black ${activeStoreId === store.id ? 'text-white/60' : 'opacity-40'}`}>{shoppingItems.filter(i => i.storeId === store.id).length}</span>
                 </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button onClick={() => setShowSharingModal(store)} className={`text-[9px] p-2 hover:text-indigo-400 transition-colors ${activeStoreId === store.id ? 'text-white/40 hover:text-white' : 'text-muted'}`} title="Поділитися"><i className="fa-solid fa-user-plus"></i></button>
                    <button onClick={() => { if(confirm('Видалити магазин?')) deleteStore(store.id); }} className={`text-[9px] p-2 hover:text-rose-500 transition-colors ${activeStoreId === store.id ? 'text-white/40 hover:text-white' : 'text-muted'}`}><i className="fa-solid fa-trash"></i></button>
                 </div>
               </div>
@@ -318,22 +390,29 @@ const ShoppingView: React.FC = () => {
 
       <main className={`flex-1 flex flex-col bg-main relative min-w-0 transition-all duration-300 ${isMobileView && !isContentViewVisible ? 'translate-x-full' : 'translate-x-0'}`}>
          <header className="px-6 md:px-10 py-4 border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center bg-card sticky top-0 z-10 gap-4 shrink-0">
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex items-center gap-3 w-full min-w-0">
               {isMobileView && (
-                <button onClick={() => setIsContentViewVisible(false)} className="w-8 h-8 rounded bg-main flex items-center justify-center text-muted mr-1">
+                <button onClick={() => setIsContentViewVisible(false)} className="w-8 h-8 rounded bg-black/5 flex items-center justify-center text-muted mr-1">
                   <i className="fa-solid fa-chevron-left"></i>
                 </button>
               )}
-              <Typography variant="h2" className="text-lg md:text-xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
-                <i className={`fa-solid ${activeStoreId === 'all' ? 'fa-layer-group' : 'fa-shop'} opacity-20 text-base md:text-lg`}></i>
-                {activeStoreId === 'all' ? 'Усі покупки' : (shoppingStores.find(s => s.id === activeStoreId)?.name || 'Магазин')}
-              </Typography>
+              <div className="flex flex-col min-w-0">
+                <Typography variant="h2" className="text-lg md:text-xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
+                  <i className={`fa-solid ${activeStoreId === 'all' ? 'fa-layer-group' : 'fa-shop'} opacity-20 text-base md:text-lg`}></i>
+                  {activeStoreId === 'all' ? 'Усі покупки' : (shoppingStores.find(s => s.id === activeStoreId)?.name || 'Магазин')}
+                </Typography>
+                {activeStoreId !== 'all' && shoppingStores.find(s => s.id === activeStoreId)?.isShared && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="indigo" className="text-[6px] py-0 px-1 font-black uppercase">Спільний список</Badge>
+                  </div>
+                )}
+              </div>
             </div>
             
             {activeStoreId !== 'all' && (
               <form onSubmit={handleAddItem} className="flex gap-2 w-full md:w-auto items-center">
-                 <input value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="Що купити?" className="flex-1 h-6 bg-main border border-theme rounded px-3 text-[11px] font-bold outline-none md:w-48 focus:ring-2 focus:ring-primary/20 transition-all text-main" />
-                 <Button type="submit" size="sm" className="h-6 rounded font-black shadow-lg shrink-0 px-4 text-[9px]">ДОДАТИ</Button>
+                 <input value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="Що купити?" className="flex-1 h-8 bg-input border border-theme rounded px-3 text-[11px] font-bold outline-none md:w-48 focus:ring-2 focus:ring-primary/20 transition-all text-main shadow-inner" />
+                 <Button type="submit" size="sm" className="h-8 rounded font-black shadow-lg shrink-0 px-4 text-[9px]">ДОДАТИ</Button>
               </form>
             )}
          </header>
@@ -350,12 +429,12 @@ const ShoppingView: React.FC = () => {
                     key={item.id} 
                     padding="none" 
                     onClick={() => setSelectedItemId(item.id)}
-                    className={`px-3 py-1 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-40 grayscale bg-main/50' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
+                    className={`px-3 py-1.5 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-40 grayscale bg-black/5 border-theme' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
                    >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                          <button 
                            onClick={(e) => { e.stopPropagation(); toggleShoppingItem(item.id); }}
-                           className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all ${item.isBought ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-main hover:border-primary/50'}`}
+                           className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all ${item.isBought ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-input hover:border-primary/50'}`}
                          >
                             {item.isBought && <i className="fa-solid fa-check text-[10px]"></i>}
                          </button>
@@ -364,6 +443,9 @@ const ShoppingView: React.FC = () => {
                                <span className={`text-[12px] font-bold truncate max-w-[150px] md:max-w-none ${item.isBought ? 'line-through text-muted' : 'text-main'}`}>{item.name}</span>
                                {lastPriceEntry && (
                                  <Badge variant="orange" className="text-[7px] py-0 px-1 font-black">{lastPriceEntry.price} ₴</Badge>
+                               )}
+                               {item.isBought && item.lastModifiedBy && (
+                                 <span className="text-[6px] font-black text-emerald-600 uppercase opacity-60">Bought by {item.lastModifiedBy.split('@')[0]}</span>
                                )}
                             </div>
                          </div>
@@ -376,13 +458,12 @@ const ShoppingView: React.FC = () => {
                  );
                }) : (
                  <div className="py-20 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
-                    <i className="fa-solid fa-basket-shopping text-7xl mb-6"></i>
-                    <Typography variant="h2" className="text-xl">Порожній список</Typography>
+                    <i className="fa-solid fa-basket-shopping text-7xl mb-6 text-main"></i>
+                    <Typography variant="h2" className="text-xl text-main font-black">Порожній список</Typography>
                  </div>
                )}
             </div>
 
-            {/* Floating Action Button for adding items */}
             {shoppingStores.length > 0 && (
               <button 
                 onClick={() => setIsQuickAdding(true)}
@@ -415,6 +496,14 @@ const ShoppingView: React.FC = () => {
           defaultStoreId={activeStoreId !== 'all' ? activeStoreId : undefined}
           onClose={() => setIsQuickAdding(false)} 
           onAdd={handleQuickAdd} 
+        />
+      )}
+
+      {showSharingModal && (
+        <SharingModal 
+          store={showSharingModal} 
+          onClose={() => setShowSharingModal(null)} 
+          onShare={(email) => { shareStore(showSharingModal.id, email); setShowSharingModal(null); }}
         />
       )}
     </div>

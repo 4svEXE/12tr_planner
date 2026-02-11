@@ -1,17 +1,15 @@
 
-import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory } from '../types';
+import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory, ReportQuestion, ReportPreset, AquariumObject } from '../types';
 
 export const generateSeedData = () => {
   const now = new Date();
   const day = now.getDay();
-  // Коригуємо до понеділка: якщо неділя (0), віднімаємо 6 днів, інакше (day-1)
   const diff = now.getDate() - (day === 0 ? 6 : day - 1);
   const startMonday = new Date(now.setDate(diff));
   startMonday.setHours(0, 0, 0, 0);
   
   const todayTimestamp = startMonday.getTime();
 
-  // 1. Мінімальні теги
   const tags: Tag[] = [
     { id: 'tag-1', name: 'робота', color: '#f97316', updatedAt: Date.now() },
     { id: 'tag-2', name: 'спорт', color: '#10b981', updatedAt: Date.now() },
@@ -19,42 +17,19 @@ export const generateSeedData = () => {
     { id: 'tag-4', name: 'терміново', color: '#ef4444', updatedAt: Date.now() }
   ];
 
-  // 2. Базові хобі як категорії інтересів
   const hobbies: Hobby[] = [
     { id: 'hobby-1', name: 'Читання', color: '#6366f1', updatedAt: Date.now() },
     { id: 'hobby-2', name: 'Спорт', color: '#10b981', updatedAt: Date.now() },
     { id: 'hobby-3', name: 'Подорожі', color: '#f97316', updatedAt: Date.now() }
   ];
 
-  // 3. Системні папки (Проєкти)
   const projects: Project[] = [
-    { 
-      id: 'folder_insights', 
-      name: 'Інсайти', 
-      color: '#f97316', 
-      status: 'active', 
-      progress: 0, 
-      isStrategic: false, 
-      description: 'FOLDER_NOTE', 
-      updatedAt: Date.now() 
-    },
-    {
-      id: 'planner_strategic_config',
-      name: 'Мій 12-тижневий план',
-      color: '#f97316',
-      status: 'active',
-      progress: 0,
-      isStrategic: true,
-      description: 'SYSTEM_PLANNER_CONFIG',
-      updatedAt: Date.now(),
-      startDate: todayTimestamp
-    }
+    { id: 'folder_insights', name: 'Інсайти', color: '#f97316', status: 'active', progress: 0, isStrategic: false, description: 'FOLDER_NOTE', updatedAt: Date.now() },
+    { id: 'planner_strategic_config', name: 'Мій 12-тижневий план', color: '#f97316', status: 'active', progress: 0, isStrategic: true, description: 'SYSTEM_PLANNER_CONFIG', updatedAt: Date.now(), startDate: todayTimestamp }
   ];
 
-  // 4. Базовий розпорядок дня (TimeBlocks)
   const timeBlocks: TimeBlock[] = [];
-  const days = [0, 1, 2, 3, 4, 5, 6];
-  days.forEach(day => {
+  [0, 1, 2, 3, 4, 5, 6].forEach(day => {
     timeBlocks.push(
       { id: `tb-${day}-1`, title: 'Ранкова рутина', startHour: 7, endHour: 9, type: 'routine', dayOfWeek: day, color: '#10b981' },
       { id: `tb-${day}-2`, title: 'Робота/Навчання', startHour: 10, endHour: 13, type: 'work', dayOfWeek: day, color: '#f97316' },
@@ -62,15 +37,44 @@ export const generateSeedData = () => {
     );
   });
 
-  // 5. Порожні масиви для контенту
-  const tasks: Task[] = [];
-  const people: Person[] = [];
-  const diary: DiaryEntry[] = [];
+  const reportTemplate: ReportQuestion[] = [
+    { id: 'q_mood', text: 'Як пройшов день?', type: 'mood', required: true },
+    { id: 'q_grat_p', text: 'Кому ви вдячні сьогодні?', type: 'gratitude_people', required: false },
+    { id: 'q_victory', text: 'Головна перемога дня', type: 'victory', required: true },
+    { id: 'q_ideas', text: 'Нові ідеї чи плани?', type: 'ideas', required: false }
+  ];
 
-  // 6. Персонаж та Цикл
+  const reportPresets: ReportPreset[] = [
+    { id: 'p_standard', name: 'Стандартний', questions: [...reportTemplate], updatedAt: Date.now() }
+  ];
+
+  // Fix: Added missing inboxCategories definition for the seed data
+  const inboxCategories: InboxCategory[] = [
+    { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: true, scope: 'inbox', updatedAt: Date.now() },
+    { id: 'ideas', title: 'Ідеї', icon: 'fa-lightbulb', isPinned: false, scope: 'inbox', updatedAt: Date.now() },
+    { id: 'actions', title: 'Дії', icon: 'fa-bolt', isPinned: true, scope: 'actions', updatedAt: Date.now() }
+  ];
+
+  // Fix: Added missing aquariumObjects definition to resolve type error in AppContext
+  const aquariumObjects: AquariumObject[] = [
+    {
+      id: 'fish-1',
+      type: 'fish',
+      species: 'Guppy',
+      name: 'Мандрівник',
+      x: 50,
+      y: 50,
+      scale: 1,
+      flip: false,
+      color: '#f97316',
+      beautyPoints: 2,
+      incomeBonus: 2
+    }
+  ];
+
   const character: Character = {
     name: 'Мандрівник', 
-    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 0, 
+    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 100, 
     bio: '', vision: '', 
     avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=NewHero`, 
     energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
@@ -79,12 +83,11 @@ export const generateSeedData = () => {
     updatedAt: Date.now()
   };
 
-  const cycle: TwelveWeekYear = { 
-    id: 'c1', startDate: todayTimestamp, endDate: todayTimestamp + 86400000 * 84, 
-    currentWeek: 1, globalExecutionScore: 0, updatedAt: Date.now() 
-  };
+  const cycle: TwelveWeekYear = { id: 'c1', startDate: todayTimestamp, endDate: todayTimestamp + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0, updatedAt: Date.now() };
 
+  // Fix: Added aquariumObjects to the return object to satisfy StoreState requirements
   return {
-    tags, hobbies, projects, people, tasks, diary, timeBlocks, character, cycle
+    tags, hobbies, projects, people: [], tasks: [], diary: [], timeBlocks, character, cycle, reportTemplate, reportPresets,
+    inboxCategories, aquariumObjects
   };
 };

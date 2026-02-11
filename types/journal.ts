@@ -7,16 +7,13 @@ export interface TimeBlock {
   color?: string;
   type: 'work' | 'rest' | 'routine' | 'study';
   dayOfWeek?: number;
-  // Fix: Added optional updatedAt to TimeBlock for consistency with AppContext usage
   updatedAt?: number;
 }
 
 export interface RoutinePreset {
   id: string;
   name: string;
-  // Fix: Changed blocks from Omit<TimeBlock, 'id'>[] to TimeBlock[] to match AppContext usage
   blocks: TimeBlock[];
-  // Fix: Added missing updatedAt property
   updatedAt: number;
 }
 
@@ -35,7 +32,6 @@ export interface InboxCategory {
   isPinned: boolean;
   scope?: 'inbox' | 'actions';
   color?: 'slate' | 'orange' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'violet';
-  // Fix: Added missing updatedAt property
   updatedAt: number;
 }
 
@@ -43,14 +39,31 @@ export interface Hobby {
   id: string;
   name: string;
   color: string;
-  // Fix: Added missing updatedAt property for data consistency
   updatedAt: number;
 }
+
+export type ReportQuestionType = 
+  | 'mood' 
+  | 'gratitude_people' 
+  | 'gratitude_self' 
+  | 'positive_events' 
+  | 'habits' 
+  | 'victory' 
+  | 'ideas' 
+  | 'text';
 
 export interface ReportQuestion {
   id: string;
   text: string;
-  page: number;
+  type: ReportQuestionType;
+  required: boolean;
+}
+
+export interface ReportPreset {
+  id: string;
+  name: string;
+  questions: ReportQuestion[];
+  updatedAt: number;
 }
 
 export interface AiSuggestion {

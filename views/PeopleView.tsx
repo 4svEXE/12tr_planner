@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Person, TaskStatus } from '../types';
@@ -9,16 +8,87 @@ import Badge from '../components/ui/Badge';
 import PersonProfile from '../components/people/PersonProfile';
 import { useResizer } from '../hooks/useResizer';
 
+// Внутрішній компонент модалки додавання
+const AddPersonModal: React.FC<{ 
+  onClose: () => void, 
+  onSave: (data: any) => void,
+  relationshipTypes: string[] 
+}> = ({ onClose, onSave, relationshipTypes }) => {
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState('acquaintance');
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({ name: name.trim(), status });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose}></div>
+      <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-card border-theme animate-in zoom-in-95 duration-200">
+        <header className="flex justify-between items-center mb-6">
+          <Typography variant="h2" className="text-xl font-black uppercase tracking-tight text-main">Новий Союзник</Typography>
+          <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center text-muted transition-all">
+            <i className="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </header>
+
+        <div className="space-y-6">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-0.5 tracking-[0.1em] opacity-60">Повне ім'я</label>
+            <input 
+              autoFocus 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Як звати героя?.." 
+              className="w-full h-10 bg-input border-2 border-theme rounded-2xl px-4 text-sm font-bold outline-none focus:border-primary transition-all text-main shadow-inner" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase text-muted mb-1 block ml-0.5 tracking-[0.1em] opacity-60">Статус зв'язку</label>
+            <select 
+              value={status} 
+              onChange={e => setStatus(e.target.value)}
+              className="w-full h-10 bg-input border-2 border-theme rounded-2xl px-4 text-sm font-bold outline-none focus:border-primary transition-all text-main appearance-none cursor-pointer shadow-inner"
+            >
+              {relationshipTypes.map(t => (
+                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] text-muted hover:bg-black/5 transition-all border border-theme">Скасувати</button>
+            <button 
+              onClick={handleSave}
+              disabled={!name.trim()}
+              className="flex-[2] py-3.5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
+            >
+              Створити
+            </button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 const PeopleView: React.FC = () => {
   const { people, addPerson, relationshipTypes, tasks, toggleTaskStatus, deletePerson } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string>('dossier');
-  const [isAdding, setIsAdding] = useState<{ active: boolean; status: string }>({ active: false, status: 'acquaintance' });
+  const [isAdding, setIsAdding] = useState(false);
   
-  const { detailsWidth: sidebarWidth, startResizing, isResizing } = useResizer(240, 400);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const activePeople = useMemo(() => (people || []).filter(p => !p.isDeleted), [people]);
 
@@ -47,19 +117,27 @@ const PeopleView: React.FC = () => {
     }).sort((a, b) => (b.rating || 0) - (a.rating || 0));
   }, [activePeople, searchQuery, activeFilter]);
 
+  const handleSaveNewPerson = (data: any) => {
+    addPerson(data);
+    setIsAdding(false);
+  };
+
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
-      <div className="flex-1 flex flex-col min-w-0 h-full">
-        <header className="p-4 md:p-6 bg-[var(--bg-card)] border-b border-[var(--border-color)] z-20 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
+    <div className="h-screen flex flex-col md:flex-row bg-main overflow-hidden relative text-main transition-none">
+      <div className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 ${isMobile && selectedPersonId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
+        <header className="p-4 md:p-6 bg-card border-b border-theme z-20 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-users-between-lines"></i></div>
+             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-users-between-lines"></i></div>
              <div>
                 <Typography variant="h2" className="text-lg md:text-xl leading-none font-black uppercase tracking-tight">Мережа</Typography>
-                <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px]">Соціальні активи</Typography>
+                <Typography variant="tiny" className="text-muted text-[8px]">Соціальні активи</Typography>
              </div>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Шукати союзників..." className="flex-1 md:w-56 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2 px-4 text-[11px] font-bold outline-none" />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Шукати союзників..." className="flex-1 md:w-56 bg-main border border-theme rounded-xl py-2 px-4 text-[11px] font-bold outline-none text-main shadow-inner" />
+            {!isMobile && (
+              <Button onClick={() => setIsAdding(true)} icon="fa-plus" size="sm" className="rounded-xl px-4 text-[9px] font-black uppercase">ДОДАТИ</Button>
+            )}
           </div>
         </header>
 
@@ -97,13 +175,33 @@ const PeopleView: React.FC = () => {
                   </Card>
                 );
               })}
-              <button onClick={() => setIsAdding({ active: true, status: 'acquaintance' })} className="border-2 border-dashed border-theme rounded-2xl p-6 flex flex-col items-center justify-center text-muted hover:border-primary/50 hover:text-primary hover:bg-card transition-all min-h-[100px]">
-                 <i className="fa-solid fa-user-plus text-xl mb-1"></i>
-                 <span className="text-[8px] font-black uppercase tracking-widest">Додати контакт</span>
-              </button>
+              
+              {!isMobile && (
+                <button onClick={() => setIsAdding(true)} className="border-2 border-dashed border-theme rounded-2xl p-6 flex flex-col items-center justify-center text-muted hover:border-primary/50 hover:text-primary hover:bg-card transition-all min-h-[100px] group">
+                   <i className="fa-solid fa-user-plus text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                   <span className="text-[8px] font-black uppercase tracking-widest">Додати союзника</span>
+                </button>
+              )}
             </div>
+
+            {filteredPeople.length === 0 && searchQuery && (
+              <div className="py-20 text-center opacity-20 grayscale flex flex-col items-center select-none pointer-events-none">
+                 <i className="fa-solid fa-user-secret text-7xl mb-6 text-main"></i>
+                 <Typography variant="h2" className="text-xl text-main font-black uppercase tracking-widest">Нікого не знайдено</Typography>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Мобільний FAB */}
+        {isMobile && !selectedPersonId && (
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all border-4 border-card"
+          >
+            <i className="fa-solid fa-plus text-xl"></i>
+          </button>
+        )}
       </div>
 
       {selectedPersonId && (
@@ -111,6 +209,14 @@ const PeopleView: React.FC = () => {
           personId={selectedPersonId} 
           onClose={() => setSelectedPersonId(null)} 
           initialTab={initialTab as any}
+        />
+      )}
+
+      {isAdding && (
+        <AddPersonModal 
+          onClose={() => setIsAdding(false)} 
+          onSave={handleSaveNewPerson} 
+          relationshipTypes={relationshipTypes || ['friend', 'colleague', 'family', 'mentor', 'acquaintance']} 
         />
       )}
     </div>

@@ -34,7 +34,7 @@ const MiniCalendar: React.FC = () => {
     };
 
     tasks.forEach(t => {
-      if (t.isDeleted) return;
+      if (t.isDeleted || t.showInCalendar === false) return;
       if (!t.scheduledDate) return;
       
       const taskDate = new Date(t.scheduledDate);

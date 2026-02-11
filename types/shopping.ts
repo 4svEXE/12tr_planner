@@ -4,8 +4,11 @@ export interface ShoppingStore {
   name: string;
   icon: string;
   color: string;
-  // Fix: Added missing updatedAt property
   updatedAt: number;
+  // Поля для спільного доступу
+  ownerEmail?: string;
+  collaborators?: string[]; // Список email користувачів, які мають доступ
+  isShared?: boolean;
 }
 
 export interface PriceEntry {
@@ -22,6 +25,6 @@ export interface ShoppingItem {
   isBought: boolean;
   priceHistory?: PriceEntry[];
   note?: string;
-  // Fix: Added missing updatedAt property
   updatedAt: number;
+  lastModifiedBy?: string; // Email того, хто останній змінив статус
 }

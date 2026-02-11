@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Task, TaskStatus } from '../../types';
@@ -12,6 +11,47 @@ interface MonthViewProps {
   onSelectTask: (id: string) => void;
   onAddQuickEvent: (timestamp: number) => void;
 }
+
+/**
+ * Перевіряє, чи має завдання відображатись у конкретний день з урахуванням рекурентності
+ */
+export const isTaskOnDay = (task: Task, timestamp: number): boolean => {
+  if (task.isDeleted || task.showInCalendar === false) return false;
+  if (!task.scheduledDate) return false;
+
+  const startTs = new Date(task.scheduledDate).setHours(0, 0, 0, 0);
+  if (timestamp < startTs) return false;
+
+  const targetDate = new Date(timestamp);
+  const startDate = new Date(startTs);
+
+  if (!task.recurrence || task.recurrence === 'none') {
+    const endTs = task.endDate ? new Date(task.endDate).setHours(0, 0, 0, 0) : startTs;
+    return timestamp >= startTs && timestamp <= endTs;
+  }
+
+  const diffDays = Math.floor((timestamp - startTs) / (24 * 60 * 60 * 1000));
+
+  switch (task.recurrence) {
+    case 'daily': 
+      return true;
+    case 'weekly': 
+      return diffDays % 7 === 0;
+    case 'weekdays': {
+      const jsDay = targetDate.getDay();
+      return jsDay !== 0 && jsDay !== 6;
+    }
+    case 'monthly':
+      return targetDate.getDate() === startDate.getDate();
+    case 'custom': {
+      const jsDay = targetDate.getDay(); 
+      const adjustedDay = jsDay === 0 ? 6 : jsDay - 1; // 0=Mon, 6=Sun
+      const taskDays = task.daysOfWeek || [];
+      return taskDays.includes(adjustedDay);
+    }
+    default: return false;
+  }
+};
 
 const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop, onDragOver, onDragLeave, onSelectTask, onAddQuickEvent }) => {
   const { tasks, people } = useApp();
@@ -38,13 +78,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
         const d = date.getDate();
         const y = date.getFullYear();
 
-        const dayTasksList = tasks.filter(t => {
-          if (t.isDeleted) return false;
-          const startTs = t.scheduledDate ? new Date(t.scheduledDate).setHours(0,0,0,0) : null;
-          const endTs = t.endDate ? new Date(t.endDate).setHours(0,0,0,0) : startTs;
-          if (!startTs) return false;
-          return ts >= startTs && ts <= (endTs || startTs);
-        });
+        const dayTasksList = tasks.filter(t => isTaskOnDay(t, ts));
 
         const personEvents: any[] = [];
         people.forEach(p => {
@@ -80,7 +114,10 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, dragOverDay, onDrop,
                   onClick={(e) => { e.stopPropagation(); onSelectTask(t.id); }} 
                   className={`text-[7px] md:text-[8px] font-black truncate px-1 md:px-2 py-0.5 md:py-1 rounded-md md:rounded-lg border transition-all cursor-pointer ${t.isEvent ? 'bg-[var(--primary)] text-white border-transparent' : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--primary)]/50'}`}
                 >
-                  <span className="truncate">{t.title}</span>
+                  <div className="flex items-center gap-1 min-w-0">
+                    {t.recurrence && t.recurrence !== 'none' && <i className="fa-solid fa-arrows-rotate text-[6px] shrink-0"></i>}
+                    <span className="truncate">{t.title}</span>
+                  </div>
                 </div>
               ))}
               {dayTasksList.length > (window.innerWidth < 768 ? 2 : 4) && (

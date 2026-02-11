@@ -64,4 +64,5 @@ export interface Task {
   plannerComment?: string;
   order?: number; 
   isAllDay?: boolean; 
+  showInCalendar?: boolean;
 }

@@ -4,20 +4,23 @@ import { Project } from './project';
 import { Person } from './person';
 import { Character } from './character';
 import { Tag } from './task';
-import { Hobby, DiaryEntry, InboxCategory, ReportQuestion } from './journal';
+import { Hobby, DiaryEntry, InboxCategory, ReportQuestion, ReportPreset } from './journal';
 import { TimeBlock, RoutinePreset } from './journal';
 import { ShoppingStore, ShoppingItem } from './shopping';
 import { ThemeType } from './base';
 
-export interface TwelveWeekYear {
+export interface AquariumObject {
   id: string;
-  startDate: number;
-  endDate: number;
-  currentWeek: number;
-  globalExecutionScore: number;
-  manualDailyStatus?: Record<string, boolean>;
-  weeklyScores?: Record<number, { score: number; comment: string }>;
-  updatedAt: number;
+  type: 'fish' | 'decor' | 'effect';
+  species: string;
+  name: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  scale: number;
+  flip: boolean;
+  color: string;
+  beautyPoints: number;
+  incomeBonus: number;
 }
 
 export interface StoreState {
@@ -43,7 +46,25 @@ export interface StoreState {
   activeTab?: string;
   theme?: ThemeType;
   reportTemplate?: ReportQuestion[];
+  reportPresets?: ReportPreset[];
+  updatedAt?: number;
   shoppingStores?: ShoppingStore[];
   shoppingItems?: ShoppingItem[];
-  updatedAt?: number;
+  // Fishdom Engine 2.0
+  aquariumObjects?: AquariumObject[];
+  lastGoldCollectAt?: number;
+  lastFedAt?: number;
+  foodInventory?: number;
+  aquariumBeauty?: number;
+}
+
+export interface TwelveWeekYear {
+  id: string;
+  startDate: number;
+  endDate: number;
+  currentWeek: number;
+  globalExecutionScore: number;
+  updatedAt: number;
+  // Added weeklyScores to support historical review comments and scores
+  weeklyScores?: Record<number, { score: number; comment: string }>;
 }

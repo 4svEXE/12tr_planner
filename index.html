@@ -18,6 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Базові змінні (Тема Classic / Light) */
     :root {
       --primary: #f97316;
       --bg-main: #f8fafc;
@@ -30,12 +31,108 @@
       --radius: 12px; 
     }
 
+    /* Тема Midnight (Темно-синя) */
+    [data-theme="midnight"] {
+      --primary: #10b981;
+      --bg-main: #0f172a;
+      --bg-sidebar: #1e293b;
+      --bg-card: #1e293b;
+      --bg-input: #334155;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    /* Тема Obsidian (Справжній чорний) */
+    [data-theme="obsidian"] {
+      --primary: #8b5cf6;
+      --bg-main: #000000;
+      --bg-sidebar: #0a0a0a;
+      --bg-card: #0a0a0a;
+      --bg-input: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #71717a;
+      --border-color: #27272a;
+    }
+
+    /* Тема Cyberpunk */
+    [data-theme="cyberpunk"] {
+      --primary: #fef08a;
+      --bg-main: #09090b;
+      --bg-sidebar: #18181b;
+      --bg-card: #18181b;
+      --bg-input: #27272a;
+      --text-main: #fef08a;
+      --text-muted: #71717a;
+      --border-color: #fef08a44;
+    }
+
+    /* Тема Sakura (Ніжно-рожева) */
+    [data-theme="sakura"] {
+      --primary: #ec4899;
+      --bg-main: #fff1f2;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-input: #ffe4e6;
+      --text-main: #881337;
+      --text-muted: #fb7185;
+      --border-color: #ffe4e6;
+    }
+
+    /* Тема Ocean */
+    [data-theme="ocean"] {
+      --primary: #0ea5e9;
+      --bg-main: #f0f9ff;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-input: #e0f2fe;
+      --text-main: #0c4a6e;
+      --text-muted: #38bdf8;
+      --border-color: #e0f2fe;
+    }
+
+    /* Тема Forest */
+    [data-theme="forest"] {
+      --primary: #22c55e;
+      --bg-main: #f0fdf4;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-input: #dcfce7;
+      --text-main: #14532d;
+      --text-muted: #4ade80;
+      --border-color: #dcfce7;
+    }
+
+    /* Тема Dracula */
+    [data-theme="dracula"] {
+      --primary: #ff79c6;
+      --bg-main: #282a36;
+      --bg-sidebar: #44475a;
+      --bg-card: #44475a;
+      --bg-input: #6272a4;
+      --text-main: #f8f8f2;
+      --text-muted: #bd93f9;
+      --border-color: #6272a4;
+    }
+
+    /* Тема Sepia */
+    [data-theme="sepia"] {
+      --primary: #92400e;
+      --bg-main: #f4ecd8;
+      --bg-sidebar: #efdfbb;
+      --bg-card: #efdfbb;
+      --bg-input: #e2d1a6;
+      --text-main: #431407;
+      --text-muted: #92400e;
+      --border-color: #e2d1a6;
+    }
+
     body { 
       font-family: 'Inter', sans-serif; 
       background-color: var(--bg-main); 
       color: var(--text-main); 
       margin: 0; 
-      transition: background-color 0.3s ease, color 0.3s ease; 
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; 
       -webkit-tap-highlight-color: transparent; 
       letter-spacing: -0.01em;
     }
@@ -61,19 +158,26 @@
     }
     input:focus {
       border-color: var(--primary) !important;
-      background-color: white !important;
+      background-color: var(--bg-card) !important;
       box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
     }
 
-    .bg-card { background-color: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border-color); }
-    .text-primary { color: var(--primary); }
-    .bg-primary { background-color: var(--primary); }
-    .bg-sidebar { background-color: var(--bg-sidebar); }
+    /* Додаткові допоміжні класи для тем */
+    .bg-main { background-color: var(--bg-main) !important; }
+    .bg-sidebar { background-color: var(--bg-sidebar) !important; }
+    .bg-card { background-color: var(--bg-card) !important; }
+    .bg-input { background-color: var(--bg-input) !important; }
+    .text-main { color: var(--text-main) !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    .border-theme { border-color: var(--border-color) !important; }
+    .text-primary { color: var(--primary) !important; }
+    .bg-primary { background-color: var(--primary) !important; }
 
     .tiktok-blur {
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      background-color: rgba(255, 255, 255, 0.8) !important;
+      background-color: var(--bg-card) !important;
+      opacity: 0.9;
     }
 
     /* Анімації */

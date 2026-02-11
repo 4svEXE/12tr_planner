@@ -94,7 +94,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     </button>
   );
 
-  // FIX: Опис може бути JSON (з DiaryEditor). Потрібно витягнути текст для прев'ю.
+  // Опис може бути JSON (з DiaryEditor). Потрібно витягнути текст для прев'ю.
   const descriptionPreview = React.useMemo(() => {
     if (!task.content || task.content === '[]') return null;
     try {
@@ -145,6 +145,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {task.title || "Без назви"}
               </span>
               {task.isPinned && <i className="fa-solid fa-thumbtack text-[8px] text-[var(--primary)] rotate-45 opacity-60"></i>}
+              {task.showInCalendar && !isDone && (
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0" title="В календарі">
+                  <div className="w-1 h-1 rounded-full bg-indigo-500"></div>
+                </div>
+              )}
             </div>
           )}
 

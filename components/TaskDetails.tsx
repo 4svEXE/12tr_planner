@@ -105,6 +105,14 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               />
             )}
           </div>
+
+          <button 
+            onClick={() => updateTask({ ...task, showInCalendar: !task.showInCalendar })}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${task.showInCalendar ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-slate-400'}`}
+            title={task.showInCalendar ? "Відображається в календарі" : "Приховано з календаря"}
+          >
+            <i className={`fa-solid ${task.showInCalendar ? 'fa-calendar-check' : 'fa-calendar-minus'} text-[13px]`}></i>
+          </button>
         </div>
 
         <div className="flex items-center gap-1">
@@ -121,7 +129,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
                   { p: Priority.NUNI, label: 'Низький', color: 'text-slate-400' },
                 ].map(opt => (
                   <button key={opt.p} onClick={() => { updateTask({...task, priority: opt.p}); setShowPriorityMenu(false); }} className={`w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-slate-50 flex items-center gap-2 ${task.priority === opt.p ? 'bg-slate-50' : ''}`}>
-                    <i className={`fa-solid fa-flag ${opt.color}`}></i> {opt.label}
+                    <i className={`fa-solid ${opt.color}`}></i> {opt.label}
                   </button>
                 ))}
               </div>
@@ -146,7 +154,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           </div>
           
           <div className="h-6 w-px bg-slate-200 mx-1"></div>
-          <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark"></i></button>
+          <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose text-slate-400 hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark"></i></button>
         </div>
       </header>
 

@@ -138,7 +138,7 @@ const NotesView: React.FC = () => {
       <aside className={`${isMobile && selectedNoteId ? 'hidden' : 'w-full md:w-72'} bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
         <header className="p-4 border-b border-[var(--border-color)] space-y-3 bg-black/[0.01]">
           <div className="flex justify-between items-center">
-            <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[8px]">Дослідник знань</Typography>
+            <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[8px]">Провідник записника</Typography>
             <div className="flex gap-0.5">
               <button onClick={() => startCreation('folder')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Нова папка"><i className="fa-solid fa-folder-plus"></i></button>
               <button onClick={() => startCreation('note')} className="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center text-[10px] text-[var(--text-muted)] transition-colors" title="Новий документ"><i className="fa-solid fa-file-circle-plus"></i></button>
@@ -295,8 +295,8 @@ const NotesView: React.FC = () => {
                   <i className="fa-solid fa-brain text-4xl text-white"></i>
                </div>
             </div>
-            <Typography variant="h2" className="text-3xl font-black uppercase tracking-[0.3em]">Knowledge Base</Typography>
-            <Typography variant="body" className="mt-4 text-xs font-bold uppercase tracking-[0.1em] opacity-60">Оберіть знання або створіть нові для архівації досвіду</Typography>
+            <Typography variant="h2" className="text-3xl font-black uppercase tracking-[0.3em]">Записник</Typography>
+            <Typography variant="body" className="mt-4 text-xs font-bold uppercase tracking-[0.1em] opacity-60">Оберіть нотатку або створіть нову для архівації досвіду</Typography>
           </div>
         )}
 
@@ -317,7 +317,7 @@ const NotesView: React.FC = () => {
         <div className="hidden lg:flex flex-col border-l border-[var(--border-color)] bg-[var(--bg-card)] shadow-[-4px_0_24px_rgba(0,0,0,0.01)]" style={{ width: detailsWidth }}>
           <div className="h-full w-full flex flex-col p-8 space-y-8 overflow-y-auto custom-scrollbar">
              <section className="space-y-4">
-                <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[9px]">Статистика Бази</Typography>
+                <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[9px]">Статистика Записника</Typography>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="bg-[var(--bg-main)] p-4 rounded-2xl border border-[var(--border-color)] text-center">
                       <div className="text-2xl font-black text-[var(--text-main)] leading-none mb-1">{tasks.filter(t => t.category === 'note' && !t.isDeleted).length}</div>

@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { Task, RecurrenceConfig } from '../types';
+import { Task, RecurrenceConfig, RecurrenceType } from '../types';
 import Typography from './ui/Typography';
 
 interface TaskDatePickerProps {
@@ -11,7 +10,7 @@ interface TaskDatePickerProps {
 
 const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose }) => {
   const [mode, setMode] = useState<'date' | 'duration'>('date');
-  const [showRecurrence, setShowRecurrence] = useState(false);
+  const [showRecurrence, setShowRecurrence] = useState(task.recurrence !== 'none');
   const [showReminders, setShowReminders] = useState(false);
 
   const currentStartDate = useMemo(() => task.scheduledDate ? new Date(task.scheduledDate) : new Date(), [task.scheduledDate]);
@@ -24,11 +23,11 @@ const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose
   };
 
   const toggleDay = (day: number) => {
-    const current = task.recurrenceConfig?.daysOfWeek || [];
+    const current = task.daysOfWeek || [];
     const next = current.includes(day) ? current.filter(d => d !== day) : [...current, day].sort();
     onUpdate({ 
       recurrence: 'custom', 
-      recurrenceConfig: { ...task.recurrenceConfig, type: 'custom', daysOfWeek: next } 
+      daysOfWeek: next
     });
   };
 
@@ -62,7 +61,7 @@ const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose
               <button onClick={() => handleQuickDate(0)} className="flex-1 h-9 rounded-xl bg-slate-50 hover:bg-orange-50 text-orange-500 transition-all flex items-center justify-center"><i className="fa-solid fa-sun text-sm"></i></button>
               <button onClick={() => handleQuickDate(1)} className="flex-1 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 text-blue-500 transition-all flex items-center justify-center"><i className="fa-solid fa-cloud-sun text-sm"></i></button>
               <button onClick={() => handleQuickDate(7)} className="flex-1 h-9 rounded-xl bg-slate-50 hover:bg-indigo-50 text-indigo-500 transition-all flex items-center justify-center font-black text-[10px]">+7</button>
-              <button onClick={() => onUpdate({ scheduledDate: undefined, endDate: undefined, reminders: [], recurrence: 'none' })} className="flex-1 h-9 rounded-xl bg-slate-50 hover:bg-rose-50 text-rose-500 transition-all flex items-center justify-center"><i className="fa-solid fa-calendar-xmark text-sm"></i></button>
+              <button onClick={() => onUpdate({ scheduledDate: undefined, endDate: undefined, reminders: [], recurrence: 'none', daysOfWeek: [] })} className="flex-1 h-9 rounded-xl bg-slate-50 hover:bg-rose-50 text-rose-500 transition-all flex items-center justify-center"><i className="fa-solid fa-calendar-xmark text-sm"></i></button>
             </div>
 
             {/* Calendar & Time Grid */}
@@ -126,7 +125,7 @@ const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose
 
         {/* Recurrence & Reminders Mini-Menu */}
         <div className="space-y-2 border-t border-slate-50 pt-4">
-           <button onClick={() => setShowRecurrence(!showRecurrence)} className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all ${task.recurrence !== 'none' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50 text-slate-500'}`}>
+           <button onClick={() => setShowRecurrence(!showRecurrence)} className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all ${task.recurrence && task.recurrence !== 'none' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50 text-slate-500'}`}>
               <div className="flex items-center gap-3">
                  <i className="fa-solid fa-arrows-rotate text-xs"></i>
                  <span className="text-[10px] font-black uppercase tracking-widest">Повторення</span>
@@ -135,22 +134,39 @@ const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose
            </button>
            
            {showRecurrence && (
-              <div className="p-3 bg-slate-50 rounded-2xl animate-in slide-in-from-top-2">
-                 <div className="flex gap-1 justify-between mb-3">
-                    {['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'].map((d, i) => (
-                      <button key={i} onClick={() => toggleDay(i)} className={`w-7 h-7 rounded-lg text-[9px] font-black transition-all ${task.recurrenceConfig?.daysOfWeek?.includes(i) ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-400 hover:bg-slate-100'}`}>{d}</button>
-                    ))}
-                 </div>
+              <div className="p-3 bg-slate-50 rounded-2xl animate-in slide-in-from-top-2 space-y-3">
                  <select 
-                   className="w-full bg-white border-none rounded-xl text-[10px] font-black uppercase p-2 outline-none"
-                   onChange={(e) => onUpdate({ recurrence: e.target.value as any })}
-                   value={task.recurrence}
+                   className="w-full bg-white border-2 border-slate-100 rounded-xl text-[10px] font-black uppercase p-2 outline-none focus:border-indigo-300"
+                   onChange={(e) => {
+                     const val = e.target.value as RecurrenceType;
+                     const updates: Partial<Task> = { recurrence: val };
+                     if (val === 'weekdays') updates.daysOfWeek = [0, 1, 2, 3, 4];
+                     if (val === 'custom' && (!task.daysOfWeek || task.daysOfWeek.length === 0)) updates.daysOfWeek = [new Date(task.scheduledDate || Date.now()).getDay() - 1];
+                     onUpdate(updates);
+                   }}
+                   value={task.recurrence || 'none'}
                  >
                     <option value="none">Не повторювати</option>
                     <option value="daily">Щодня</option>
+                    <option value="weekdays">Робочі дні</option>
                     <option value="weekly">Щотижня</option>
                     <option value="monthly">Щомісяця</option>
+                    <option value="custom">Обрати дні...</option>
                  </select>
+
+                 {(task.recurrence === 'custom' || (task.daysOfWeek && task.daysOfWeek.length > 0)) && (
+                   <div className="flex gap-1 justify-between animate-in fade-in zoom-in-95">
+                      {['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'].map((d, i) => (
+                        <button 
+                          key={i} 
+                          onClick={() => toggleDay(i)} 
+                          className={`w-7 h-7 rounded-lg text-[9px] font-black transition-all ${task.daysOfWeek?.includes(i) ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-100 hover:border-indigo-200'}`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                   </div>
+                 )}
               </div>
            )}
 
@@ -175,7 +191,7 @@ const TaskDatePicker: React.FC<TaskDatePickerProps> = ({ task, onUpdate, onClose
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button onClick={() => { onUpdate({ scheduledDate: undefined, endDate: undefined, reminders: [], recurrence: 'none' }); onClose(); }} className="flex-1 py-3 text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 rounded-2xl transition-all">Очистити</button>
+          <button onClick={() => { onUpdate({ scheduledDate: undefined, endDate: undefined, reminders: [], recurrence: 'none', daysOfWeek: [] }); onClose(); }} className="flex-1 py-3 text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 rounded-2xl transition-all">Очистити</button>
           <button onClick={onClose} className="flex-[2] py-3 text-[10px] font-black uppercase text-white bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-100 active:scale-95 transition-all">ГОТОВО</button>
         </div>
       </div>

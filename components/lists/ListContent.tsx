@@ -14,9 +14,10 @@ interface ListContentProps {
   onSelectTask: (id: string | null) => void;
   onBack: () => void;
   isMobile: boolean;
+  onOpenQuickAdd?: () => void;
 }
 
-const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskId, onSelectTask, onBack, isMobile }) => {
+const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskId, onSelectTask, onBack, isMobile, onOpenQuickAdd }) => {
   const { addTask, updateTask, updateProject, addProjectSection, renameProjectSection, deleteProjectSection, deleteTask, toggleTaskStatus } = useApp();
   const [quickTaskValue, setQuickTaskValue] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -150,7 +151,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
   const isSystem = project.id === 'system_inbox' || project.id === 'system_notes';
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full overflow-hidden">
+    <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full overflow-hidden relative">
       <ListHeader 
         project={project} 
         tasks={tasks}
@@ -161,7 +162,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
         onAddSection={addProjectSection} 
       />
       
-      {viewMode === 'list' && (
+      {viewMode === 'list' && !isMobile && (
         <div className="mb-1">
           <QuickAddTask 
             value={quickTaskValue} 
@@ -171,145 +172,122 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
         </div>
       )}
 
-      {viewMode === 'list' ? (
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 space-y-1.5 pb-32 pt-0">
-          {sections.map(section => {
-            const sectionItems: Task[] = filteredTasks.filter(t => (t.projectSection as any) === section.id || (section.id === 'actions' && !t.projectSection));
-            const isCollapsed = collapsedSections.has(section.id);
-            const isSectionEditing = editingSectionId === section.id;
-
-            return (
-              <div key={section.id} className="space-y-0.5 mb-4 last:mb-0">
-                <div 
-                   onDragOver={e => e.preventDefault()}
-                   onDrop={e => handleDropToSection(e, section.id)}
-                   className="flex items-center group/sec relative h-8"
-                >
-                  <div className="flex items-center gap-2 flex-1 pl-2">
-                    {isSectionEditing ? (
-                      <input 
-                        ref={sectionInputRef} 
-                        autoFocus 
-                        value={inputValue} 
-                        onChange={e => setInputValue(e.target.value)} 
-                        onBlur={() => { if(inputValue.trim()) renameProjectSection(project.id, section.id, inputValue); setEditingSectionId(null); }} 
-                        onKeyDown={e => e.key === 'Enter' && (inputValue.trim() && renameProjectSection(project.id, section.id, inputValue), setEditingSectionId(null))} 
-                        className="text-[9px] font-black uppercase text-[var(--text-main)] tracking-[0.15em] bg-transparent border-b border-[var(--primary)] outline-none px-0" 
-                      />
-                    ) : (
-                      <span 
-                        onDoubleClick={() => { setEditingSectionId(section.id); setInputValue(section.title); }}
-                        className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-[0.15em] opacity-80 shrink-0 cursor-text hover:text-[var(--text-main)] transition-colors"
-                      >
-                        {section.title}
-                      </span>
-                    )}
-                    <div className="h-[1px] flex-1 bg-[var(--border-color)] opacity-20"></div>
-                  </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/sec:opacity-100 transition-opacity pr-2 shrink-0">
-                    <button onClick={() => handleAddTaskAndEdit(project.id, section.id)} className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--primary)]" title="Швидке завдання"><i className="fa-solid fa-plus"></i></button>
-                    {!isSystem && section.id !== 'actions' && (
-                      <button onClick={() => confirm(`Видалити секцію "${section.title}"? Завдання залишаться в списку.`) && deleteProjectSection(project.id, section.id)} className="w-6 h-6 rounded hover:bg-rose-50 flex items-center justify-center text-[9px] text-rose-400" title="Видалити секцію"><i className="fa-solid fa-trash-can"></i></button>
-                    )}
-                    <button onClick={() => toggleSection(section.id)} className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--text-muted)]"><i className={`fa-solid ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i></button>
-                  </div>
-                </div>
-
-                {!isCollapsed && (
-                  <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                    {sectionItems.map(renderTask)}
-                    {sectionItems.length === 0 && (
-                      <div className="py-2 text-center text-[8px] font-bold text-slate-300 uppercase tracking-widest border border-dashed border-slate-100 rounded-lg mx-2">Секція порожня</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {!isSystem && (
-            <button 
-              onClick={handleAddSectionAction}
-              className="w-full mt-6 py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 hover:bg-white transition-all group flex items-center justify-center gap-2"
-            >
-              <i className="fa-solid fa-plus-square group-hover:scale-110 transition-transform"></i>
-              Додати нову секцію
-            </button>
-          )}
-        </div>
-      ) : viewMode === 'kanban' ? (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-4 p-4 md:p-6 custom-scrollbar bg-slate-50/40">
-           {sections.map(section => {
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 space-y-1.5 pb-32 pt-0">
+        {viewMode === 'list' ? (
+          <>
+            {sections.map(section => {
               const sectionItems: Task[] = filteredTasks.filter(t => (t.projectSection as any) === section.id || (section.id === 'actions' && !t.projectSection));
+              const isCollapsed = collapsedSections.has(section.id);
+              const isSectionEditing = editingSectionId === section.id;
+
               return (
-                <div 
-                  key={section.id} 
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => handleDropToSection(e, section.id)}
-                  className="w-[280px] md:w-[320px] shrink-0 flex flex-col bg-white border border-slate-200 p-3 h-full overflow-hidden rounded-2xl shadow-sm"
-                >
-                   <div className="flex items-center justify-between mb-4 px-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                         <Typography variant="tiny" className="text-slate-600 font-black uppercase tracking-widest truncate">{section.title}</Typography>
-                         <span className="text-[8px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">{sectionItems.length}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => handleAddTaskAndEdit(project.id, section.id)} className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all"><i className="fa-solid fa-plus text-[10px]"></i></button>
-                      </div>
-                   </div>
-                   <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pb-10">
+                <div key={section.id} className="space-y-0.5 mb-4 last:mb-0">
+                  <div 
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => handleDropToSection(e, section.id)}
+                    className="flex items-center group/sec relative h-8"
+                  >
+                    <div className="flex items-center gap-2 flex-1 pl-2">
+                      {isSectionEditing ? (
+                        <input 
+                          ref={sectionInputRef} 
+                          autoFocus 
+                          value={inputValue} 
+                          onChange={e => setInputValue(e.target.value)} 
+                          onBlur={() => { if(inputValue.trim()) renameProjectSection(project.id, section.id, inputValue); setEditingSectionId(null); }} 
+                          onKeyDown={e => e.key === 'Enter' && (inputValue.trim() && renameProjectSection(project.id, section.id, inputValue), setEditingSectionId(null))} 
+                          className="text-[9px] font-black uppercase text-[var(--text-main)] tracking-[0.15em] bg-transparent border-b border-[var(--primary)] outline-none px-0" 
+                        />
+                      ) : (
+                        <span 
+                          onDoubleClick={() => { setEditingSectionId(section.id); setInputValue(section.title); }}
+                          className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-[0.15em] opacity-80 shrink-0 cursor-text hover:text-[var(--text-main)] transition-colors"
+                        >
+                          {section.title}
+                        </span>
+                      )}
+                      <div className="h-[1px] flex-1 bg-[var(--border-color)] opacity-20"></div>
+                    </div>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/sec:opacity-100 transition-opacity pr-2 shrink-0">
+                      <button onClick={() => handleAddTaskAndEdit(project.id, section.id)} className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--primary)]" title="Швидке завдання"><i className="fa-solid fa-plus"></i></button>
+                      {!isSystem && section.id !== 'actions' && (
+                        <button onClick={() => confirm(`Видалити секцію "${section.title}"? Завдання залишаться в списку.`) && deleteProjectSection(project.id, section.id)} className="w-6 h-6 rounded hover:bg-rose-50 flex items-center justify-center text-[9px] text-rose-400" title="Видалити секцію"><i className="fa-solid fa-trash-can"></i></button>
+                      )}
+                      <button onClick={() => toggleSection(section.id)} className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[9px] text-[var(--text-muted)]"><i className={`fa-solid ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i></button>
+                    </div>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                       {sectionItems.map(renderTask)}
                       {sectionItems.length === 0 && (
-                        <div className="py-16 text-center opacity-10 flex flex-col items-center select-none grayscale">
-                           <i className="fa-solid fa-mountain-sun text-4xl mb-3"></i>
-                           <span className="text-[9px] font-black uppercase tracking-widest">Горизонт чистий</span>
-                        </div>
+                        <div className="py-2 text-center text-[8px] font-bold text-slate-300 uppercase tracking-widest border border-dashed border-slate-100 rounded-lg mx-2">Секція порожня</div>
                       )}
-                   </div>
+                    </div>
+                  )}
                 </div>
               );
-           })}
-           <button 
-             onClick={handleAddSectionAction}
-             className="w-12 shrink-0 bg-slate-100/50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center text-slate-300 hover:text-indigo-500 hover:border-indigo-300 transition-all group"
-             title="Додати нову колонку"
-           >
-              <i className="fa-solid fa-plus text-xl group-hover:scale-125 transition-transform"></i>
-           </button>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 py-8 bg-slate-50/30">
-           <div className="max-w-3xl mx-auto space-y-12 pb-32 relative">
-              <div className="absolute left-[7px] top-4 bottom-24 w-[2px] bg-slate-200"></div>
-
-              {(Object.entries(timelineGroups) as [string, Task[]][]).map(([dateLabel, groupTasks]) => {
+            })}
+            {!isSystem && (
+              <button 
+                onClick={handleAddSectionAction}
+                className="w-full mt-6 py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 hover:bg-white transition-all group flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-plus-square group-hover:scale-110 transition-transform"></i>
+                Додати нову секцію
+              </button>
+            )}
+          </>
+        ) : viewMode === 'kanban' ? (
+          <div className="flex gap-4 p-4 md:p-6 custom-scrollbar bg-slate-50/40">
+             {sections.map(section => {
+                const sectionItems: Task[] = filteredTasks.filter(t => (t.projectSection as any) === section.id || (section.id === 'actions' && !t.projectSection));
+                return (
+                  <div key={section.id} onDragOver={e => e.preventDefault()} onDrop={e => handleDropToSection(e, section.id)} className="w-[280px] md:w-[320px] shrink-0 flex flex-col bg-white border border-slate-200 p-3 h-full overflow-hidden rounded-2xl shadow-sm">
+                     <div className="flex items-center justify-between mb-4 px-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                           <Typography variant="tiny" className="text-slate-600 font-black uppercase tracking-widest truncate">{section.title}</Typography>
+                           <span className="text-[8px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">{sectionItems.length}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleAddTaskAndEdit(project.id, section.id)} className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all"><i className="fa-solid fa-plus text-[10px]"></i></button>
+                        </div>
+                     </div>
+                     <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pb-10">
+                        {sectionItems.map(renderTask)}
+                     </div>
+                  </div>
+                );
+             })}
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto space-y-12 pb-32 relative pt-8">
+             <div className="absolute left-[7px] top-4 bottom-24 w-[2px] bg-slate-200"></div>
+             {(Object.entries(timelineGroups) as [string, Task[]][]).map(([dateLabel, groupTasks]) => {
                 if (groupTasks.length === 0) return null;
                 return (
                   <div key={dateLabel} className="relative pl-8 space-y-4">
                      <div className={`absolute left-0 top-1 w-4 h-4 rounded-full border-4 border-white shadow-sm z-10 ${dateLabel === 'Сьогодні' ? 'bg-indigo-600 animate-pulse' : 'bg-slate-300'}`}></div>
-                     
                      <div className="flex items-center gap-3">
-                        <Typography variant="tiny" className={`font-black uppercase tracking-widest ${dateLabel === 'Сьогодні' ? 'text-indigo-600' : 'text-slate-400'}`}>
-                          {dateLabel}
-                        </Typography>
+                        <Typography variant="tiny" className={`font-black uppercase tracking-widest ${dateLabel === 'Сьогодні' ? 'text-indigo-600' : 'text-slate-400'}`}>{dateLabel}</Typography>
                         <div className="h-px flex-1 bg-slate-100"></div>
                      </div>
-
-                     <div className="grid grid-cols-1 gap-2">
-                        {groupTasks.map(renderTask)}
-                     </div>
+                     <div className="grid grid-cols-1 gap-2">{groupTasks.map(renderTask)}</div>
                   </div>
                 );
-              })}
+             })}
+          </div>
+        )}
+      </div>
 
-              {filteredTasks.length === 0 && (
-                <div className="py-20 text-center opacity-10 flex flex-col items-center">
-                   <i className="fa-solid fa-timeline text-9xl mb-8"></i>
-                   <Typography variant="h2" className="text-2xl uppercase font-black">Стрічка порожня</Typography>
-                </div>
-              )}
-           </div>
-        </div>
+      {isMobile && onOpenQuickAdd && (
+        <button 
+          onClick={onOpenQuickAdd}
+          className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[500] hover:scale-110 active:scale-95 transition-all border-4 border-white"
+          title="Додати завдання"
+        >
+          <i className="fa-solid fa-plus text-2xl"></i>
+        </button>
       )}
     </div>
   );
