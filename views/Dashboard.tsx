@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Task, Project, TaskStatus, Priority } from '../types';
 import Typography from '../components/ui/Typography';
 import Card from '../components/ui/Card';
@@ -15,6 +15,7 @@ const Dashboard: React.FC = () => {
     tasks, projects, timeBlocks, toggleTaskStatus, toggleHabitStatus, 
     character, cycle, setActiveTab, setCalendarViewMode, aiEnabled, people 
   } = useApp();
+  const { isGuest, login } = useAuth();
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -42,7 +43,6 @@ const Dashboard: React.FC = () => {
   const todayTimestamp = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
   const dateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Перевірка вечірнього часу (після 21:00)
   const isEveningReviewTime = useMemo(() => currentTime.getHours() >= 21, [currentTime]);
 
   const stats = useMemo(() => {
@@ -180,9 +180,9 @@ const Dashboard: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 transition-none">
           <div className="max-w-6xl mx-auto space-y-4 pb-32">
+            
             {mainTab === 'tasks' ? (
               <>
-                {/* ВЕЧІРНЯ РЕТРОСПЕКЦІЯ - З'ЯВЛЯЄТЬСЯ ПІСЛЯ 21:00 */}
                 {isEveningReviewTime && (
                   <Card 
                     padding="none" 

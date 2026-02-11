@@ -13,7 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const {
     isSidebarCollapsed, setSidebarCollapsed, character
   } = useApp();
-  const { user } = useAuth();
+  const { user, login, isGuest } = useAuth();
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -71,9 +71,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     );
   };
 
-  const barItemIds = ['today', 'lists', 'calendar', 'habits'];
-  const menuOnlyItems = sections.flatMap(s => s.items).filter(item => !barItemIds.includes(item.id));
-
   return (
     <>
       <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-60'} hidden md:flex flex-col h-screen sticky top-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] transition-all duration-300 shrink-0 z-40`}>
@@ -90,12 +87,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         </div>
 
         <div className="px-2 mb-4">
-          <div onClick={() => setActiveTab('character')} className={`flex items-center gap-3 p-1.5 rounded-2xl cursor-pointer transition-all ${activeTab === 'character' ? 'ring-2 ring-[var(--primary)] bg-[var(--primary)]/5' : 'hover:bg-black/5'} ${isSidebarCollapsed ? 'justify-center px-0' : 'px-2'}`}>
-            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm bg-card shrink-0 border border-[var(--border-color)]">
-              <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="Hero" />
+          {isGuest ? (
+            <button 
+              onClick={login}
+              className={`w-full flex items-center gap-3 p-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg overflow-hidden ${isSidebarCollapsed ? 'justify-center' : 'px-4'}`}
+            >
+              <i className="fa-brands fa-google text-xs"></i>
+              {!isSidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-widest">Увійти</span>}
+            </button>
+          ) : (
+            <div onClick={() => setActiveTab('character')} className={`flex items-center gap-3 p-1.5 rounded-2xl cursor-pointer transition-all ${activeTab === 'character' ? 'ring-2 ring-[var(--primary)] bg-[var(--primary)]/5' : 'hover:bg-black/5'} ${isSidebarCollapsed ? 'justify-center px-0' : 'px-2'}`}>
+              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm bg-card shrink-0 border border-[var(--border-color)]">
+                <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="Hero" />
+              </div>
+              {!isSidebarCollapsed && <div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase truncate leading-none mb-0.5">{character.name}</div><div className="text-[7px] font-bold text-[var(--primary)] uppercase tracking-widest">LVL {character.level}</div></div>}
             </div>
-            {!isSidebarCollapsed && <div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase truncate leading-none mb-0.5">{character.name}</div><div className="text-[7px] font-bold text-[var(--primary)] uppercase tracking-widest">LVL {character.level}</div></div>}
-          </div>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto no-scrollbar space-y-6 pt-2">
@@ -118,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         </div>
       </aside>
 
-      {/* Мобільний навбар (Themed) */}
+      {/* Мобільний навбар */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-xl border-t border-theme z-[1100] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
@@ -142,10 +149,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         <div className="fixed inset-0 z-[1000] bg-main/95 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
           <header className="p-6 border-b border-theme flex justify-between items-center shrink-0 bg-card">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl overflow-hidden border border-theme shadow-sm">
-                <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="User" />
-              </div>
-              <Typography variant="h2" className="text-xl font-black uppercase tracking-tighter text-main">Система</Typography>
+              {isGuest ? (
+                <button onClick={login} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">Увійти з Google</button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl overflow-hidden border border-theme shadow-sm">
+                    <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="User" />
+                  </div>
+                  <Typography variant="h2" className="text-xl font-black uppercase tracking-tighter text-main">Система</Typography>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <button
@@ -162,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           </header>
 
           <div className="overflow-y-auto p-4 grid grid-cols-3 gap-3 pb-32 no-scrollbar">
-            {menuOnlyItems.map(item => (
+            {sections.flatMap(s => s.items).filter(item => !['today', 'lists', 'calendar', 'habits'].includes(item.id)).map(item => (
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id!); setShowMobileMenu(false); }}

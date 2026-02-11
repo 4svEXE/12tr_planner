@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +9,73 @@ import Badge from '../components/ui/Badge';
 import { useResizer } from '../hooks/useResizer';
 import ReportDesigner from '../components/settings/ReportDesigner';
 
+const CleanupModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { clearSelectedData } = useApp();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [confirmText, setConfirmText] = useState('');
+
+  const categories = [
+    { id: 'tasks', label: 'Квести та вхідні', icon: 'fa-bolt' },
+    { id: 'projects', label: 'Цілі та проєкти', icon: 'fa-flag-checkered' },
+    { id: 'people', label: 'Мережа союзників', icon: 'fa-user-ninja' },
+    { id: 'diary', label: 'Щоденник та записи', icon: 'fa-book-open' },
+    { id: 'shopping', label: 'Списки покупок', icon: 'fa-cart-shopping' },
+    { id: 'routine', label: 'Розпорядок та пресети', icon: 'fa-clock' },
+    { id: 'character', label: 'Профіль героя та Акваріум', icon: 'fa-user-astronaut' },
+  ];
+
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleCleanup = () => {
+    if (confirmText.toLowerCase() !== 'видалити') return alert('Введіть слово ВИДАЛИТИ для підтвердження');
+    clearSelectedData(selected);
+    onClose();
+    alert('Обрані дані успішно очищено.');
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 tiktok-blur">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose}></div>
+      <Card className="w-full max-w-md relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-white border-theme animate-in zoom-in-95 duration-200 overflow-hidden">
+        <Typography variant="h2" className="text-xl mb-2 text-rose-600 font-black uppercase">Очищення Сховища</Typography>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">Оберіть категорії для повного видалення</p>
+        
+        <div className="space-y-2 mb-8">
+           {categories.map(cat => (
+             <label key={cat.id} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-all">
+                <input type="checkbox" checked={selected.includes(cat.id)} onChange={() => toggle(cat.id)} className="w-5 h-5 rounded-lg accent-rose-500" />
+                <div className="flex items-center gap-3 flex-1">
+                   <i className={`fa-solid ${cat.icon} text-slate-400 w-4 text-center`}></i>
+                   <span className="text-xs font-bold text-slate-700">{cat.label}</span>
+                </div>
+             </label>
+           ))}
+        </div>
+
+        <div className="space-y-4">
+           <div>
+              <label className="text-[8px] font-black uppercase text-slate-400 ml-1 block mb-2">Напишіть "видалити" для підтвердження</label>
+              <input value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder="Напишіть видалити..." className="w-full h-10 bg-slate-50 border-2 border-rose-100 rounded-xl px-4 text-sm font-bold outline-none focus:border-rose-500 text-rose-600" />
+           </div>
+           <div className="flex gap-3">
+              <Button variant="white" className="flex-1" onClick={onClose}>СКАСУВАТИ</Button>
+              <Button 
+                disabled={selected.length === 0 || confirmText.toLowerCase() !== 'видалити'} 
+                variant="primary" 
+                className="flex-[2] bg-rose-600 hover:bg-rose-700 shadow-rose-200" 
+                onClick={handleCleanup}
+              >
+                ОЧИСТИТИ ОБРАНЕ ({selected.length})
+              </Button>
+           </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 const SettingsView: React.FC = () => {
   const { 
     theme, setTheme, aiEnabled, setAiEnabled, sidebarSettings, 
@@ -19,9 +85,10 @@ const SettingsView: React.FC = () => {
     diaryNotificationTime, setDiaryNotificationTime,
     setActiveTab
   } = useApp();
-  const { user } = useAuth();
+  const { user, login, logout, isGuest } = useAuth();
   
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>('account');
+  const [showCleanup, setShowCleanup] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -51,22 +118,14 @@ const SettingsView: React.FC = () => {
     setTimeout(() => setFeedbackSent(false), 3000);
   };
 
-  const handleFullReset = () => {
-    if (confirm('Видалити ВСІ дані? Ця дія незворотна.')) {
-      localStorage.clear();
-      localStorage.setItem('12tr_guest_mode', 'true');
-      window.location.reload();
-    }
-  };
-
   const sections = [
+    { id: 'account', icon: 'fa-user-circle', label: 'Мій Акаунт', color: 'text-blue-500', desc: 'Google Sync & Профіль' },
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
-    { id: 'profile', icon: 'fa-user-astronaut', label: 'Профіль Героя', color: 'text-orange-500', desc: 'Ідентичність у грі' },
+    { id: 'profile', icon: 'fa-user-astronaut', label: 'Герой RPG', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'report', icon: 'fa-chart-line', label: 'Звіт Дня', color: 'text-rose-500', desc: 'Конструктор ретроспекції' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
     { id: 'notifications', icon: 'fa-bell', label: 'Сповіщення', color: 'text-rose-500', desc: 'Push & Ритми' },
-    { id: 'sidebar', icon: 'fa-bars-staggered', label: 'Навігація', color: 'text-amber-500', desc: 'Бокова панель' },
-    { id: 'data', icon: 'fa-database', label: 'Хмара & Сховище', color: 'text-rose-500', desc: 'Синхронізація даних' },
+    { id: 'data', icon: 'fa-database', label: 'Дані та Сховище', color: 'text-rose-600', desc: 'Хмара та Очищення' },
     { id: 'feedback', icon: 'fa-comment-dots', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
   ];
 
@@ -84,6 +143,40 @@ const SettingsView: React.FC = () => {
 
   const renderContent = () => {
     switch (selectedSectionId) {
+      case 'account':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             {isGuest ? (
+               <Card padding="lg" className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none shadow-xl relative overflow-hidden">
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                     <div className="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center text-3xl mb-6 shadow-inner"><i className="fa-solid fa-cloud-arrow-up"></i></div>
+                     <Typography variant="h2" className="text-white text-xl mb-2">Хмарна синхронізація</Typography>
+                     <p className="text-xs text-white/70 mb-8 max-w-[240px]">Увійдіть через Google, щоб ваші квести та союзники були доступні на всіх пристроях.</p>
+                     <button onClick={login} className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" />
+                        Увійти з Google
+                     </button>
+                  </div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-10 -mt-10"></div>
+               </Card>
+             ) : (
+               <div className="space-y-4">
+                  <Card className="p-6 border-theme bg-white">
+                     <div className="flex items-center gap-4 mb-6">
+                        <img src={user?.photoURL || ''} className="w-12 h-12 rounded-2xl border-2 border-slate-100 shadow-sm" />
+                        <div className="min-w-0">
+                           <div className="text-sm font-black text-slate-800 truncate">{user?.displayName}</div>
+                           <div className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-tight">{user?.email}</div>
+                        </div>
+                        <Badge variant="emerald" className="ml-auto text-[7px]">ACTIVE</Badge>
+                     </div>
+                     <div className="h-px bg-slate-50 mb-6"></div>
+                     <button onClick={logout} className="w-full py-3 bg-rose-50 text-rose-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all">Вийти з акаунта</button>
+                  </Card>
+               </div>
+             )}
+          </div>
+        );
       case 'report':
         return <ReportDesigner />;
       case 'profile':
@@ -100,6 +193,14 @@ const SettingsView: React.FC = () => {
                 <div className="space-y-1">
                    <label className="text-[9px] font-black uppercase text-[var(--text-muted)] ml-1">Псевдонім</label>
                    <input value={character.name} onChange={e => updateCharacter({name: e.target.value})} className="w-full h-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded px-3 text-xs font-bold outline-none text-main" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[9px] font-black uppercase text-[var(--text-muted)] ml-1">Біографія Героя</label>
+                   <textarea value={character.bio} onChange={e => updateCharacter({bio: e.target.value})} className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded p-3 text-xs font-medium outline-none min-h-[100px] resize-none leading-relaxed text-main" placeholder="Хто ви у цьому світі?.." />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[9px] font-black uppercase text-[var(--text-muted)] ml-1">Глобальна Візія</label>
+                   <textarea value={character.vision} onChange={e => updateCharacter({vision: e.target.value})} className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded p-3 text-xs font-medium italic outline-none min-h-[80px] resize-none leading-relaxed text-main" placeholder="Яка ваша фінальна мета?.." />
                 </div>
                 <div className="p-3 bg-slate-900 rounded text-white">
                    <Typography variant="tiny" className="text-orange-500 mb-1 font-black">Статус Гравця</Typography>
@@ -212,8 +313,14 @@ const SettingsView: React.FC = () => {
                 </Card>
              )}
              <Card padding="md" className="border-rose-100 bg-rose-50/20">
-                <Typography variant="h2" className="text-rose-600 mb-2 text-sm">Очищення</Typography>
-                <button onClick={handleFullReset} className="w-full py-3 rounded bg-white text-rose-500 border border-rose-100 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">ОЧИСТИТИ ЛОКАЛЬНЕ СХОВИЩЕ</button>
+                <Typography variant="h3" className="text-rose-600 mb-2 text-sm font-black uppercase">Управління даними</Typography>
+                <p className="text-[10px] text-slate-500 font-bold uppercase mb-4 leading-relaxed tracking-tight">Повне або вибіркове очищення вашого простору в локальному сховищі та хмарі.</p>
+                <button 
+                  onClick={() => setShowCleanup(true)} 
+                  className="w-full py-4 rounded-2xl bg-white text-rose-500 border-2 border-rose-100 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                >
+                   Хірургічне очищення...
+                </button>
              </Card>
           </div>
         );
@@ -265,7 +372,7 @@ const SettingsView: React.FC = () => {
       </div>
       <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${isMobile ? (selectedSectionId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
         {!isMobile && (
-          <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-[1px] h-full cursor-col-resize hover:bg-primary z-[120] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-[var(--border-color)]'}`}></div>
+          <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-[1px] h-full cursor-col-resize hover:bg-primary z-[120] transition-colors ${isResizing ? 'bg-primary' : 'bg-[var(--border-color)]'}`}></div>
         )}
         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] relative overflow-hidden flex flex-col shadow-2xl">
            {selectedSectionId ? (
@@ -291,6 +398,8 @@ const SettingsView: React.FC = () => {
            ) : (!isMobile && <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-5 grayscale pointer-events-none select-none"><i className="fa-solid fa-gear text-9xl mb-8"></i><Typography variant="h2" className="text-2xl font-black uppercase tracking-widest">Параметри Двигуна</Typography></div>)}
         </div>
       </div>
+
+      {showCleanup && <CleanupModal onClose={() => setShowCleanup(false)} />}
     </div>
   );
 };

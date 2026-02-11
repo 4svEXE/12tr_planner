@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +11,7 @@ type ProfileTab = 'status' | 'identity' | 'evolution';
 
 const CharacterProfile: React.FC = () => {
   const { character, updateCharacter, tasks, cycle, diary, hobbies } = useApp();
-  const { user, isGuest, setIsAuthModalOpen } = useAuth();
+  const { user, isGuest, login } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('status');
 
   const gtdStats = useMemo(() => ({
@@ -81,7 +80,7 @@ const CharacterProfile: React.FC = () => {
         {/* CLOUD SYNC SECTION */}
         <section className="mb-10">
           {isGuest ? (
-            <Card padding="lg" className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white border-none shadow-xl shadow-indigo-200 overflow-hidden relative group cursor-pointer active:scale-[0.98] transition-all" onClick={() => setIsAuthModalOpen(true)}>
+            <Card padding="lg" className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white border-none shadow-xl shadow-indigo-200 overflow-hidden relative group cursor-pointer active:scale-[0.98] transition-all" onClick={login}>
                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-10 -mt-10"></div>
                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                   <div className="flex items-center gap-5">
@@ -89,11 +88,11 @@ const CharacterProfile: React.FC = () => {
                        <i className="fa-solid fa-cloud-arrow-up animate-bounce"></i>
                     </div>
                     <div className="text-center md:text-left">
-                       <Typography variant="h3" className="text-white text-lg mb-1">Збережіть свій прогрес</Typography>
-                       <p className="text-xs text-white/70 font-medium">Увійдіть через Google, щоб синхронізувати квести та AI-профіль</p>
+                       <Typography variant="h3" className="text-white text-lg md:text-xl font-black mb-1">Хмарна синхронізація</Typography>
+                       <p className="text-xs text-white/70 font-bold uppercase tracking-widest">Збережи свої квести та прокачай акаунт</p>
                     </div>
                   </div>
-                  <Button variant="white" className="w-full md:w-auto px-8 py-4 rounded-2xl text-indigo-600 font-black shadow-lg">УВІЙТИ ЗАРАЗ</Button>
+                  <Button variant="white" className="w-full md:w-auto px-8 py-4 rounded-2xl text-indigo-600 font-black shadow-lg">УВІЙТИ З GOOGLE</Button>
                </div>
             </Card>
           ) : (
@@ -199,12 +198,12 @@ const CharacterProfile: React.FC = () => {
                          <input value={character.role} onChange={e => updateCharacter({ role: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-orange-100 outline-none" />
                       </div>
                       <div>
-                         <label className="text-[8px] font-black uppercase text-slate-400 block mb-1">Життєпис</label>
-                         <textarea value={character.bio} onChange={e => updateCharacter({ bio: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-orange-100 outline-none min-h-[80px] resize-none" />
+                         <label className="text-[8px] font-black uppercase text-slate-400 block mb-1">Біографія Героя</label>
+                         <textarea value={character.bio} onChange={e => updateCharacter({ bio: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-orange-100 outline-none min-h-[120px] resize-none leading-relaxed" placeholder="Опишіть шлях вашого героя..." />
                       </div>
                       <div>
                          <label className="text-[8px] font-black uppercase text-slate-400 block mb-1">Глобальна Візія</label>
-                         <textarea value={character.vision} onChange={e => updateCharacter({ vision: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-medium italic focus:ring-2 focus:ring-orange-100 outline-none min-h-[60px] resize-none border-l-2 border-orange-200" />
+                         <textarea value={character.vision} onChange={e => updateCharacter({ vision: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-medium italic focus:ring-2 focus:ring-orange-100 outline-none min-h-[100px] resize-none border-l-2 border-orange-200 leading-relaxed" placeholder="Який фінальний стан системи ви бачите?" />
                       </div>
                    </Card>
                 </div>

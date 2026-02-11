@@ -70,6 +70,7 @@ interface AppContextType extends StoreState {
   setDiaryNotificationEnabled: (enabled: boolean) => void;
   setDiaryNotificationTime: (time: string) => void;
   syncData: () => Promise<void>;
+  clearSelectedData: (categories: string[]) => void;
   isSyncing: boolean;
   lastSyncTime: number | null;
   plannerProjectId?: string;
@@ -143,6 +144,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   };
 
   if (!state) return null;
+
+  const clearSelectedData = (categories: string[]) => {
+    const seed = generateSeedData();
+    let nextState = { ...state };
+
+    if (categories.includes('tasks')) nextState.tasks = [];
+    if (categories.includes('projects')) nextState.projects = seed.projects;
+    if (categories.includes('people')) nextState.people = [];
+    if (categories.includes('diary')) nextState.diary = [];
+    if (categories.includes('shopping')) {
+      nextState.shoppingStores = [];
+      nextState.shoppingItems = [];
+    }
+    if (categories.includes('routine')) {
+      nextState.timeBlocks = seed.timeBlocks;
+      nextState.routinePresets = [];
+    }
+    if (categories.includes('character')) {
+      nextState.character = seed.character;
+      nextState.aquariumObjects = seed.aquariumObjects;
+      nextState.lastGoldCollectAt = Date.now();
+      nextState.lastFedAt = Date.now();
+      nextState.foodInventory = 5;
+      nextState.aquariumBeauty = 10;
+    }
+
+    pushUpdate(nextState);
+  };
 
   const buyAquariumObject = (type: any, species: string, cost: number, beauty: number, income: number) => {
     if (state.character.gold < cost) return alert("Недостатньо золота!");
@@ -350,6 +379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       deleteReportPreset: (id) => pushUpdate({ ...state, reportPresets: state.reportPresets?.filter(p => p.id !== id) }),
       setDiaryNotificationEnabled: (e) => pushUpdate({ ...state, diaryNotificationEnabled: e }),
       setDiaryNotificationTime: (t) => pushUpdate({ ...state, diaryNotificationTime: t }),
+      clearSelectedData,
       syncData,
     } as any}>
       {children}
