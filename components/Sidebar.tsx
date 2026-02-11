@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </aside>
 
       {/* Мобільний навбар */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-xl border-t border-theme z-[1100] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-xl border-t border-theme z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
           { id: 'lists', icon: 'fa-layer-group', label: 'Списки' },

@@ -78,7 +78,7 @@ const ListsView: React.FC = () => {
       )}
 
       <div className={`
-        ${isMobile ? 'fixed inset-y-0 left-0 z-[1001] w-[280px] transform transition-transform duration-300 ease-out' : 'relative w-64'}
+        ${isMobile ? 'fixed inset-y-0 left-0 z-[1111] w-[280px] transform transition-transform duration-300 ease-out' : 'relative w-64'}
         ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
         h-full
       `}>

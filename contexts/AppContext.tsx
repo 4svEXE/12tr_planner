@@ -77,6 +77,8 @@ interface AppContextType extends StoreState {
   setPlannerProjectId: (id: string | undefined) => void;
   calendarDate: number;
   calendarViewMode: CalendarViewMode;
+  isReportWizardOpen: boolean;
+  setIsReportWizardOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -118,6 +120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   const [detailsWidth, setDetailsWidth] = useState(450);
   const [calendarDate, setCalendarDate] = useState(Date.now());
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
+  const [isReportWizardOpen, setIsReportWizardOpen] = useState(false);
   
   const [plannerProjectId, setPlannerProjectId] = useState<string | undefined>();
   const [isSyncing, setIsSyncing] = useState(false);
@@ -261,7 +264,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   return (
     <AppContext.Provider value={{
       ...state, activeTab, setActiveTab, theme, setTheme, isSidebarCollapsed, setSidebarCollapsed, detailsWidth, setDetailsWidth, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
-      plannerProjectId, setPlannerProjectId, isSyncing, lastSyncTime,
+      plannerProjectId, setPlannerProjectId, isSyncing, lastSyncTime, isReportWizardOpen, setIsReportWizardOpen,
       updateCharacter: (u) => pushUpdate({ ...state, character: { ...state.character, ...u, updatedAt: Date.now() } }),
       addTask: (title, category = 'tasks', projectId, projectSection, isEvent, scheduledDate, personId, status) => { 
         const id = Math.random().toString(36).substr(2, 9); 

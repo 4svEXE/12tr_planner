@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
@@ -22,12 +21,14 @@ import ListsView from './views/ListsView';
 import AiChat from './components/AiChat';
 import AuthView from './views/AuthView';
 import NotificationToast from './components/ui/NotificationToast';
+import DailyReportWizard from './components/DailyReportWizard';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
   const { 
     activeTab, setActiveTab, tasks, projects, aiEnabled, theme, 
-    plannerProjectId, setPlannerProjectId, diaryNotificationEnabled, diaryNotificationTime 
+    plannerProjectId, setPlannerProjectId, diaryNotificationEnabled, 
+    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen 
   } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -55,11 +56,9 @@ const MainLayout: React.FC = () => {
     const nextTriggered = new Set(triggeredReminders);
     let hasNewTrigger = false;
 
-    // 1. Перевірка сповіщення щоденника
     if (diaryNotificationEnabled && diaryNotificationTime) {
       const currentTimeStr = nowDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       const todayStr = nowDate.toDateString();
-      
       if (currentTimeStr === diaryNotificationTime && lastDiaryNotifiedDate !== todayStr) {
         setLastDiaryNotifiedDate(todayStr);
         if ("Notification" in window && Notification.permission === "granted") {
@@ -72,12 +71,10 @@ const MainLayout: React.FC = () => {
       }
     }
 
-    // 2. Перевірка дедлайнів завдань
     const activeTasks = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate || t.dueDate));
     activeTasks.forEach(task => {
       const targetTime = task.scheduledDate || task.dueDate || 0;
       if (targetTime < now - 3600000) return;
-
       if (task.reminders && task.reminders.length > 0) {
         task.reminders.forEach(minutes => {
           const reminderKey = `${task.id}:${minutes}`;
@@ -93,36 +90,21 @@ const MainLayout: React.FC = () => {
     });
 
     if (hasNewTrigger) setTriggeredReminders(nextTriggered);
-
-    const imminent = tasks.filter(t => 
-      !t.isDeleted && 
-      t.status !== TaskStatus.DONE && 
-      t.scheduledDate && 
-      t.scheduledDate > now && 
-      t.scheduledDate <= now + 3600000 &&
-      !dismissedAlertIds.has(t.id)
-    );
+    const imminent = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && t.scheduledDate && t.scheduledDate > now && t.scheduledDate <= now + 3600000 && !dismissedAlertIds.has(t.id));
     setActiveAlerts(imminent);
-
   }, [tasks, triggeredReminders, dismissedAlertIds, diaryNotificationEnabled, diaryNotificationTime, lastDiaryNotifiedDate]);
 
   const triggerNotification = (task: Task, label: string) => {
     audioRef.current?.play().catch(() => {});
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(`Квест: ${task.title}`, { 
-        body: label, 
-        icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316" 
-      });
+      new Notification(`Квест: ${task.title}`, { body: label, icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316" });
     }
-    setActiveAlerts(prev => {
-      if (prev.find(t => t.id === task.id)) return prev;
-      return [...prev, task];
-    });
+    setActiveAlerts(prev => prev.find(t => t.id === task.id) ? prev : [...prev, task]);
   };
 
   useEffect(() => {
     checkDeadlines();
-    const interval = setInterval(checkDeadlines, 60000); // Кожну хвилину
+    const interval = setInterval(checkDeadlines, 60000);
     return () => clearInterval(interval);
   }, [checkDeadlines]);
 
@@ -130,14 +112,6 @@ const MainLayout: React.FC = () => {
     setDismissedAlertIds(prev => new Set(prev).add(taskId));
     setActiveAlerts(prev => prev.filter(t => t.id !== taskId));
   };
-
-  useEffect(() => {
-    if (activeTab === 'today') return;
-    window.history.pushState({ tab: activeTab }, '');
-    const handlePopState = (event: PopStateEvent) => setActiveTab('today');
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeTab, setActiveTab]);
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)).length,
@@ -162,7 +136,6 @@ const MainLayout: React.FC = () => {
       case 'people': return <PeopleView />;
       case 'hobbies': return <HobbiesView />;
       case 'shopping': return <ShoppingView />;
-      case 'completed': return <Inbox showCompleted />;
       case 'calendar': return <Calendar />;
       case 'projects': return <ProjectsView />;
       case 'hashtags': return <Hashtags tasks={tasks.filter(t => !t.isDeleted)} />;
@@ -187,11 +160,7 @@ const MainLayout: React.FC = () => {
         {renderContent()}
         <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
            {activeAlerts.slice(0, 3).map(task => (
-             <NotificationToast 
-               key={task.id} 
-               task={task} 
-               onClose={() => handleDismissAlert(task.id)} 
-             />
+             <NotificationToast key={task.id} task={task} onClose={() => handleDismissAlert(task.id)} />
            ))}
         </div>
         {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
@@ -200,6 +169,7 @@ const MainLayout: React.FC = () => {
             <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
           </button>
         )}
+        {isReportWizardOpen && <DailyReportWizard onClose={() => setIsReportWizardOpen(false)} />}
       </main>
       <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
     </div>

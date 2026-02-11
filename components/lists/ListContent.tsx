@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Project, Task, TaskStatus, Priority, ProjectSectionData } from '../../types';
@@ -221,7 +220,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
                     <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                       {sectionItems.map(renderTask)}
                       {sectionItems.length === 0 && (
-                        <div className="py-2 text-center text-[8px] font-bold text-slate-300 uppercase tracking-widest border border-dashed border-slate-100 rounded-lg mx-2">Секція порожня</div>
+                        <div className="py-4 text-center text-[8px] font-bold text-slate-300 uppercase tracking-widest mx-2">Секція порожня</div>
                       )}
                     </div>
                   )}

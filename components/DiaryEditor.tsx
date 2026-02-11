@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import Typography from './ui/Typography';
@@ -97,22 +96,22 @@ const EditableBlock: React.FC<{
 
   const getBlockStyle = () => {
     switch (block.type) {
-      case 'h1': return "text-[18px] font-bold mb-2 mt-4 text-slate-900";
-      case 'h2': return "text-[16px] font-bold mb-1.5 mt-3 text-slate-800";
-      case 'h3': return "text-[14px] font-bold mb-1 mt-2 text-slate-700";
-      case 'quote': return "border-l-[3px] border-slate-200 pl-4 italic text-slate-500 my-3 py-1 bg-slate-50/50 rounded-r-lg";
-      case 'task': return `text-[13px] font-medium flex items-center gap-3 py-1 ${block.checked ? 'line-through text-slate-300' : 'text-slate-700'}`;
-      case 'bullet': return "text-[13px] font-medium flex items-start gap-3 py-1 text-slate-700";
-      case 'number': return "text-[13px] font-medium flex items-start gap-3 py-1 text-slate-700";
-      case 'divider': return "h-px bg-slate-100 my-6 w-full";
-      default: return "text-[13px] font-medium leading-relaxed text-slate-600 py-1";
+      case 'h1': return "text-[18px] font-bold mb-2 mt-4 text-[var(--text-main)]";
+      case 'h2': return "text-[16px] font-bold mb-1.5 mt-3 text-[var(--text-main)] opacity-90";
+      case 'h3': return "text-[14px] font-bold mb-1 mt-2 text-[var(--text-main)] opacity-80";
+      case 'quote': return "border-l-[3px] border-[var(--primary)]/30 pl-4 italic text-[var(--text-muted)] my-3 py-1 bg-[var(--bg-main)]/30 rounded-r-lg";
+      case 'task': return `text-[13px] font-medium flex items-center gap-3 py-1 ${block.checked ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'}`;
+      case 'bullet': return "text-[13px] font-medium flex items-start gap-3 py-1 text-[var(--text-main)]";
+      case 'number': return "text-[13px] font-medium flex items-start gap-3 py-1 text-[var(--text-main)]";
+      case 'divider': return "h-px bg-[var(--border-color)] my-6 w-full";
+      default: return "text-[13px] font-medium leading-relaxed text-[var(--text-main)] opacity-80 py-1";
     }
   };
 
   return (
     <div className={`relative group/block w-full flex items-start ${isFocused ? 'z-30' : 'z-10'}`}>
       <div className="absolute -left-6 top-1.5 flex items-center opacity-0 group-hover/block:opacity-100 transition-opacity">
-        <button onClick={() => onAddBlock('text')} className="w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-300 hover:text-slate-600 transition-colors">
+        <button onClick={() => onAddBlock('text')} className="w-5 h-5 rounded hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
           <i className="fa-solid fa-plus text-[9px]"></i>
         </button>
       </div>
@@ -122,18 +121,18 @@ const EditableBlock: React.FC<{
           {block.type === 'task' && (
             <button 
               onClick={() => onUpdate({ checked: !block.checked })} 
-              className={`w-4 h-4 rounded border mt-1 shrink-0 transition-all flex items-center justify-center ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white hover:border-emerald-400'}`}
+              className={`w-4 h-4 rounded border mt-1 shrink-0 transition-all flex items-center justify-center ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--primary)]'}`}
             >
               {block.checked && <i className="fa-solid fa-check text-[8px]"></i>}
             </button>
           )}
           
           {block.type === 'bullet' && (
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] opacity-40 mt-2.5 shrink-0" />
           )}
 
           {block.type === 'number' && (
-            <span className="text-[11px] font-black text-slate-300 mt-1.5 shrink-0 w-4">{index + 1}.</span>
+            <span className="text-[11px] font-black text-[var(--text-muted)] opacity-40 mt-1.5 shrink-0 w-4">{index + 1}.</span>
           )}
 
           <div 
@@ -144,25 +143,25 @@ const EditableBlock: React.FC<{
             onInput={handleInput} 
             onKeyDown={internalKeyDown} 
             onFocus={onFocus}
-            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 empty:before:italic block-input ${getBlockStyle()}`}
+            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)] empty:before:opacity-30 empty:before:italic block-input ${getBlockStyle()}`}
           />
         </div>
       </div>
 
       {showSlashMenu && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-          <div className="px-4 py-1 text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Форматування</div>
+        <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--bg-card)] shadow-[0_10px_40px_rgba(0,0,0,0.25)] border border-[var(--border-color)] rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="px-4 py-1 text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 opacity-50">Форматування</div>
           <div className="max-h-72 overflow-y-auto no-scrollbar">
             {BLOCK_TYPES.map((t, i) => (
               <button 
                 key={t.id} 
                 onClick={() => selectBlockType(t.id as Block['type'])}
                 onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-colors ${selectedIndex === i ? 'bg-slate-50' : ''}`}
+                className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-colors ${selectedIndex === i ? 'bg-black/5' : ''}`}
               >
-                <i className={`fa-solid ${t.icon} w-4 text-center text-slate-400 text-[10px] ${selectedIndex === i ? 'text-indigo-500' : ''}`}></i>
+                <i className={`fa-solid ${t.icon} w-4 text-center text-[var(--text-muted)] text-[10px] ${selectedIndex === i ? 'text-[var(--primary)]' : ''}`}></i>
                 <div className="flex-1 min-w-0">
-                   <div className={`text-[12px] font-bold truncate ${selectedIndex === i ? 'text-indigo-600' : 'text-slate-700'}`}>{t.label}</div>
+                   <div className={`text-[12px] font-bold truncate ${selectedIndex === i ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{t.label}</div>
                 </div>
               </button>
             ))}
@@ -278,7 +277,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   };
 
   return (
-    <div className="h-full flex flex-col bg-white relative">
+    <div className="h-full flex flex-col bg-transparent relative">
       <div className="flex-1 overflow-y-auto no-scrollbar py-2">
         <div className="space-y-0.5">
           {blocks.map((block, idx) => (
