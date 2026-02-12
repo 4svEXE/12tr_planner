@@ -17,7 +17,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
 
   useEffect(() => {
     // Приємний звук завершення (Notification chime)
-    audioRef.current = new Audio('https://assets.mixkit.sh/active_storage/sfx/2869/2869-preview.mp3');
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -82,7 +82,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[5, 15, 25, 45, 60, 90].map((m) => (
-              <button 
+              <button
                 key={m}
                 onClick={() => startTimer(m)}
                 className="py-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl text-[var(--text-main)] hover:border-[var(--primary)]/50 transition-all group shadow-sm"
@@ -94,7 +94,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
           </div>
 
           <p className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-widest leading-relaxed">
-            Почніть сесію, щоб увійти в стан потоку. <br/> Звук сповістить про завершення.
+            Почніть сесію, щоб увійти в стан потоку. <br /> Звук сповістить про завершення.
           </p>
         </div>
       </div>
@@ -104,14 +104,14 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] flex flex-col items-center justify-center p-8 transition-none animate-in zoom-in-95 duration-500">
       <div className="absolute top-8 right-8 flex gap-4">
-        <button 
+        <button
           onClick={() => { setIsActive(false); setIsSetup(true); }}
           className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center transition-all"
           title="Скинути"
         >
           <i className="fa-solid fa-rotate-left"></i>
         </button>
-        <button 
+        <button
           onClick={onExit}
           className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center transition-all"
         >
@@ -138,11 +138,10 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
         </div>
 
         <div className="flex justify-center gap-6">
-          <button 
+          <button
             onClick={() => setIsActive(!isActive)}
-            className={`px-12 py-5 rounded-3xl font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all ${
-              isActive ? 'bg-black/5 text-[var(--text-main)] border border-[var(--border-color)]' : 'bg-[var(--primary)] text-white'
-            }`}
+            className={`px-12 py-5 rounded-3xl font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all ${isActive ? 'bg-black/5 text-[var(--text-main)] border border-[var(--border-color)]' : 'bg-[var(--primary)] text-white'
+              }`}
           >
             {isActive ? 'ПАУЗА' : 'ПРОДОВЖИТИ'}
           </button>
@@ -151,9 +150,9 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
 
       <div className="absolute bottom-12 flex flex-col items-center gap-4">
         <div className="flex gap-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[var(--primary)] animate-bounce' : 'bg-[var(--text-muted)]/20'}`} style={{ animationDelay: `${i * 0.1}s` }}></div>
-            ))}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[var(--primary)] animate-bounce' : 'bg-[var(--text-muted)]/20'}`} style={{ animationDelay: `${i * 0.1}s` }}></div>
+          ))}
         </div>
         <div className="text-[var(--text-muted)] text-[10px] font-black tracking-[0.3em] uppercase opacity-40">
           Digital Monastery Mode

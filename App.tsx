@@ -25,19 +25,19 @@ import DailyReportWizard from './components/DailyReportWizard';
 import { TaskStatus, Task } from './types';
 
 const MainLayout: React.FC = () => {
-  const { 
-    activeTab, setActiveTab, tasks, projects, aiEnabled, theme, 
-    plannerProjectId, setPlannerProjectId, diaryNotificationEnabled, 
-    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen 
+  const {
+    activeTab, setActiveTab, tasks, projects, aiEnabled, theme,
+    plannerProjectId, setPlannerProjectId, diaryNotificationEnabled,
+    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen
   } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [activeAlerts, setActiveAlerts] = useState<Task[]>([]);
-  
+
   const [triggeredReminders, setTriggeredReminders] = useState<Set<string>>(new Set());
   const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
   const [lastDiaryNotifiedDate, setLastDiaryNotifiedDate] = useState<string>('');
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
@@ -46,7 +46,7 @@ const MainLayout: React.FC = () => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-    audioRef.current = new Audio('https://assets.mixkit.sh/active_storage/sfx/2358/2358-preview.mp3');
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
     audioRef.current.volume = 0.4;
   }, [theme]);
 
@@ -62,12 +62,12 @@ const MainLayout: React.FC = () => {
       if (currentTimeStr === diaryNotificationTime && lastDiaryNotifiedDate !== todayStr) {
         setLastDiaryNotifiedDate(todayStr);
         if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("Час підбити підсумки дня", { 
-            body: "Заповніть свій щоденник та отримайте XP!", 
-            icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316" 
+          new Notification("Час підбити підсумки дня", {
+            body: "Заповніть свій щоденник та отримайте XP!",
+            icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316"
           });
         }
-        audioRef.current?.play().catch(() => {});
+        audioRef.current?.play().catch(() => { });
       }
     }
 
@@ -86,7 +86,7 @@ const MainLayout: React.FC = () => {
             hasNewTrigger = true;
           }
         });
-      } 
+      }
     });
 
     if (hasNewTrigger) setTriggeredReminders(nextTriggered);
@@ -95,7 +95,7 @@ const MainLayout: React.FC = () => {
   }, [tasks, triggeredReminders, dismissedAlertIds, diaryNotificationEnabled, diaryNotificationTime, lastDiaryNotifiedDate]);
 
   const triggerNotification = (task: Task, label: string) => {
-    audioRef.current?.play().catch(() => {});
+    audioRef.current?.play().catch(() => { });
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification(`Квест: ${task.title}`, { body: label, icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316" });
     }
@@ -114,7 +114,7 @@ const MainLayout: React.FC = () => {
   };
 
   const counts = React.useMemo(() => ({
-    today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp)).length,
+    today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp)).length,
     inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && !t.projectId && !t.scheduledDate).length,
     next_actions: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.NEXT_ACTION).length,
     calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
@@ -159,9 +159,9 @@ const MainLayout: React.FC = () => {
       <main className="flex-1 overflow-y-auto relative">
         {renderContent()}
         <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
-           {activeAlerts.slice(0, 3).map(task => (
-             <NotificationToast key={task.id} task={task} onClose={() => handleDismissAlert(task.id)} />
-           ))}
+          {activeAlerts.slice(0, 3).map(task => (
+            <NotificationToast key={task.id} task={task} onClose={() => handleDismissAlert(task.id)} />
+          ))}
         </div>
         {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
         {aiEnabled && !isAiOpen && (

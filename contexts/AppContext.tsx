@@ -111,8 +111,8 @@ const ensureDefaults = (s: any): StoreState => {
     inboxCategories: s?.inboxCategories || seed.inboxCategories,
     timeBlocks: s?.timeBlocks || seed.timeBlocks,
     routinePresets: s?.routinePresets || [],
-    reportTemplate: s?.reportTemplate || seed.reportTemplate,
-    reportPresets: s?.reportPresets || seed.reportPresets,
+    reportTemplate: (s?.reportTemplate && s.reportTemplate.length > 0) ? s.reportTemplate : seed.reportTemplate,
+    reportPresets: (s?.reportPresets && s.reportPresets.length > 0) ? s.reportPresets : seed.reportPresets,
     shoppingStores: s?.shoppingStores || [],
     shoppingItems: s?.shoppingItems || [],
     aquariumObjects: s?.aquariumObjects || seed.aquariumObjects,
@@ -137,7 +137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   const [calendarDate, setCalendarDate] = useState(Date.now());
   const [calendarViewMode, setCalendarViewModeState] = useState<CalendarViewMode>(savedUI.calendarViewMode || 'month');
   const [isReportWizardOpen, setIsReportWizardOpen] = useState(false);
-  
+
   const [plannerProjectId, setPlannerProjectId] = useState<string | undefined>();
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
@@ -161,9 +161,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
 
   useEffect(() => {
     if (!state || !state.updatedAt) return;
-    
+
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(state));
-    
+
     if (user) {
       const cleanData = sanitizeData(state);
       setDoc(doc(db, "users", user.uid), cleanData).catch(err => console.error("Firebase save error", err));
@@ -208,6 +208,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
     });
   };
 
+  useEffect(() => {
+    if (state && (!state.reportTemplate || state.reportTemplate.length === 0)) {
+      const seed = generateSeedData();
+      pushUpdate(prev => ({ ...prev, reportTemplate: seed.reportTemplate }));
+    }
+  }, [state]);
+
   if (!state) return null;
 
   const buyAquariumObject = (type: any, species: string, cost: number, beauty: number, income: number) => {
@@ -224,7 +231,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
         y: 20 + Math.random() * 60,
         scale: type === 'fish' ? 0.8 + Math.random() * 0.4 : 1,
         flip: Math.random() > 0.5,
-        color: type === 'fish' ? ['#f97316', '#0ea5e9', '#ec4899', '#facc15', '#a855f7'][Math.floor(Math.random()*5)] : '#ffffff'
+        color: type === 'fish' ? ['#f97316', '#0ea5e9', '#ec4899', '#facc15', '#a855f7'][Math.floor(Math.random() * 5)] : '#ffffff'
       };
       return {
         ...prev,
@@ -289,17 +296,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       ...state, activeTab, setActiveTab, theme, setTheme, isSidebarCollapsed, setSidebarCollapsed, detailsWidth, setDetailsWidth, calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode,
       plannerProjectId, setPlannerProjectId, isSyncing, lastSyncTime, isReportWizardOpen, setIsReportWizardOpen,
       updateCharacter: (u) => pushUpdate(prev => ({ ...prev, character: { ...prev.character, ...u, updatedAt: Date.now() } })),
-      addTask: (title, category = 'tasks', projectId, projectSection, isEvent, scheduledDate, personId, status) => { 
-        const id = Math.random().toString(36).substr(2, 9); 
-        const newTask: Task = { 
-          id, title, 
-          status: status || TaskStatus.INBOX, 
-          priority: Priority.NUI, 
-          difficulty: 1, 
-          xp: 50, 
-          tags: [], 
-          createdAt: Date.now(), 
-          updatedAt: Date.now(), 
+      addTask: (title, category = 'tasks', projectId, projectSection, isEvent, scheduledDate, personId, status) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        const newTask: Task = {
+          id, title,
+          status: status || TaskStatus.INBOX,
+          priority: Priority.NUI,
+          difficulty: 1,
+          xp: 50,
+          tags: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
           category,
           projectId,
           projectSection: projectSection as any,
@@ -307,8 +314,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
           scheduledDate,
           personId
         };
-        pushUpdate(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] })); 
-        return id; 
+        pushUpdate(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] }));
+        return id;
       },
       updateTask: (t) => pushUpdate(prev => ({ ...prev, tasks: prev.tasks.map(old => old.id === t.id ? { ...t, updatedAt: Date.now() } : old) })),
       deleteTask: (id, perm) => pushUpdate(prev => ({ ...prev, tasks: perm ? prev.tasks.filter(t => t.id !== id) : prev.tasks.map(t => t.id === id ? { ...t, isDeleted: true, updatedAt: Date.now() } : t) })),
@@ -338,10 +345,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       buyAquariumObject, collectAquariumGold, feedFish,
       moveAquariumObject: (id, x, y) => pushUpdate(prev => ({ ...prev, aquariumObjects: prev.aquariumObjects?.map(o => o.id === id ? { ...o, x, y } : o) })),
       updateProject: (p) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) })),
-      addProject: (p) => { 
-        const id = Math.random().toString(36).substr(2, 9); 
-        pushUpdate(prev => ({ ...prev, projects: [...prev.projects, { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] })); 
-        return id; 
+      addProject: (p) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        pushUpdate(prev => ({ ...prev, projects: [...prev.projects, { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] }));
+        return id;
       },
       deleteProject: (id) => pushUpdate(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) })),
       addProjectSection: (pId, title) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(p => p.id === pId ? { ...p, sections: [...(p.sections || []), { id: Math.random().toString(36).substr(2, 5), title }], updatedAt: Date.now() } : p) })),
@@ -362,10 +369,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       updateShoppingItem: (i) => pushUpdate(prev => ({ ...prev, shoppingItems: prev.shoppingItems?.map(old => old.id === i.id ? { ...i, updatedAt: Date.now() } : old) })),
       toggleShoppingItem: (id) => pushUpdate(prev => ({ ...prev, shoppingItems: prev.shoppingItems?.map(i => i.id === id ? { ...i, isBought: !i.isBought, updatedAt: Date.now(), lastModifiedBy: user?.email || 'guest' } : i) })),
       deleteShoppingItem: (id) => pushUpdate(prev => ({ ...prev, shoppingItems: prev.shoppingItems?.filter(i => i.id !== id) })),
-      addTag: (name) => { 
-        const tag = { id: Math.random().toString(36).substr(2, 9), name, color: '#f97316', updatedAt: Date.now() }; 
-        pushUpdate(prev => ({ ...prev, tags: [...prev.tags, tag] })); 
-        return tag; 
+      addTag: (name) => {
+        const tag = { id: Math.random().toString(36).substr(2, 9), name, color: '#f97316', updatedAt: Date.now() };
+        pushUpdate(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+        return tag;
       },
       renameTag: (oldN, newN) => pushUpdate(prev => ({ ...prev, tags: prev.tags.map(t => t.name === oldN ? { ...t, name: newN, updatedAt: Date.now() } : t), tasks: prev.tasks.map(t => ({ ...t, tags: t.tags.map(tag => tag === oldN ? newN : tag) })) })),
       deleteTag: (name) => pushUpdate(prev => ({ ...prev, tags: prev.tags.filter(t => t.name !== name), tasks: prev.tasks.map(t => ({ ...t, tags: t.tags.filter(tag => tag !== name) })) })),

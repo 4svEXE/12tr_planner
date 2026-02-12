@@ -6,7 +6,7 @@ export const generateSeedData = () => {
   const diff = now.getDate() - (day === 0 ? 6 : day - 1);
   const startMonday = new Date(now.setDate(diff));
   startMonday.setHours(0, 0, 0, 0);
-  
+
   const todayTimestamp = startMonday.getTime();
 
   const tags: Tag[] = [
@@ -38,13 +38,11 @@ export const generateSeedData = () => {
 
   const reportTemplate: ReportQuestion[] = [
     { id: 'q_mood', text: 'Як пройшов день?', type: 'mood', required: true },
-    { id: 'q_habits', text: 'Які звички не виконав? Чому? (мін. 1)', type: 'habits', required: false },
+    { id: 'q_habits', text: 'Які звички не виконав? чому? (мінімум 1)', type: 'habits', required: false },
     { id: 'q_grat_p', text: 'За що і кому я вдячний?', type: 'gratitude_people', required: false },
     { id: 'q_grat_s', text: 'За що вдячний собі?', type: 'text', required: false },
     { id: 'q_pos', text: 'Що було позитивного сьогодні?', type: 'text', required: false },
     { id: 'q_change', text: 'Що не хочу терпіти / що змінив би?', type: 'text', required: false },
-    { id: 'q_res', text: 'Які можливості і ресурси у мене зараз є?', type: 'text', required: false },
-    { id: 'q_max', text: 'Як я можу вижати максимум з моєї ситуації?', type: 'text', required: false },
     { id: 'q_victory', text: 'Головна перемога дня', type: 'victory', required: true },
     { id: 'q_conc', text: 'Висновок дня:', type: 'text', required: true }
   ];
@@ -76,12 +74,12 @@ export const generateSeedData = () => {
   ];
 
   const character: Character = {
-    name: 'Мандрівник', 
-    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 100, 
-    bio: '', vision: '', 
-    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=NewHero`, 
+    name: 'Мандрівник',
+    race: 'Human', archetype: 'Strategist', role: 'Новачок', level: 1, xp: 0, gold: 100,
+    bio: '', vision: '',
+    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=NewHero`,
     energy: 100, maxEnergy: 100, focus: 100, goals: [], views: [], beliefs: [],
-    preferences: { focusBlockers: [] }, skills: [], achievements: [], 
+    preferences: { focusBlockers: [] }, skills: [], achievements: [],
     stats: { health: 50, career: 50, finance: 50, education: 50, relationships: 50, rest: 50 },
     updatedAt: Date.now()
   };

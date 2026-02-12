@@ -52,8 +52,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
         <button
           onClick={() => setActiveTab(item.id)}
           className={`flex-1 flex items-center gap-3 h-10 rounded-xl transition-all duration-200 relative ${isActive
-              ? 'bg-[var(--primary)] text-white shadow-md'
-              : 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)]'
+            ? 'bg-[var(--primary)] text-white shadow-md'
+            : 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)]'
             } ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
           title={isSidebarCollapsed ? item.label : ''}
         >
@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
         <div className="px-2 mb-4">
           {isGuest ? (
-            <button 
+            <button
               onClick={login}
               className={`w-full flex items-center gap-3 p-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg overflow-hidden ${isSidebarCollapsed ? 'justify-center' : 'px-4'}`}
             >
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </aside>
 
       {/* Мобільний навбар */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-xl border-t border-theme z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-theme z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
           { id: 'lists', icon: 'fa-layer-group', label: 'Списки' },
@@ -146,7 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </div>
 
       {showMobileMenu && (
-        <div className="fixed inset-0 z-[1000] bg-main/95 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
+        <div className="fixed inset-0 z-[1000] bg-main animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
           <header className="p-6 border-b border-theme flex justify-between items-center shrink-0 bg-card">
             <div className="flex items-center gap-3">
               {isGuest ? (
