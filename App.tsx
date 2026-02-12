@@ -23,16 +23,44 @@ import AuthView from './views/AuthView';
 import NotificationToast from './components/ui/NotificationToast';
 import DailyReportWizard from './components/DailyReportWizard';
 import { TaskStatus, Task } from './types';
+const isExe = /12TR-Engine/i.test(navigator.userAgent) || (window as any).process?.versions?.electron;
+
+const WindowTitleBar: React.FC = () => {
+  const { theme } = useApp();
+  const closeApp = () => (window as any).ipcRenderer?.send('close-window') || window.close();
+  const minApp = () => (window as any).ipcRenderer?.send('minimize-window');
+  const maxApp = () => (window as any).ipcRenderer?.send('maximize-window');
+
+  if (!isExe) return null;
+
+  return (
+    <div className="h-8 bg-[var(--bg-card)] border-b border-[var(--border-color)] flex items-center justify-between px-3 select-none z-[1000] shrink-0" style={{ WebkitAppRegion: 'drag' } as any}>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[var(--primary)] flex items-center justify-center text-[10px] text-white">
+          <i className="fa-solid fa-mountain"></i>
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">12TR Engine</span>
+      </div>
+      <div className="flex items-center h-full no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <button onClick={minApp} className="h-full px-3 hover:bg-black/5 text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-minus text-[10px]"></i></button>
+        <button onClick={maxApp} className="h-full px-3 hover:bg-black/5 text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-square text-[8px]"></i></button>
+        <button onClick={closeApp} className="h-full px-3 hover:bg-rose-500 hover:text-white text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+      </div>
+    </div>
+  );
+};
 
 const MainLayout: React.FC = () => {
   const {
     activeTab, setActiveTab, tasks, projects, aiEnabled, theme,
     plannerProjectId, setPlannerProjectId, diaryNotificationEnabled,
-    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen
+    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen,
+    updateTask, scheduleTask
   } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [activeAlerts, setActiveAlerts] = useState<Task[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const [triggeredReminders, setTriggeredReminders] = useState<Set<string>>(new Set());
   const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
@@ -48,7 +76,19 @@ const MainLayout: React.FC = () => {
     }
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
     audioRef.current.volume = 0.4;
-  }, [theme]);
+
+    // Handle back button for Mobile/PWA
+    const handlePopState = (e: PopStateEvent) => {
+      if (activeTab !== 'today') {
+        setActiveTab('today');
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [theme, activeTab, setActiveTab]);
 
   const checkDeadlines = useCallback(() => {
     const now = Date.now();
@@ -113,6 +153,36 @@ const MainLayout: React.FC = () => {
     setActiveAlerts(prev => prev.filter(t => t.id !== taskId));
   };
 
+  const handleSnooze = (taskId: string, minutes: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    let newTime: number;
+    const now = Date.now();
+
+    if (minutes === -1) {
+      // Вечір (21:00 сьогодні або завтра)
+      const today = new Date();
+      today.setHours(21, 0, 0, 0);
+      newTime = today.getTime();
+      if (newTime < now) {
+        newTime += 24 * 60 * 60 * 1000;
+      }
+    } else if (minutes === -2) {
+      // Завтра о 9:00
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      newTime = tomorrow.getTime();
+    } else {
+      // Звичайне відкладання
+      newTime = now + (minutes * 60 * 1000);
+    }
+
+    updateTask({ ...task, scheduledDate: newTime });
+    handleDismissAlert(taskId);
+  };
+
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp)).length,
     inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && !t.projectId && !t.scheduledDate).length,
@@ -154,31 +224,40 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-500 overflow-hidden">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
-      <main className="flex-1 overflow-y-auto relative">
-        {renderContent()}
-        <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
-          {activeAlerts.slice(0, 3).map(task => (
-            <NotificationToast key={task.id} task={task} onClose={() => handleDismissAlert(task.id)} />
-          ))}
-        </div>
-        {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
-        {aiEnabled && !isAiOpen && (
-          <button onClick={() => setIsAiOpen(true)} className="fixed bottom-[80px] md:bottom-8 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[490] hover:scale-110 active:scale-95 transition-all border-4 border-white">
-            <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
-          </button>
-        )}
-        {isReportWizardOpen && <DailyReportWizard onClose={() => setIsReportWizardOpen(false)} />}
-      </main>
-      <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
+    <div className="flex flex-col h-screen bg-[var(--bg-main)]">
+      <WindowTitleBar />
+      <div className="flex flex-1 text-[var(--text-main)] transition-colors duration-500 overflow-hidden">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
+        <main className="flex-1 overflow-y-auto relative">
+          {renderContent()}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4">
+            {activeAlerts.slice(0, 3).map(task => (
+              <NotificationToast
+                key={task.id}
+                task={task}
+                onClose={() => handleDismissAlert(task.id)}
+                onTaskClick={(id) => setSelectedTaskId(id)}
+                onSnooze={handleSnooze}
+              />
+            ))}
+          </div>
+          {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
+          {aiEnabled && !isAiOpen && (
+            <button onClick={() => setIsAiOpen(true)} className="fixed bottom-[80px] md:bottom-8 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[490] hover:scale-110 active:scale-95 transition-all border-4 border-white">
+              <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
+            </button>
+          )}
+          {isReportWizardOpen && <DailyReportWizard onClose={() => setIsReportWizardOpen(false)} />}
+        </main>
+        <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
+      </div>
     </div>
   );
 };
 
 const App: React.FC = () => {
   const { user, isAuthModalOpen, loading } = useAuth();
-  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-slate-950"><i className="fa-solid fa-circle-notch animate-spin text-orange-500 text-2xl"></i></div>;
+  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-[#020617]"><i className="fa-solid fa-mountain animate-pulse text-orange-500 text-4xl"></i></div>;
   return (
     <AppProvider userId={user?.uid || 'guest'}>
       <MainLayout />

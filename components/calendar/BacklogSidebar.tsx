@@ -70,20 +70,51 @@ const TreeNode: React.FC<{
 
 const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSelectTask }) => {
   const { tasks, projects, setActiveTab, updateTask, deleteTask, diary, saveDiaryEntry } = useApp();
-  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
-    'system_inbox': false,
-    'system_calendar': false,
-    'system_notes': false,
-    'root_collections': true
-  });
 
-  const toggleNode = (nodeId: string) => setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  const getInitialExpandedState = () => {
+    const saved = localStorage.getItem('backlog_expanded_nodes');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved expanded state', e);
+      }
+    }
+    return {
+      'system_inbox': false,
+      'system_calendar': true,
+      'system_notes': false,
+      'root_collections': true
+    };
+  };
+
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>(getInitialExpandedState());
+
+  const toggleNode = (nodeId: string) => {
+    setExpandedNodes(prev => {
+      const next = { ...prev, [nodeId]: !prev[nodeId] };
+      localStorage.setItem('backlog_expanded_nodes', JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Фільтрація згідно з GTD-логікою Записника
-  const inboxTasks = useMemo(() => tasks.filter(t => !t.projectId && t.category !== 'note' && !t.isDeleted && !t.scheduledDate), [tasks]);
-  const scheduledTasks = useMemo(() => tasks.filter(t => t.scheduledDate && !t.isDeleted), [tasks]);
+  const inboxTasks = useMemo(() => tasks.filter(t =>
+    !t.isDeleted &&
+    t.status !== TaskStatus.DONE &&
+    !t.projectId &&
+    t.category !== 'note' &&
+    !t.scheduledDate
+  ), [tasks]);
+
+  const scheduledTasks = useMemo(() =>
+    tasks
+      .filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (!!t.scheduledDate || !!t.dueDate))
+      .sort((a, b) => (a.scheduledDate || a.dueDate || 0) - (b.scheduledDate || b.dueDate || 0)),
+    [tasks]
+  );
   const looseNotes = useMemo(() => tasks.filter(t => !t.projectId && t.category === 'note' && !t.isDeleted && !t.scheduledDate), [tasks]);
-  const projectTasks = useMemo(() => tasks.filter(t => t.projectId && !t.isDeleted), [tasks]);
+  const projectTasks = useMemo(() => tasks.filter(t => t.projectId && !t.isDeleted && t.status !== TaskStatus.DONE), [tasks]);
 
   const handleDrop = (e: React.DragEvent, targetType: 'inbox' | 'note' | 'diary' | string) => {
     e.preventDefault();
@@ -95,6 +126,8 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
 
     if (targetType === 'inbox') {
       updateTask({ ...task, scheduledDate: undefined, projectId: undefined, category: 'tasks' });
+    } else if (targetType === 'calendar') {
+      updateTask({ ...task, showInCalendar: true, scheduledDate: task.scheduledDate || new Date().setHours(0, 0, 0, 0) });
     } else if (targetType === 'note') {
       updateTask({ ...task, scheduledDate: undefined, projectId: undefined, category: 'note' });
     } else if (targetType === 'diary') {
@@ -123,23 +156,42 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
     }
   };
 
-  const renderTaskNode = (t: Task, level: number) => (
-    <TreeNode
-      key={t.id}
-      id={t.id}
-      label={t.title || "Без назви"}
-      icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-circle-dot'}
-      type={t.category === 'note' ? 'note' : 'task'}
-      level={level}
-      onClick={() => onSelectTask(t.id)}
-      isDone={t.status === TaskStatus.DONE}
-      isDraggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('taskId', t.id);
-        if (e.currentTarget instanceof HTMLElement) e.currentTarget.style.opacity = '0.5';
-      }}
-    />
-  );
+  const renderTaskNode = (t: Task, level: number) => {
+    const formattedDate = t.scheduledDate
+      ? new Date(t.scheduledDate).toLocaleString('uk-UA', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      : '';
+
+    const tagsStr = t.tags && t.tags.length > 0
+      ? ' ' + t.tags.slice(0, 3).map(tag => `#${tag}`).join(' ')
+      : '';
+
+    const labelWithDate = formattedDate
+      ? `${t.title || "Без назви"} • ${formattedDate}${tagsStr}`
+      : `${t.title || "Без назви"}${tagsStr}`;
+
+    return (
+      <TreeNode
+        key={t.id}
+        id={t.id}
+        label={labelWithDate}
+        icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-circle-dot'}
+        type={t.category === 'note' ? 'note' : 'task'}
+        level={level}
+        onClick={() => onSelectTask(t.id)}
+        isDone={t.status === TaskStatus.DONE || (t.status as any) === 'DONE'}
+        isDraggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData('taskId', t.id);
+          if (e.currentTarget instanceof HTMLElement) e.currentTarget.style.opacity = '0.5';
+        }}
+      />
+    );
+  };
 
   const renderProjectTree = (parentId?: string, level = 0): React.ReactNode[] => {
     return projects
@@ -173,7 +225,7 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
 
   return (
     <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shrink-0 select-none shadow-sm h-full overflow-hidden no-print">
-      <header className="p-4 md:p-5 border-b border-[var(--border-color)] flex items-center bg-white sticky top-0 z-10 shrink-0">
+      <header className="p-4 md:p-5 border-b border-[var(--border-color)] flex items-center bg-[var(--bg-card)] sticky top-0 z-10 shrink-0">
         <Typography variant="h2" className="text-lg font-black uppercase tracking-tight text-[var(--text-main)]">Записник</Typography>
       </header>
 
@@ -203,6 +255,7 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
             level={0}
             isOpen={expandedNodes['system_calendar']}
             onToggle={() => toggleNode('system_calendar')}
+            onDrop={(e) => handleDrop(e, 'calendar')}
             count={scheduledTasks.length}
           >
             {scheduledTasks.map(t => renderTaskNode(t, 1))}
@@ -238,10 +291,13 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
         <section className="space-y-1">
           <div
             onClick={() => toggleNode('root_collections')}
-            className="px-3 mb-1 flex items-center gap-2 cursor-pointer group opacity-50 hover:opacity-100 transition-opacity"
+            className="flex items-center gap-2 py-1 px-3 cursor-pointer group hover:bg-black/5 rounded-xl transition-all"
           >
-            <i className={`fa-solid fa-chevron-right text-[7px] transition-transform ${expandedNodes['root_collections'] ? 'rotate-90' : ''}`}></i>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Колекції</span>
+            <div className="flex items-center gap-1.5 shrink-0" style={{ paddingLeft: '12px' }}>
+              <i className={`fa-solid fa-chevron-right text-[7px] w-3 text-center transition-transform ${expandedNodes['root_collections'] ? 'rotate-90' : 'text-slate-300'}`}></i>
+              <div className="w-4"></div>
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors">Списки</span>
           </div>
 
           {expandedNodes['root_collections'] && (

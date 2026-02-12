@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="uk" data-theme="classic">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>12TR: Ігровий Двигун Життя</title>
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -19,7 +23,7 @@
       --text-muted: #64748b;
       --text-sidebar: #1e293b;
       --border-color: #f1f5f9;
-      --radius: 12px; 
+      --radius: 12px;
     }
 
     [data-theme="midnight"] {
@@ -154,32 +158,76 @@
       --border-color: #e2e8f0;
     }
 
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background-color: var(--bg-main); 
-      color: var(--text-main); 
-      margin: 0; 
-      transition: background-color 0.3s ease, color 0.3s ease; 
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
       letter-spacing: -0.01em;
     }
 
     /* Примусовий контраст сайдбару */
-    aside, aside * {
+    aside,
+    aside * {
       transition: color 0.3s ease, background-color 0.3s ease;
     }
 
-    aside span, aside div:not([class*="bg-primary"]):not([class*="bg-indigo"]), aside button:not([class*="bg-primary"]) {
+    aside span,
+    aside div:not([class*="bg-primary"]):not([class*="bg-indigo"]),
+    aside button:not([class*="bg-primary"]) {
       color: var(--text-sidebar) !important;
     }
 
-    aside .text-muted, aside i.opacity-50, aside i.opacity-40 {
+    aside .text-muted,
+    aside i.opacity-50,
+    aside i.opacity-40 {
       color: var(--text-sidebar) !important;
       opacity: 0.6;
     }
 
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-    
+    /* Глобальні стилі скролбарів */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary) transparent;
+    }
+
+    *::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 20px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+      opacity: 0.3;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background-color: var(--primary);
+      opacity: 1;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 20px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
     .custom-checkbox {
       width: 20px;
       height: 20px;
@@ -188,16 +236,16 @@
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), 
-    select { 
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+    select {
       min-height: 36px !important;
-      height: 36px !important; 
+      height: 36px !important;
       border-radius: var(--radius) !important;
       padding-left: 12px !important;
       padding-right: 12px !important;
       font-size: 13px !important;
-      background-color: var(--bg-input) !important; 
-      color: var(--text-main) !important; 
+      background-color: var(--bg-input) !important;
+      color: var(--text-main) !important;
       border: 1px solid transparent !important;
     }
 
@@ -209,12 +257,19 @@
     }
 
     @keyframes strike-through {
-      from { width: 0; }
-      to { width: 100%; }
+      from {
+        width: 0;
+      }
+
+      to {
+        width: 100%;
+      }
     }
+
     .strike-anim.is-striking {
       position: relative;
     }
+
     .strike-anim.is-striking::after {
       content: '';
       position: absolute;
@@ -225,7 +280,30 @@
       animation: strike-through 0.3s forwards;
     }
   </style>
-<script type="importmap">
+  <script>
+    // EXE Build Helpers
+    window.addEventListener('click', (e) => {
+      const isExe = /12TR-Engine/i.test(navigator.userAgent);
+      if (!isExe) return;
+
+      const anchor = e.target.closest('a') || (e.target.tagName === 'BUTTON' ? e.target : null);
+      if (!anchor) return;
+
+      const isLoginLink = anchor.innerText?.toLowerCase().includes('google') ||
+        anchor.innerText?.toLowerCase().includes('вхід') ||
+        anchor.getAttribute('href')?.includes('auth');
+
+      if (isLoginLink && (window.process || isExe)) {
+        // Nativefier handles window.open for external domains by opening them in default browser
+        // if they don't match internal-urls
+        if (anchor.getAttribute('href')) {
+          window.open(anchor.getAttribute('href'), '_blank');
+          e.preventDefault();
+        }
+      }
+    }, true);
+  </script>
+  <script type="importmap">
 {
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
@@ -238,11 +316,13 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
+
 <body>
   <div id="root"></div>
   <script type="module" src="./index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

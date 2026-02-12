@@ -151,7 +151,17 @@ const Dashboard: React.FC = () => {
   }, [tasks, todayTimestamp]);
 
   const upcomingRadarEvents = useMemo(() => {
-    return tasks.filter(t => !t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate >= todayTimestamp).slice(0, 3);
+    const sevenDaysFromNow = todayTimestamp + (7 * 24 * 60 * 60 * 1000);
+    return tasks
+      .filter(t =>
+        !t.isDeleted &&
+        t.status !== TaskStatus.DONE &&
+        t.scheduledDate &&
+        t.scheduledDate >= todayTimestamp &&
+        t.scheduledDate <= sevenDaysFromNow
+      )
+      .sort((a, b) => (a.scheduledDate || 0) - (b.scheduledDate || 0))
+      .slice(0, 5);
   }, [tasks, todayTimestamp]);
 
   const handleToggleTaskWithDelay = (task: Task) => {

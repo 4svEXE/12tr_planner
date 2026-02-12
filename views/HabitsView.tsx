@@ -234,7 +234,7 @@ const HabitsView: React.FC = () => {
                       isTarget ? 'border-t-2 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
                       }`}
                   >
-                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] py-2 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-10 px-3 flex items-center gap-2 md:gap-3 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
                           <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
@@ -260,7 +260,7 @@ const HabitsView: React.FC = () => {
 
                       return (
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
-                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-12 flex flex-col items-center justify-center transition-all group/btn`}>
+                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-10 flex flex-col items-center justify-center transition-all group/btn`}>
                             <div className="relative">
                               {status === 'completed' ? (
                                 <i className="fa-solid fa-check text-base" style={{ color }}></i>

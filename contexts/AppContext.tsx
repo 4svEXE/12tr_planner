@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, StoreState, AquariumObject, ThemeType, CalendarViewMode, ShoppingStore, ShoppingItem, Interaction, Memory, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ReportQuestion, ReportPreset, Person, TwelveWeekYear } from '../types';
 import { generateSeedData } from '../services/seedService';
-import { db, doc, setDoc, getDoc } from '../services/firebase';
+import { db, doc, setDoc, getDoc, onSnapshot } from '../services/firebase';
 import { useAuth } from './AuthContext';
 
 const DATA_STORAGE_KEY = '12tr_engine_data_v4';
@@ -160,7 +160,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   }, [user]);
 
   useEffect(() => {
-    if (!state || !state.updatedAt) return;
+    if (!state || !state.updatedAt || isUpdatingFromFirebase.current) return;
 
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(state));
 
@@ -214,6 +214,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       pushUpdate(prev => ({ ...prev, reportTemplate: seed.reportTemplate }));
     }
   }, [state]);
+
+  // Реал-тайм синхронізація з Firebase
+  const isUpdatingFromFirebase = useRef(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists() && !isUpdatingFromFirebase.current) {
+        const firebaseData = ensureDefaults(docSnap.data());
+        // Оновлюємо стан тільки якщо дані з Firebase новіші
+        setState(prev => {
+          if (!prev || (firebaseData.updatedAt || 0) > (prev.updatedAt || 0)) {
+            isUpdatingFromFirebase.current = true;
+            setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
+            return firebaseData;
+          }
+          return prev;
+        });
+      }
+    }, (error) => {
+      console.error("Firebase realtime sync error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Функція для ручної синхронізації
+  const syncData = useCallback(async () => {
+    if (!user) return;
+
+    setIsSyncing(true);
+    try {
+      const docSnap = await getDoc(doc(db, "users", user.uid));
+      if (docSnap.exists()) {
+        const firebaseData = ensureDefaults(docSnap.data());
+        setState(firebaseData);
+        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(firebaseData));
+        setLastSyncTime(Date.now());
+      }
+    } catch (error) {
+      console.error("Manual sync error:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user]);
 
   if (!state) return null;
 
@@ -274,22 +320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
     });
   };
 
-  const syncData = async () => {
-    if (!user) return;
-    setIsSyncing(true);
-    try {
-      const docSnap = await getDoc(doc(db, "users", user.uid));
-      if (docSnap.exists()) {
-        const data = ensureDefaults(docSnap.data());
-        setState(data);
-        setLastSyncTime(Date.now());
-      }
-    } catch (e) {
-      console.error("Sync failed", e);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+
 
   return (
     <AppContext.Provider value={{

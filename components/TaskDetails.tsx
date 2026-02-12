@@ -194,6 +194,14 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             )}
           </div>
 
+          <button
+            onClick={() => updateTask({ ...task, title: localTitle })}
+            className="w-8 h-8 rounded flex items-center justify-center text-emerald-500 hover:bg-emerald-500/10 transition-all"
+            title="Зберегти"
+          >
+            <i className="fa-solid fa-floppy-disk text-[13px]"></i>
+          </button>
+
           <div className="h-6 w-px bg-[var(--border-color)] mx-1"></div>
           <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark"></i></button>
         </div>
