@@ -37,7 +37,10 @@ const EditableBlock: React.FC<{
   onFocus: () => void;
   onAddBlock: (type: Block['type']) => void;
   onContextMenu: (e: React.MouseEvent, block: Block) => void;
-}> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onAddBlock, onContextMenu }) => {
+  isSelected: boolean;
+  onMouseDown: (id: string) => void;
+  onMouseEnter: (id: string) => void;
+}> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onAddBlock, onContextMenu, isSelected, onMouseDown, onMouseEnter }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -97,10 +100,21 @@ const EditableBlock: React.FC<{
   };
 
   return (
-    <div 
-      className={`relative group/block w-full flex items-start ${isFocused ? 'z-30' : 'z-10'}`}
+    <div
+      className={`relative group/block w-full flex items-start ${isFocused || isSelected ? 'z-30' : 'z-10'} -ml-10 transition-colors duration-100 ${isSelected ? 'bg-indigo-500/10' : ''}`}
       onContextMenu={(e) => onContextMenu(e, block)}
+      onMouseDown={() => onMouseDown(block.id)}
+      onMouseEnter={() => onMouseEnter(block.id)}
     >
+      <div className="w-10 flex items-center justify-center opacity-0 group-hover/block:opacity-100 transition-opacity">
+        <button
+          onClick={() => setShowSlashMenu(!showSlashMenu)}
+          className="w-6 h-6 rounded-md hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center transition-all"
+        >
+          <i className="fa-solid fa-plus text-[10px]"></i>
+        </button>
+      </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-3 w-full">
           {block.type === 'task' && (
@@ -108,16 +122,16 @@ const EditableBlock: React.FC<{
               {block.checked && <i className="fa-solid fa-check text-[10px]"></i>}
             </button>
           )}
-          
+
           {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] mt-2 shrink-0" />}
 
-          <div 
-            ref={contentRef} 
-            contentEditable 
-            suppressContentEditableWarning 
-            data-placeholder={block.type === 'text' ? "Пишіть тут... ('+' для меню)" : ""} 
-            onInput={handleInput} 
-            onKeyDown={internalKeyDown} 
+          <div
+            ref={contentRef}
+            contentEditable
+            suppressContentEditableWarning
+            data-placeholder={block.type === 'text' ? "Пишіть тут... ('+' для меню)" : ""}
+            onInput={handleInput}
+            onKeyDown={internalKeyDown}
             onFocus={onFocus}
             className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)] empty:before:opacity-30 empty:before:italic block-input ${getBlockStyle()}`}
           />
@@ -125,15 +139,15 @@ const EditableBlock: React.FC<{
       </div>
 
       {showSlashMenu && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="absolute top-full left-10 mt-2 w-64 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
           <div className="px-4 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-[var(--border-color)] mb-1">Інструменти</div>
           <div className="max-h-80 overflow-y-auto no-scrollbar">
             {BLOCK_TYPES.map((t, i) => (
               <button key={t.id} onClick={() => selectBlockType(t.id as Block['type'])} onMouseEnter={() => setSelectedIndex(i)} className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-all ${selectedIndex === i ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
                 <i className={`fa-solid ${t.icon} text-[10px] w-4 text-center`}></i>
                 <div className="min-w-0">
-                   <div className="text-[11px] font-black uppercase tracking-tight leading-none">{t.label}</div>
-                   <div className={`text-[7px] font-bold ${selectedIndex === i ? 'text-white/60' : 'text-slate-400'}`}>{t.desc}</div>
+                  <div className="text-[11px] font-black uppercase tracking-tight leading-none">{t.label}</div>
+                  <div className={`text-[7px] font-bold ${selectedIndex === i ? 'text-white/60' : 'text-slate-400'}`}>{t.desc}</div>
                 </div>
               </button>
             ))}
@@ -150,7 +164,10 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, blockId: string } | null>(null);
-  
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStartId, setSelectionStartId] = useState<string | null>(null);
+
   const saveTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -217,49 +234,100 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
 
   const handleContextMenu = (e: React.MouseEvent, block: Block) => {
     e.preventDefault();
+    if (selectedIds.size <= 1) {
+      setSelectedIds(new Set([block.id]));
+    }
     setContextMenu({ x: e.clientX, y: e.clientY, blockId: block.id });
   };
 
+  const handleMouseDown = (id: string) => {
+    setIsSelecting(true);
+    setSelectionStartId(id);
+    setSelectedIds(new Set([id]));
+  };
+
+  const handleMouseEnter = (id: string) => {
+    if (!isSelecting || !selectionStartId) return;
+
+    const startIdx = blocks.findIndex(b => b.id === selectionStartId);
+    const endIdx = blocks.findIndex(b => b.id === id);
+    const min = Math.min(startIdx, endIdx);
+    const max = Math.max(startIdx, endIdx);
+
+    const newSelected = new Set(blocks.slice(min, max + 1).map(b => b.id));
+    setSelectedIds(newSelected);
+  };
+
+  const handleMouseUp = () => {
+    setIsSelecting(false);
+  };
+
+  const applyBulkFormat = (type: Block['type']) => {
+    setBlocks(prev => prev.map(b => selectedIds.has(b.id) ? { ...b, type } : b));
+    setContextMenu(null);
+  };
+
+  const deleteSelected = () => {
+    if (selectedIds.size === 0) return;
+    setBlocks(prev => {
+      const remaining = prev.filter(b => !selectedIds.has(b.id));
+      return remaining.length > 0 ? remaining : [{ id: 'b1', type: 'text', content: '' }];
+    });
+    setSelectedIds(new Set());
+    setContextMenu(null);
+  };
+
   return (
-    <div className="h-full flex flex-col bg-transparent relative" onClick={() => setContextMenu(null)}>
-      <div className="flex-1 overflow-y-auto no-scrollbar py-10 px-8">
-        <div className="max-w-3xl mx-auto space-y-1">
+    <div
+      className="h-full flex flex-col bg-transparent relative select-text"
+      onClick={() => { if (!isSelecting) { setContextMenu(null); if (selectedIds.size > 0 && !isSelecting) setSelectedIds(new Set()); } }}
+      onMouseUp={handleMouseUp}
+    >
+      <div className="flex-1 overflow-y-auto no-scrollbar py-2 px-2">
+        <div className="w-full space-y-1">
           {blocks.map((block, idx) => (
-            <EditableBlock 
-              key={block.id} 
-              block={block} 
-              index={idx} 
-              isFocused={focusedBlockId === block.id} 
-              onUpdate={(u) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, ...u } : b))} 
-              onKeyDown={handleKeyDown} 
-              onFocus={() => setFocusedBlockId(block.id)} 
+            <EditableBlock
+              key={block.id}
+              block={block}
+              index={idx}
+              isFocused={focusedBlockId === block.id}
+              isSelected={selectedIds.has(block.id)}
+              onUpdate={(u) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, ...u } : b))}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { setFocusedBlockId(block.id); setSelectedIds(new Set([block.id])); }}
               onAddBlock={(type) => addBlock(block.id, type)}
               onContextMenu={handleContextMenu}
+              onMouseDown={handleMouseDown}
+              onMouseEnter={handleMouseEnter}
             />
           ))}
         </div>
       </div>
 
       {contextMenu && (
-        <div 
+        <div
           className="fixed z-[1000] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl rounded-2xl py-2 w-56 tiktok-blur animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <div className="px-4 py-1.5 text-[8px] font-black uppercase text-slate-400 tracking-widest border-b border-[var(--border-color)] mb-1">Форматування</div>
           {BLOCK_TYPES.map(t => (
-            <button 
-              key={t.id} 
-              onClick={() => { setBlocks(prev => prev.map(b => b.id === contextMenu.blockId ? { ...b, type: t.id as any } : b)); setContextMenu(null); }}
-              className="w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            <button
+              key={t.id}
+              onClick={() => { applyBulkFormat(t.id as any); }}
+              className="w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-black/5 hover:text-indigo-600 transition-colors"
             >
               <i className={`fa-solid ${t.icon} w-4 text-center text-[10px]`}></i>
-              <span className="text-[11px] font-bold uppercase tracking-tight">{t.label}</span>
+              <span className="text-[11px] font-bold uppercase tracking-tight">
+                {selectedIds.size > 1 ? `Всі як ${t.label}` : t.label}
+              </span>
             </button>
           ))}
           <div className="h-px bg-[var(--border-color)] my-1"></div>
-          <button onClick={() => { setBlocks(prev => prev.filter(b => b.id !== contextMenu.blockId)); setContextMenu(null); }} className="w-full text-left px-4 py-2 flex items-center gap-3 text-rose-500 hover:bg-rose-50">
+          <button onClick={deleteSelected} className="w-full text-left px-4 py-2 flex items-center gap-3 text-rose-500 hover:bg-rose-50">
             <i className="fa-solid fa-trash-can w-4 text-center text-[10px]"></i>
-            <span className="text-[11px] font-bold uppercase tracking-tight">Видалити</span>
+            <span className="text-[11px] font-bold uppercase tracking-tight">
+              {selectedIds.size > 1 ? `Видалити обране (${selectedIds.size})` : 'Видалити'}
+            </span>
           </button>
         </div>
       )}

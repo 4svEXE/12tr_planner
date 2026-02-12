@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </aside>
 
       {/* Мобільний навбар */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-theme z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
           { id: 'lists', icon: 'fa-layer-group', label: 'Списки' },
@@ -146,14 +146,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </div>
 
       {showMobileMenu && (
-        <div className="fixed inset-0 z-[1000] bg-main animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
-          <header className="p-6 border-b border-theme flex justify-between items-center shrink-0 bg-card">
+        <div className="fixed inset-0 z-[1000] bg-[var(--bg-main)] animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
+          <header className="p-6 border-b border-[var(--border-color)] flex justify-between items-center shrink-0 bg-[var(--bg-card)]">
             <div className="flex items-center gap-3">
               {isGuest ? (
                 <button onClick={login} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">Увійти з Google</button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl overflow-hidden border border-theme shadow-sm">
+                  <div className="w-10 h-10 rounded-[4px] overflow-hidden border border-[var(--border-color)] shadow-sm">
                     <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="User" />
                   </div>
                   <Typography variant="h2" className="text-xl font-black uppercase tracking-tighter text-main">Система</Typography>
@@ -179,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id!); setShowMobileMenu(false); }}
-                className={`flex flex-col items-center justify-center h-20 rounded-[1.5rem] border transition-all ${activeTab === item.id ? 'bg-[var(--primary)] text-white shadow-xl border-[var(--primary)]' : 'bg-card border-theme text-[var(--text-muted)] hover:bg-black/5'}`}
+                className={`flex flex-col items-center justify-center h-20 rounded-[4px] border transition-all ${activeTab === item.id ? 'bg-[var(--primary)] text-white shadow-xl border-[var(--primary)]' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:bg-black/5'}`}
               >
                 <i className={`fa-solid ${item.icon} text-xl mb-1.5 ${activeTab === item.id ? 'text-white' : item.color}`}></i>
                 <span className="text-[7px] font-black uppercase text-center leading-tight tracking-widest px-1">{item.label}</span>

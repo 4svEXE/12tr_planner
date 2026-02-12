@@ -12,8 +12,8 @@ interface TaskDetailsProps {
 }
 
 const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
-  const { updateTask, toggleTaskStatus, deleteTask, addTask, people = [] } = useApp();
-  
+  const { updateTask, toggleTaskStatus, deleteTask, addTask, people = [], projects = [] } = useApp();
+
   const isNote = task.category === 'note';
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
@@ -21,7 +21,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [showTagPopover, setShowTagPopover] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [localTitle, setLocalTitle] = useState(task.title);
-  
+
   const menuRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const isDone = task.status === TaskStatus.DONE;
 
   const getPriorityColor = (p: Priority) => {
-    switch(p) {
+    switch (p) {
       case Priority.UI: return 'text-rose-500';
       case Priority.UNI: return 'text-orange-500';
       case Priority.NUI: return 'text-indigo-500';
@@ -90,7 +90,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     alert("Посилання скопійовано");
   };
 
-  const formattedDate = task.scheduledDate 
+  const formattedDate = task.scheduledDate
     ? new Date(task.scheduledDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
     : 'Дата';
 
@@ -102,7 +102,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   );
 
   const MenuItem = ({ icon, label, onClick, danger = false }: { icon: string, label: string, onClick: () => void, danger?: boolean }) => (
-    <button 
+    <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`w-full text-left flex items-center gap-3 px-3 py-2 text-[10px] font-bold transition-all hover:bg-black/5 ${danger ? 'text-rose-500 hover:bg-rose-50' : 'text-[var(--text-main)]'}`}
     >
@@ -112,12 +112,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   );
 
   return (
-    <div className="w-full flex flex-col h-full bg-[var(--bg-card)] relative text-[var(--text-main)] border-none">
+    <div className="w-full flex flex-col h-full bg-[var(--bg-card)] relative text-[var(--text-main)] border-none overflow-hidden">
       <header className="flex items-center justify-between px-4 h-12 border-b border-[var(--border-color)] bg-transparent shrink-0 z-[100]">
         <div className="flex items-center gap-2 flex-1">
           {!isNote && (
-            <button 
-              onClick={() => toggleTaskStatus(task)} 
+            <button
+              onClick={() => toggleTaskStatus(task)}
               className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-emerald-400'}`}
             >
               {isDone && <i className="fa-solid fa-check text-[10px]"></i>}
@@ -125,25 +125,25 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           )}
 
           <div className="relative">
-            <button 
-              onClick={() => setShowDatePicker(!showDatePicker)} 
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
               className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-black/5 text-[11px] font-bold transition-all ${task.scheduledDate ? 'text-indigo-600' : 'text-[var(--text-muted)]'}`}
             >
               <i className="fa-regular fa-calendar text-[12px]"></i>
               <span>{formattedDate}</span>
               {task.recurrence !== 'none' && <i className="fa-solid fa-arrows-rotate text-[8px] opacity-40 ml-1"></i>}
             </button>
-            
+
             {showDatePicker && (
-              <TaskDatePicker 
-                task={task} 
-                onUpdate={handleApplyUpdates} 
-                onClose={() => setShowDatePicker(false)} 
+              <TaskDatePicker
+                task={task}
+                onUpdate={handleApplyUpdates}
+                onClose={() => setShowDatePicker(false)}
               />
             )}
           </div>
 
-          <button 
+          <button
             onClick={() => updateTask({ ...task, showInCalendar: !task.showInCalendar })}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${task.showInCalendar ? 'text-indigo-600 bg-indigo-50/50' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
             title={task.showInCalendar ? "Відображається в календарі" : "Приховано з календаря"}
@@ -165,7 +165,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
                   { p: Priority.NUI, label: 'Звичайний', color: 'text-indigo-500' },
                   { p: Priority.NUNI, label: 'Низький', color: 'text-slate-400' },
                 ].map(opt => (
-                  <button key={opt.p} onClick={() => { updateTask({...task, priority: opt.p}); setShowPriorityMenu(false); }} className={`w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-black/5 flex items-center gap-2 ${task.priority === opt.p ? 'bg-black/5' : ''}`}>
+                  <button key={opt.p} onClick={() => { updateTask({ ...task, priority: opt.p }); setShowPriorityMenu(false); }} className={`w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-black/5 flex items-center gap-2 ${task.priority === opt.p ? 'bg-black/5' : ''}`}>
                     <i className={`fa-solid ${opt.color}`}></i> {opt.label}
                   </button>
                 ))}
@@ -180,77 +180,109 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             {showActionsMenu && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-[var(--bg-card)] shadow-xl border border-[var(--border-color)] rounded-xl z-[120] py-1 tiktok-blur animate-in zoom-in-95">
                 <MenuSection title="Дії">
-                   <MenuItem icon={isNote ? "fa-bolt" : "fa-note-sticky"} label={isNote ? "Зробити завданням" : "Зробити нотаткою"} onClick={toggleType} />
-                   <MenuItem icon="fa-thumbtack" label={task.isPinned ? "Відкріпити" : "Закріпити"} onClick={() => { updateTask({...task, isPinned: !task.isPinned}); setShowActionsMenu(false); }} />
+                  <MenuItem icon={isNote ? "fa-bolt" : "fa-note-sticky"} label={isNote ? "Зробити завданням" : "Зробити нотаткою"} onClick={toggleType} />
+                  <MenuItem icon="fa-thumbtack" label={task.isPinned ? "Відкріпити" : "Закріпити"} onClick={() => { updateTask({ ...task, isPinned: !task.isPinned }); setShowActionsMenu(false); }} />
                 </MenuSection>
                 <MenuSection title="Організація">
-                   <MenuItem icon="fa-copy" label="Дублювати" onClick={handleDuplicate} />
-                   <MenuItem icon="fa-link" label="Копіювати посилання" onClick={handleCopyLink} />
+                  <MenuItem icon="fa-copy" label="Дублювати" onClick={handleDuplicate} />
+                  <MenuItem icon="fa-link" label="Копіювати посилання" onClick={handleCopyLink} />
                 </MenuSection>
                 <MenuSection title="Небезпечна зона">
-                   <MenuItem icon="fa-trash-can" label="Видалити" danger onClick={() => { if(confirm('Видалити?')) { deleteTask(task.id); onClose(); } }} />
+                  <MenuItem icon="fa-trash-can" label="Видалити" danger onClick={() => { if (confirm('Видалити?')) { deleteTask(task.id); onClose(); } }} />
                 </MenuSection>
               </div>
             )}
           </div>
-          
+
           <div className="h-6 w-px bg-[var(--border-color)] mx-1"></div>
           <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark"></i></button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-transparent">
-        <div className="p-5 md:p-6 max-w-2xl mx-auto space-y-4">
-          <div className="space-y-1 relative">
-            <textarea 
-              value={localTitle} 
-              onChange={(e) => setLocalTitle(e.target.value)} 
-              onBlur={() => updateTask({...task, title: localTitle})} 
-              rows={1}
-              className={`w-full bg-transparent text-[20px] font-bold border-t-0 border-l-0 border-r-0 border-b border-[var(--border-color)] focus:border-[var(--primary)]/50 focus:ring-0 p-0 pb-1.5 placeholder:text-[var(--text-muted)] placeholder:opacity-30 resize-none leading-tight outline-none shadow-none ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} overflow-hidden h-auto transition-all`} 
-              placeholder={isNote ? "Текст нотатки..." : "Текст завдання..."}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = target.scrollHeight + 'px';
-              }}
-            />
-          </div>
+      <div className="flex-1 flex flex-col overflow-hidden bg-transparent">
+        <div className="p-2 md:p-2 pb-2 shrink-0 border-b border-[var(--border-color)]/30 mx-2">
+          <textarea
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            onBlur={() => updateTask({ ...task, title: localTitle })}
+            rows={1}
+            className={`w-full bg-transparent text-[22px] font-black border-none focus:ring-0 p-0 placeholder:text-[var(--text-muted)] placeholder:opacity-20 resize-none leading-tight outline-none shadow-none ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} overflow-hidden h-auto transition-all`}
+            placeholder={isNote ? "Текст нотатки..." : "Текст завдання..."}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = target.scrollHeight + 'px';
+            }}
+          />
+        </div>
 
-          <div className="min-h-[400px] text-[13px]">
-            <DiaryEditor 
-              id={task.id} 
-              date={new Date(task.createdAt).toISOString().split('T')[0]} 
-              onClose={() => {}} 
-              standaloneMode={true} 
-              initialContent={task.content}
-              onContentChange={(newContent) => updateTask({...task, content: newContent})}
-            />
-          </div>
-
-          <div className="pt-6 border-t border-[var(--border-color)] flex flex-wrap gap-2 items-center">
-             <i className="fa-solid fa-tag text-[10px] text-[var(--text-muted)] opacity-30"></i>
-             {task.tags.map(t => {
-               const isPerson = people.some(p => p.name.trim().replace(/\s+/g, '_') === t);
-               return (
-                <Badge key={t} variant={isPerson ? "orange" : "slate"} className="text-[9px] font-bold bg-[var(--bg-input)] border-none px-2 py-0.5 rounded group/tag lowercase text-[var(--text-main)]">
-                  {isPerson && <i className="fa-solid fa-user-ninja mr-1 opacity-50"></i>}
-                  #{t}
-                  <button onClick={() => removeTag(t)} className="ml-1 opacity-0 group-hover/tag:opacity-100 transition-opacity text-rose-400 hover:text-rose-600"><i className="fa-solid fa-xmark"></i></button>
-                </Badge>
-               );
-             })}
-             <div className="relative" ref={tagRef}>
-               <button onClick={() => setShowTagPopover(!showTagPopover)} className="text-[9px] font-bold text-[var(--primary)] hover:underline opacity-80">+ тег</button>
-               {showTagPopover && (
-                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-[var(--bg-card)] shadow-xl border border-[var(--border-color)] rounded-lg p-2 z-[130] tiktok-blur">
-                    <HashtagAutocomplete mode="tags" value={newTagInput} onChange={setNewTagInput} onSelectTag={addNewTag} placeholder="Тег чи людина..." className="w-full text-[11px] p-1 border-none focus:ring-0 bg-[var(--bg-input)] rounded text-[var(--text-main)]" />
-                 </div>
-               )}
-             </div>
-          </div>
+        <div className="flex-1 overflow-hidden relative">
+          <DiaryEditor
+            id={task.id}
+            date={new Date(task.createdAt).toISOString().split('T')[0]}
+            onClose={() => { }}
+            standaloneMode={true}
+            initialContent={task.content}
+            onContentChange={(newContent) => updateTask({ ...task, content: newContent })}
+          />
         </div>
       </div>
+
+      <footer className="shrink-0 p-4 border-t border-[var(--border-color)] bg-[var(--bg-card)]/50 backdrop-blur-md space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 border border-[var(--border-color)]">
+            <i className="fa-solid fa-layer-group text-[10px] text-[var(--text-muted)]"></i>
+            <select
+              value={task.projectId || ''}
+              onChange={(e) => updateTask({ ...task, projectId: e.target.value || undefined, projectSection: undefined })}
+              className="bg-transparent text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer max-w-[120px]"
+            >
+              <option value="">Без списку</option>
+              {projects.filter(p => (p.type === 'folder' || p.type === 'list' || !p.type) && p.description !== 'SYSTEM_PLANNER_CONFIG').map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {task.projectId && projects.find(p => p.id === task.projectId)?.sections && projects.find(p => p.id === task.projectId)!.sections!.length > 0 && (
+            <div className="flex items-center gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1.5 border border-[var(--border-color)]">
+              <i className="fa-solid fa-layer-group text-[10px] text-[var(--text-muted)]"></i>
+              <select
+                value={task.projectSection || ''}
+                onChange={(e) => updateTask({ ...task, projectSection: e.target.value as any })}
+                className="bg-transparent text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer"
+              >
+                <option value="">Головна</option>
+                {projects.find(p => p.id === task.projectId)?.sections?.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5 items-center flex-1">
+            {task.tags.map(t => {
+              const isPerson = people.some(p => p.name.trim().replace(/\s+/g, '_') === t);
+              return (
+                <Badge key={t} variant={isPerson ? "orange" : "slate"} className="text-[8px] font-bold bg-[var(--bg-input)] border-none px-2 py-0.5 rounded group/tag lowercase text-[var(--text-main)]">
+                  {isPerson && <i className="fa-solid fa-user-ninja mr-1 opacity-50"></i>}
+                  #{t}
+                  <button onClick={() => removeTag(t)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity text-rose-400"><i className="fa-solid fa-xmark"></i></button>
+                </Badge>
+              );
+            })}
+
+            <div className="relative" ref={tagRef}>
+              <button onClick={() => setShowTagPopover(!showTagPopover)} className="w-6 h-6 rounded-lg bg-[var(--bg-input)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-all">
+                <i className="fa-solid fa-plus text-[10px]"></i>
+              </button>
+              {showTagPopover && (
+                <div className="absolute bottom-full left-0 mb-2 w-56 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-xl p-2 z-[200] tiktok-blur animate-in slide-in-from-bottom-2 duration-200">
+                  <HashtagAutocomplete mode="tags" value={newTagInput} onChange={setNewTagInput} onSelectTag={addNewTag} placeholder="Додати тег..." className="w-full text-[11px] p-2 border-none focus:ring-0 bg-[var(--bg-input)] rounded-lg text-[var(--text-main)]" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

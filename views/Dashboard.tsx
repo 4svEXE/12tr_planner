@@ -92,6 +92,35 @@ const Dashboard: React.FC = () => {
     return Math.round((completedCount / allHabits.length) * 100);
   }, [tasks, dateStr]);
 
+  const habitStreak = useMemo(() => {
+    const allHabits = tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit')));
+    if (allHabits.length === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const dow = (d.getDay() + 6) % 7;
+
+      const dayHabits = allHabits.filter(h => (h.daysOfWeek || [0, 1, 2, 3, 4, 5, 6]).includes(dow));
+      if (dayHabits.length === 0) continue;
+
+      const allCompleted = dayHabits.every(h => h.habitHistory?.[ds]?.status === 'completed');
+
+      if (allCompleted) {
+        streak++;
+      } else {
+        if (i === 0) continue;
+        break;
+      }
+    }
+    return streak;
+  }, [tasks]);
+
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
       if (t.isDeleted) return false;
@@ -285,18 +314,30 @@ const Dashboard: React.FC = () => {
                         <button onClick={() => setActiveTab('habits')} className="text-[8px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline">До налаштувань</button>
                       </div>
                       <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2">
-                        {habitTasks.length > 0 ? habitTasks.map(habit => {
-                          const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
-                          return (
-                            <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
-                              className={`shrink-0 w-32 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
-                                <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
-                              </div>
-                              <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
-                            </button>
-                          );
-                        }) : (
+                        {habitCompletionRate === 100 && tasks.some(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))) ? (
+                          <div className="w-full py-8 bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 rounded-[2.5rem] flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg mb-4">
+                              <i className="fa-solid fa-trophy"></i>
+                            </div>
+                            <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-emerald-600">Всі звички виконано!</Typography>
+                            <p className="text-[10px] font-bold mt-2 uppercase tracking-tight text-emerald-700/50 text-center px-6">
+                              Ви виконали всі свої звички {habitStreak} {habitStreak === 1 ? 'день' : (habitStreak > 1 && habitStreak < 5) ? 'дні' : 'днів'} підряд. Так тримати!
+                            </p>
+                          </div>
+                        ) : habitTasks.length > 0 ? (
+                          habitTasks.map(habit => {
+                            const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
+                            return (
+                              <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
+                                className={`shrink-0 w-32 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
+                                  <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
+                                </div>
+                                <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
+                              </button>
+                            );
+                          })
+                        ) : (
                           <button
                             onClick={() => setActiveTab('habits')}
                             className="w-full py-8 border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] bg-black/[0.02] flex flex-col items-center justify-center opacity-40 hover:opacity-100 transition-all group"

@@ -13,9 +13,9 @@ const HabitsView: React.FC = () => {
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState('');
-  
+
   // Restore tab preference
-  const [activeTab, setActiveTabState] = useState<'active' | 'archived'>(() => 
+  const [activeTab, setActiveTabState] = useState<'active' | 'archived'>(() =>
     (localStorage.getItem(HABITS_TAB_KEY) as any) || 'active'
   );
 
@@ -23,12 +23,12 @@ const HabitsView: React.FC = () => {
     setActiveTabState(tab);
     localStorage.setItem(HABITS_TAB_KEY, tab);
   };
-  
+
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [touchTargetId, setTouchTargetId] = useState<string | null>(null);
-  
+
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const handleCreateHabit = (e: React.FormEvent) => {
@@ -40,19 +40,19 @@ const HabitsView: React.FC = () => {
     }
   };
 
-  const habits = useMemo(() => 
-    tasks.filter(t => 
-      !t.isDeleted && 
+  const habits = useMemo(() =>
+    tasks.filter(t =>
+      !t.isDeleted &&
       (activeTab === 'archived' ? t.isArchived === true : !t.isArchived) &&
       (t.projectSection === 'habits' || t.tags.includes('habit'))
     ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-  [tasks, activeTab]);
+    [tasks, activeTab]);
 
   const days = useMemo(() => {
     return Array.from({ length: 14 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      d.setHours(0,0,0,0);
+      d.setHours(0, 0, 0, 0);
       return {
         label: d.toLocaleString('uk-UA', { weekday: 'short' }).toUpperCase(),
         date: d.getDate(),
@@ -65,10 +65,10 @@ const HabitsView: React.FC = () => {
 
   const calculateSmartStreak = (habit: Task) => {
     const history = habit.habitHistory || {};
-    const scheduledDays = habit.daysOfWeek || [0,1,2,3,4,5,6];
+    const scheduledDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
     let streak = 0;
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
@@ -173,13 +173,13 @@ const HabitsView: React.FC = () => {
         <div className="flex items-center gap-3">
           <Typography variant="h2" className="text-lg font-black">Звички</Typography>
           <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)] ml-2">
-            <button 
+            <button
               onClick={() => setActiveTab('active')}
               className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
               Активні
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('archived')}
               className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
@@ -197,7 +197,7 @@ const HabitsView: React.FC = () => {
           <table className="w-full border-separate border-spacing-0 table-fixed">
             <thead>
               <tr className="bg-[var(--bg-main)]">
-                <th className="sticky left-0 z-30 bg-[var(--bg-main)] p-2 text-left w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem] border-b border-[var(--border-color)]">
+                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-2 text-left w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem] border-b border-[var(--border-color)]">
                   <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-[0.2em] ml-2">Активність</span>
                 </th>
                 {days.map(d => {
@@ -215,27 +215,26 @@ const HabitsView: React.FC = () => {
               {habits.map(habit => {
                 const streak = calculateSmartStreak(habit);
                 const color = getHabitColor(habit);
-                const scheduledDays = habit.daysOfWeek || [0,1,2,3,4,5,6];
+                const scheduledDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
                 const isItemDragged = draggedId === habit.id;
                 const isTarget = touchTargetId === habit.id;
 
                 return (
-                  <tr 
-                    key={habit.id} 
+                  <tr
+                    key={habit.id}
                     data-id={habit.id}
-                    draggable 
+                    draggable
                     onDragStart={(e) => onDragStart(e, habit.id)}
                     onDragEnd={onDragEnd}
                     onDragOver={(e) => onDragOver(e, habit.id)}
                     onDrop={(e) => onDrop(e, habit.id)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    className={`group transition-all duration-200 ${
-                      isItemDragged ? 'z-50 bg-[var(--bg-card)] shadow-2xl scale-[1.02] border-y border-[var(--primary)]' : 
+                    className={`group transition-all duration-200 ${isItemDragged ? 'z-50 bg-[var(--bg-card)] shadow-2xl scale-[1.02] border-y border-[var(--primary)]' :
                       isTarget ? 'border-t-2 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
-                    }`}
+                      }`}
                   >
-                    <td className="sticky left-0 z-30 bg-inherit py-2 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] py-2 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
                           <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
@@ -258,17 +257,15 @@ const HabitsView: React.FC = () => {
                       const hasNote = !!dayData.note;
                       const isToday = d.dateStr === new Date().toISOString().split('T')[0];
                       const isScheduled = scheduledDays.includes(d.dayOfWeek);
-                      
+
                       return (
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
                           <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-12 flex flex-col items-center justify-center transition-all group/btn`}>
                             <div className="relative">
                               {status === 'completed' ? (
-                                <div className="w-6 h-6 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
-                                   <i className="fa-solid fa-check text-white text-[10px]"></i>
-                                </div>
+                                <i className="fa-solid fa-check text-base" style={{ color }}></i>
                               ) : status === 'skipped' ? (
-                                <i className="fa-solid fa-xmark text-[var(--text-muted)] text-[8px] opacity-20"></i>
+                                <i className="fa-solid fa-xmark text-rose-500 text-base"></i>
                               ) : (
                                 <span className={`text-[11px] font-black transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
                               )}
@@ -300,10 +297,10 @@ const HabitsView: React.FC = () => {
           <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
             <header className="flex justify-between items-center mb-6">
               <div className="flex flex-col">
-                 <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-black text-[8px]">
-                    {days.find(d => d.dateStr === activeCell.dateStr)?.label}, {days.find(d => d.dateStr === activeCell.dateStr)?.date}
-                 </Typography>
-                 <Typography variant="h2" className="text-lg">Відмітити звичку</Typography>
+                <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-black text-[8px]">
+                  {days.find(d => d.dateStr === activeCell.dateStr)?.label}, {days.find(d => d.dateStr === activeCell.dateStr)?.date}
+                </Typography>
+                <Typography variant="h2" className="text-lg">Відмітити звичку</Typography>
               </div>
               <button onClick={() => setActiveCell(null)} className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all">
                 <i className="fa-solid fa-xmark"></i>
@@ -312,13 +309,12 @@ const HabitsView: React.FC = () => {
 
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => handleSetStatus('completed')} 
-                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${
-                    activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' 
-                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl scale-105' 
+                <button
+                  onClick={() => handleSetStatus('completed')}
+                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed'
+                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl scale-105'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-emerald-500/30 text-[var(--text-muted)]'
-                  }`}
+                    }`}
                 >
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
                     <i className="fa-solid fa-check text-emerald-500"></i>
@@ -326,13 +322,12 @@ const HabitsView: React.FC = () => {
                   <span className="text-[10px] font-black uppercase tracking-widest">ВИКОНАНО</span>
                 </button>
 
-                <button 
-                  onClick={() => handleSetStatus('skipped')} 
-                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${
-                    activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' 
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-xl scale-105' 
+                <button
+                  onClick={() => handleSetStatus('skipped')}
+                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped'
+                    ? 'bg-slate-800 border-slate-800 text-white shadow-xl scale-105'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-slate-500/30 text-[var(--text-muted)]'
-                  }`}
+                    }`}
                 >
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
                     <i className="fa-solid fa-xmark text-slate-500"></i>
@@ -343,18 +338,18 @@ const HabitsView: React.FC = () => {
 
               <div className="space-y-2">
                 <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest ml-1">Коментар / Інсайт</label>
-                <textarea 
-                  value={reportText} 
-                  onChange={(e) => setReportText(e.target.value)} 
-                  placeholder="Як це було сьогодні?.." 
-                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl p-4 text-xs font-medium outline-none h-24 resize-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all text-[var(--text-main)] shadow-inner" 
+                <textarea
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  placeholder="Як це було сьогодні?.."
+                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl p-4 text-xs font-medium outline-none h-24 resize-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all text-[var(--text-main)] shadow-inner"
                 />
               </div>
 
               <div className="flex gap-3">
-                 <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
-                 <button 
-                  onClick={() => { toggleHabitStatus(activeCell.habitId, activeCell.dateStr, undefined, reportText); setActiveCell(null); }} 
+                <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
+                <button
+                  onClick={() => { toggleHabitStatus(activeCell.habitId, activeCell.dateStr, undefined, reportText); setActiveCell(null); }}
                   className="flex-[2] py-3.5 bg-[var(--primary)] text-white rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
                 >
                   ЗБЕРЕГТИ ЗВІТ
@@ -372,8 +367,8 @@ const HabitsView: React.FC = () => {
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>
             <form onSubmit={handleCreateHabit} className="space-y-6">
               <div className="space-y-1.5">
-                 <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest">Назва звички</label>
-                 <input autoFocus value={newHabitTitle} onChange={(e) => setNewHabitTitle(e.target.value)} placeholder="Напр: Медитація" className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-[var(--text-main)]" />
+                <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest">Назва звички</label>
+                <input autoFocus value={newHabitTitle} onChange={(e) => setNewHabitTitle(e.target.value)} placeholder="Напр: Медитація" className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-[var(--text-main)]" />
               </div>
               <div className="flex gap-3">
                 <Button variant="white" type="button" className="flex-1 rounded-xl text-[10px]" onClick={() => setIsAdding(false)}>ВІДМІНА</Button>
@@ -386,8 +381,8 @@ const HabitsView: React.FC = () => {
 
       {selectedHabit && (
         <div className="fixed top-0 right-0 h-full w-full md:w-[340px] bg-[var(--bg-sidebar)] border-l border-[var(--border-color)] z-[800] shadow-[-10px_0_40px_rgba(0,0,0,0.2)] animate-in slide-in-from-right duration-300">
-          <HabitStatsSidebar 
-            habit={selectedHabit} 
+          <HabitStatsSidebar
+            habit={selectedHabit}
             onClose={() => setSelectedHabitId(null)}
             onUpdate={(updates) => updateTask({ ...selectedHabit, ...updates })}
             onToggleStatus={toggleHabitStatus}

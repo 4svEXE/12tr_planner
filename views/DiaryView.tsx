@@ -15,7 +15,7 @@ const DiaryView: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
-  
+
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[] | null>(null);
 
@@ -51,7 +51,7 @@ const DiaryView: React.FC = () => {
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     if (isCalendarExpanded || !isMobile) {
       const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -63,7 +63,7 @@ const DiaryView: React.FC = () => {
     } else {
       const sel = new Date(selectedDate);
       const start = new Date(sel);
-      start.setDate(sel.getDate() - sel.getDay() + (sel.getDay() === 0 ? -6 : 1)); 
+      start.setDate(sel.getDate() - sel.getDay() + (sel.getDay() === 0 ? -6 : 1));
       return Array.from({ length: 7 }, (_, i) => {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
@@ -110,8 +110,8 @@ const DiaryView: React.FC = () => {
               const isToday = ds === new Date().toLocaleDateString('en-CA');
 
               return (
-                <button 
-                  key={ds} 
+                <button
+                  key={ds}
                   onClick={() => { setSelectedDate(ds); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1)); }}
                   className={`h-10 md:h-12 rounded-2xl flex flex-col items-center justify-center relative transition-all group ${isSelected ? 'bg-[var(--primary)] text-white shadow-lg' : 'hover:bg-black/5'}`}
                 >
@@ -138,12 +138,12 @@ const DiaryView: React.FC = () => {
               <Typography variant="h1" className="text-lg md:text-2xl font-black uppercase tracking-tighter">Щоденник</Typography>
             </div>
             <div className="flex items-center gap-1.5">
-               <button 
-                onClick={() => setIsReportWizardOpen(true)} 
+              <button
+                onClick={() => setIsReportWizardOpen(true)}
                 className="px-4 h-9 md:h-10 bg-[var(--primary)] text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-[var(--primary)]/20 transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
-               >
+              >
                 Звіт дня
-               </button>
+              </button>
             </div>
           </div>
         </header>
@@ -153,15 +153,15 @@ const DiaryView: React.FC = () => {
         <div className="flex-1 flex overflow-hidden">
           <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
             <div className="p-4 bg-indigo-50/50 rounded-3xl border border-indigo-100 mb-4">
-               <Typography variant="tiny" className="text-indigo-600 font-black mb-2 uppercase text-[8px] tracking-widest">Статистика</Typography>
-               <div className="text-2xl font-black text-slate-800">{diary.length}</div>
-               <div className="text-[7px] font-black uppercase text-slate-400">Всього записів</div>
+              <Typography variant="tiny" className="text-indigo-600 font-black mb-2 uppercase text-[8px] tracking-widest">Статистика</Typography>
+              <div className="text-2xl font-black text-slate-800">{diary.length}</div>
+              <div className="text-[7px] font-black uppercase text-slate-400">Всього записів</div>
             </div>
             <Button variant="primary" className="w-full rounded-2xl shadow-xl font-black uppercase text-[10px] tracking-widest" onClick={() => { setEditingEntryId('new'); }}>НОВИЙ ЗАПИС</Button>
           </aside>
-          
+
           <main className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-8 bg-[var(--bg-main)]/30">
-            <div className="max-w-3xl mx-auto space-y-6 pb-40">
+            <div className="w-full space-y-6 pb-40">
               {Object.entries(groupedByMonth).length > 0 ? (Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, monthEntries]) => (
                 <div key={month} className="space-y-3">
                   <div className="flex items-center gap-3 px-2">
@@ -175,7 +175,7 @@ const DiaryView: React.FC = () => {
                     try {
                       const blocks = JSON.parse(entry.content);
                       title = blocks.find((b: any) => b.content && b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
-                    } catch(e) { title = entry.content.split('\n')[0].trim(); }
+                    } catch (e) { title = entry.content.split('\n')[0].trim(); }
 
                     const isSelected = selectedDate === entry.date;
 
@@ -184,17 +184,17 @@ const DiaryView: React.FC = () => {
                         className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-[2rem] cursor-pointer overflow-hidden transition-all group ${isSelected ? 'ring-1 ring-[var(--primary)] border-[var(--primary)] shadow-xl' : 'shadow-sm hover:shadow-md'}`}>
                         <div className="flex items-center gap-5 p-4 md:p-6 relative">
                           <div className="w-10 md:w-14 flex flex-col items-center shrink-0 border-r border-[var(--border-color)] pr-4">
-                             <span className="text-[8px] md:text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
-                             <span className={`text-base md:text-2xl font-black transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
+                            <span className="text-[8px] md:text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
+                            <span className={`text-base md:text-2xl font-black transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className={`text-[14px] md:text-base font-black truncate block uppercase tracking-tight ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{title}</span>
                             <div className="flex items-center gap-2 mt-2">
-                               <Badge variant="indigo" className="text-[7px] py-0 px-1.5">{entry.date}</Badge>
-                               <span className="text-[7px] font-black text-[var(--text-muted)] uppercase opacity-30">Updated {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}</span>
+                              <Badge variant="indigo" className="text-[7px] py-0 px-1.5">{entry.date}</Badge>
+                              <span className="text-[7px] font-black text-[var(--text-muted)] uppercase opacity-30">Updated {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                           </div>
-                          <button 
+                          <button
                             onClick={(e) => handleDeleteEntry(e, entry.id)}
                             className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center shadow-sm"
                           >
@@ -217,7 +217,7 @@ const DiaryView: React.FC = () => {
         </div>
 
         {isMobile && !editingEntryId && (
-          <button 
+          <button
             onClick={() => { setEditingEntryId('new'); }}
             className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[50] hover:scale-110 active:scale-95 transition-all border-4 border-[var(--bg-card)]"
           >
@@ -227,35 +227,35 @@ const DiaryView: React.FC = () => {
       </div>
 
       <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] z-[2100] transition-all duration-300 ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
-         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col">
-            {editingEntryId && (
-              <div className="flex-1 flex flex-col">
-                <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs shadow-sm"><i className="fa-solid fa-pen-nib"></i></div>
-                    <Typography variant="h3" className="text-xs font-black uppercase tracking-widest">Редактор</Typography>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {editingEntryId !== 'new' && (
-                      <button onClick={(e) => handleDeleteEntry(e, editingEntryId)} className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can"></i></button>
-                    )}
-                    <button onClick={() => setEditingEntryId(null)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark text-lg"></i></button>
-                  </div>
-                </header>
-                <div className="flex-1 overflow-hidden">
-                  <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
+        <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col">
+          {editingEntryId && (
+            <div className="flex-1 flex flex-col">
+              <header className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs shadow-sm"><i className="fa-solid fa-pen-nib"></i></div>
+                  <Typography variant="h3" className="text-xs font-black uppercase tracking-widest">Редактор</Typography>
                 </div>
-                <footer className="p-6 border-t border-[var(--border-color)] bg-black/[0.02] shrink-0 pb-safe">
-                   <button 
-                    onClick={() => setEditingEntryId(null)}
-                    className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all"
-                   >
-                     Зберегти та вийти
-                   </button>
-                </footer>
+                <div className="flex items-center gap-2">
+                  {editingEntryId !== 'new' && (
+                    <button onClick={(e) => handleDeleteEntry(e, editingEntryId)} className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can"></i></button>
+                  )}
+                  <button onClick={() => setEditingEntryId(null)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+              </header>
+              <div className="flex-1 overflow-hidden">
+                <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
               </div>
-            )}
-         </div>
+              <footer className="p-6 border-t border-[var(--border-color)] bg-black/[0.02] shrink-0 pb-safe">
+                <button
+                  onClick={() => setEditingEntryId(null)}
+                  className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all"
+                >
+                  Зберегти та вийти
+                </button>
+              </footer>
+            </div>
+          )}
+        </div>
       </div>
 
       {showAiWizard && aiSuggestions && <DailyReportAiWizard suggestions={aiSuggestions} onClose={() => setShowAiWizard(false)} />}
