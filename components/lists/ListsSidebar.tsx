@@ -51,10 +51,10 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
 
   return (
     <aside className="w-full h-full bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col shadow-xl md:shadow-none overflow-hidden">
-      <header className="p-4 md:p-5 border-b border-[var(--border-color)] flex justify-between items-center bg-white shrink-0">
-        <Typography variant="h2" className="text-lg font-black uppercase tracking-tight text-[var(--text-main)]">Записник</Typography>
+      <header className="p-4 md:p-5 border-b border-[var(--border-color)] flex justify-between items-center bg-transparent shrink-0">
+        <Typography variant="h2" className="text-lg font-black uppercase tracking-tight" style={{ color: 'var(--text-sidebar)' }}>Записник</Typography>
         {isMobile && (
-          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
+          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center active:scale-90 transition-all">
              <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         )}
@@ -66,45 +66,45 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
         <div className="space-y-0.5">
             <button 
               onClick={() => onSelectProject('system_inbox')} 
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_inbox' ? 'text-[var(--primary)]' : 'text-[var(--text-main)] hover:bg-black/5'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_inbox' ? 'bg-[var(--primary)] shadow-lg' : 'hover:bg-black/5'}`}
             >
-              <i className={`fa-solid fa-inbox text-[12px] w-5 text-center ${selectedProjectId === 'system_inbox' ? 'text-[var(--primary)]' : 'text-blue-500'}`}></i>
-              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_inbox' ? 'border-b-2 border-[var(--primary)]' : ''}`}>Вхідні</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_inbox' ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'bg-black/5 text-slate-400'}`}>{inboxCount}</span>
+              <i className={`fa-solid fa-inbox text-[12px] w-5 text-center ${selectedProjectId === 'system_inbox' ? 'text-white' : 'text-blue-400'}`}></i>
+              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_inbox' ? 'text-white' : ''}`}>Вхідні</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_inbox' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{inboxCount}</span>
             </button>
 
             <button 
               onClick={() => onSelectProject('system_calendar')} 
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_calendar' ? 'text-rose-500' : 'text-[var(--text-main)] hover:bg-black/5'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_calendar' ? 'bg-rose-500 shadow-lg' : 'hover:bg-black/5'}`}
             >
-              <i className={`fa-solid fa-calendar-day text-[12px] w-5 text-center ${selectedProjectId === 'system_calendar' ? 'text-rose-500' : 'text-rose-400'}`}></i>
-              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_calendar' ? 'border-b-2 border-rose-500' : ''}`}>Календар</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_calendar' ? 'bg-rose-500/10 text-rose-500' : 'bg-black/5 text-slate-400'}`}>{calendarCount}</span>
+              <i className={`fa-solid fa-calendar-day text-[12px] w-5 text-center ${selectedProjectId === 'system_calendar' ? 'text-white' : 'text-rose-400'}`}></i>
+              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_calendar' ? 'text-white' : ''}`}>Календар</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_calendar' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{calendarCount}</span>
             </button>
 
             <button 
               onClick={() => onSelectProject('system_notes')} 
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_notes' ? 'text-indigo-600' : 'text-[var(--text-main)] hover:bg-black/5'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group ${selectedProjectId === 'system_notes' ? 'bg-indigo-600 shadow-lg' : 'hover:bg-black/5'}`}
             >
-              <i className={`fa-solid fa-note-sticky text-[12px] w-5 text-center ${selectedProjectId === 'system_notes' ? 'text-indigo-600' : 'text-indigo-500'}`}></i>
-              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_notes' ? 'border-b-2 border-indigo-600' : ''}`}>Нотатки</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_notes' ? 'bg-indigo-600/10 text-indigo-600' : 'bg-black/5 text-slate-400'}`}>{notesCount}</span>
+              <i className={`fa-solid fa-note-sticky text-[12px] w-5 text-center ${selectedProjectId === 'system_notes' ? 'text-white' : 'text-indigo-400'}`}></i>
+              <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_notes' ? 'text-white' : ''}`}>Нотатки</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_notes' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{notesCount}</span>
             </button>
         </div>
 
         {/* SECTION: COLLECTIONS */}
         <div className="space-y-1">
-          <div className="px-3 mb-1 flex justify-between items-center group/sec-header">
+          <div className="px-3 mb-1 flex justify-between items-center group/sec-header opacity-60">
               <div 
                 onClick={() => setIsCollectionsExpanded(!isCollectionsExpanded)}
                 className="flex items-center gap-2 cursor-pointer flex-1"
               >
-                <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 text-[var(--text-muted)] opacity-50 ${isCollectionsExpanded ? 'rotate-90' : ''}`}></i>
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50">Колекції</span>
+                <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isCollectionsExpanded ? 'rotate-90' : ''}`}></i>
+                <span className="text-[8px] font-black uppercase tracking-[0.2em]">Колекції</span>
               </div>
               <div className="flex gap-2">
-                 <button onClick={() => onOpenListModal({ type: 'folder' })} className="text-slate-400 hover:text-primary transition-colors p-1" title="Нова папка"><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
-                 <button onClick={() => onOpenListModal({ type: 'list' })} className="text-slate-400 hover:text-primary transition-colors p-1" title="Новий список"><i className="fa-solid fa-plus text-[10px]"></i></button>
+                 <button onClick={() => onOpenListModal({ type: 'folder' })} className="hover:scale-110 transition-transform p-1" title="Нова папка"><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
+                 <button onClick={() => onOpenListModal({ type: 'list' })} className="hover:scale-110 transition-transform p-1" title="Новий список"><i className="fa-solid fa-plus text-[10px]"></i></button>
               </div>
           </div>
 
@@ -137,38 +137,38 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
         </div>
       </div>
 
-      <div className="mt-auto shrink-0 border-t border-[var(--border-color)] bg-black/[0.01] pt-2">
+      <div className="mt-auto shrink-0 border-t border-[var(--border-color)] bg-black/[0.05] pt-2">
         <div className="space-y-1 pb-2">
           <div 
             onClick={() => setIsArchiveExpanded(!isArchiveExpanded)}
-            className="px-4 mb-1 flex items-center gap-2 cursor-pointer group/sec"
+            className="px-4 mb-1 flex items-center gap-2 cursor-pointer group/sec opacity-50"
           >
-            <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 text-[var(--text-muted)] opacity-50 ${isArchiveExpanded ? 'rotate-90' : ''}`}></i>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50">Системний архів</span>
+            <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isArchiveExpanded ? 'rotate-90' : ''}`}></i>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Системний архів</span>
           </div>
           
           {isArchiveExpanded && (
             <div className="grid grid-cols-1 gap-0.5 px-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
               {[
-                { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги', color: 'text-amber-500' },
-                { id: 'completed', icon: 'fa-check-double', label: 'Готово', color: 'text-emerald-500' },
-                { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', color: 'text-rose-500' }
+                { id: 'hashtags', icon: 'fa-hashtag', label: 'Теги', color: 'text-amber-400' },
+                { id: 'completed', icon: 'fa-check-double', label: 'Готово', color: 'text-emerald-400' },
+                { id: 'trash', icon: 'fa-trash-can', label: 'Корзина', color: 'text-rose-400' }
               ].map(item => (
                 <button 
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight text-[var(--text-main)] hover:bg-black/5 transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all hover:bg-white/10"
                 >
                   <i className={`fa-solid ${item.icon} w-5 text-center ${item.color} text-[12px]`}></i>
-                  <span>{item.label}</span>
+                  <span className="text-[10px] font-black uppercase tracking-tight">{item.label}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-[var(--border-color)]/30">
-            <div className="bg-white rounded-2xl border border-[var(--border-color)] p-2 shadow-sm">
+        <div className="p-4 border-t border-black/10">
+            <div className="bg-[var(--bg-main)] rounded-2xl p-2 shadow-inner border border-black/10">
                <MiniCalendar />
             </div>
         </div>

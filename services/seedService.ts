@@ -1,4 +1,3 @@
-
 import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory, ReportQuestion, ReportPreset, AquariumObject } from '../types';
 
 export const generateSeedData = () => {
@@ -39,23 +38,27 @@ export const generateSeedData = () => {
 
   const reportTemplate: ReportQuestion[] = [
     { id: 'q_mood', text: 'Як пройшов день?', type: 'mood', required: true },
-    { id: 'q_grat_p', text: 'Кому ви вдячні сьогодні?', type: 'gratitude_people', required: false },
+    { id: 'q_habits', text: 'Які звички не виконав? Чому? (мін. 1)', type: 'habits', required: false },
+    { id: 'q_grat_p', text: 'За що і кому я вдячний?', type: 'gratitude_people', required: false },
+    { id: 'q_grat_s', text: 'За що вдячний собі?', type: 'text', required: false },
+    { id: 'q_pos', text: 'Що було позитивного сьогодні?', type: 'text', required: false },
+    { id: 'q_change', text: 'Що не хочу терпіти / що змінив би?', type: 'text', required: false },
+    { id: 'q_res', text: 'Які можливості і ресурси у мене зараз є?', type: 'text', required: false },
+    { id: 'q_max', text: 'Як я можу вижати максимум з моєї ситуації?', type: 'text', required: false },
     { id: 'q_victory', text: 'Головна перемога дня', type: 'victory', required: true },
-    { id: 'q_ideas', text: 'Нові ідеї чи плани?', type: 'ideas', required: false }
+    { id: 'q_conc', text: 'Висновок дня:', type: 'text', required: true }
   ];
 
   const reportPresets: ReportPreset[] = [
-    { id: 'p_standard', name: 'Стандартний', questions: [...reportTemplate], updatedAt: Date.now() }
+    { id: 'p_standard', name: 'Стандартний 12TR', questions: [...reportTemplate], updatedAt: Date.now() }
   ];
 
-  // Fix: Added missing inboxCategories definition for the seed data
   const inboxCategories: InboxCategory[] = [
     { id: 'unsorted', title: 'Вхідні', icon: 'fa-inbox', isPinned: true, scope: 'inbox', updatedAt: Date.now() },
     { id: 'ideas', title: 'Ідеї', icon: 'fa-lightbulb', isPinned: false, scope: 'inbox', updatedAt: Date.now() },
     { id: 'actions', title: 'Дії', icon: 'fa-bolt', isPinned: true, scope: 'actions', updatedAt: Date.now() }
   ];
 
-  // Fix: Added missing aquariumObjects definition to resolve type error in AppContext
   const aquariumObjects: AquariumObject[] = [
     {
       id: 'fish-1',
@@ -85,7 +88,6 @@ export const generateSeedData = () => {
 
   const cycle: TwelveWeekYear = { id: 'c1', startDate: todayTimestamp, endDate: todayTimestamp + 86400000 * 84, currentWeek: 1, globalExecutionScore: 0, updatedAt: Date.now() };
 
-  // Fix: Added aquariumObjects to the return object to satisfy StoreState requirements
   return {
     tags, hobbies, projects, people: [], tasks: [], diary: [], timeBlocks, character, cycle, reportTemplate, reportPresets,
     inboxCategories, aquariumObjects

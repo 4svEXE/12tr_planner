@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "build:exe": "npx nativefier \"https://one2tr.onrender.com\" --name \"12TR Engine\" --single-instance --user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36\" --internal-urls \".*?one2tr\\.onrender\\.com.*?\""
+    "build:exe": "npx nativefier \"https://one2tr.onrender.com\" --name \"12TR Engine\" --single-instance --user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\" --internal-urls \".*?one2tr\\.onrender\\.com.*?\""
   },
   "dependencies": {
     "react": "^19.2.3",

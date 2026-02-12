@@ -1,8 +1,7 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 
-export const useResizer = (minWidth = 300, maxWidth = 800) => {
+export const useResizer = (minWidth = 300, maxWidth = 1200) => {
   const { detailsWidth, setDetailsWidth } = useApp();
   const [isResizing, setIsResizing] = useState(false);
 
@@ -18,17 +17,14 @@ export const useResizer = (minWidth = 300, maxWidth = 800) => {
   const resize = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
     
-    // Розраховуємо ширину як відстань від правого краю вікна до курсора
     const newWidth = window.innerWidth - e.clientX;
-    
-    // Обмежуємо ширину в межах 20% - 70% екрана для кращого UX
-    const dynamicMax = Math.min(maxWidth, window.innerWidth * 0.7);
-    const dynamicMin = Math.max(minWidth, window.innerWidth * 0.2);
+    const dynamicMax = window.innerWidth * 0.8; // Розширення до 80% екрану
+    const dynamicMin = Math.max(minWidth, 200);
 
     if (newWidth >= dynamicMin && newWidth <= dynamicMax) {
       setDetailsWidth(newWidth);
     }
-  }, [isResizing, setDetailsWidth, minWidth, maxWidth]);
+  }, [isResizing, setDetailsWidth, minWidth]);
 
   useEffect(() => {
     if (isResizing) {

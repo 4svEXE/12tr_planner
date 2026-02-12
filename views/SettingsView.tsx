@@ -175,7 +175,8 @@ const SettingsView: React.FC = () => {
     { id: 'sakura', label: 'Sakura Night', main: '#fff1f2', nav: '#4c0519', accent: '#ec4899' },
     { id: 'ocean', label: 'Deep Ocean', main: '#f0f9ff', nav: '#082f49', accent: '#0ea5e9' },
     { id: 'forest', label: 'Deep Forest', main: '#f0fdf4', nav: '#064e3b', accent: '#22c55e' },
-    { id: 'sepia', label: 'Vintage Sepia', main: '#f4ecd8', nav: '#431407', accent: '#92400e' }
+    { id: 'sepia', label: 'Vintage Sepia', main: '#f4ecd8', nav: '#431407', accent: '#92400e' },
+    { id: 'paper', label: 'Ink Paper', main: '#fcfcfc', nav: '#f1f5f9', accent: '#334155' }
   ];
 
   const renderContent = () => {

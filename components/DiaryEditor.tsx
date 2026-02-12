@@ -7,9 +7,6 @@ interface Block {
   type: 'h1' | 'h2' | 'h3' | 'text' | 'task' | 'quote' | 'bullet' | 'number' | 'divider' | 'callout';
   content: string;
   checked?: boolean;
-  metadata?: {
-    icon?: string;
-  };
 }
 
 interface DiaryEditorProps {
@@ -23,16 +20,12 @@ interface DiaryEditorProps {
 
 const BLOCK_TYPES = [
   { id: 'h1', label: 'Заголовок 1', icon: 'fa-heading', desc: 'Великий розділ' },
-  { id: 'h2', label: 'Заголовок 2', icon: 'fa-heading', desc: 'Середній розділ', size: 'text-[10px]' },
-  { id: 'h3', label: 'Заголовок 3', icon: 'fa-heading', desc: 'Малий розділ', size: 'text-[8px]' },
-  { id: 'bullet', label: 'Маркований список', icon: 'fa-list-ul', desc: 'Класичний список' },
-  { id: 'number', label: 'Нумерований список', icon: 'fa-list-ol', desc: 'Порядковий список' },
-  { id: 'task', label: 'Перевірте елемент', icon: 'fa-square-check', desc: 'Чек-ліст підзадач' },
-  { id: 'quote', label: 'Цитата', icon: 'fa-quote-left', desc: 'Виділити текстом' },
-  { id: 'divider', label: 'Горизонтальна лінія', icon: 'fa-minus', desc: 'Роздільник блоків' },
-  { id: 'attachment', label: 'Вкладення', icon: 'fa-paperclip', desc: 'Додати файл', action: 'attach' },
-  { id: 'subtask', label: 'Підзадача', icon: 'fa-diagram-predecessor', desc: 'Додати внутрішню дію', action: 'subtask' },
-  { id: 'tag', label: 'Мітка', icon: 'fa-tag', desc: 'Прив\'язати тег', action: 'tag' },
+  { id: 'h2', label: 'Заголовок 2', icon: 'fa-heading', desc: 'Середній розділ' },
+  { id: 'h3', label: 'Заголовок 3', icon: 'fa-heading', desc: 'Малий розділ' },
+  { id: 'bullet', label: 'Список', icon: 'fa-list-ul', desc: 'Класичний маркер' },
+  { id: 'task', label: 'Чек-бокс', icon: 'fa-square-check', desc: 'Справи' },
+  { id: 'quote', label: 'Цитата', icon: 'fa-quote-left', desc: 'Важливе виділення' },
+  { id: 'divider', label: 'Роздільник', icon: 'fa-minus', desc: 'Лінія' },
 ];
 
 const EditableBlock: React.FC<{
@@ -43,7 +36,8 @@ const EditableBlock: React.FC<{
   onKeyDown: (e: React.KeyboardEvent, block: Block, currentHTML: string) => void;
   onFocus: () => void;
   onAddBlock: (type: Block['type']) => void;
-}> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onAddBlock }) => {
+  onContextMenu: (e: React.MouseEvent, block: Block) => void;
+}> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onAddBlock, onContextMenu }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -57,12 +51,6 @@ const EditableBlock: React.FC<{
   useEffect(() => {
     if (isFocused && contentRef.current) {
       contentRef.current.focus();
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(contentRef.current);
-      range.collapse(false);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
     }
   }, [isFocused]);
 
@@ -70,16 +58,17 @@ const EditableBlock: React.FC<{
     const html = e.currentTarget.innerHTML;
     onUpdate({ content: html });
 
-    if (html.endsWith('/')) {
+    // Тригер '+' замість '/'
+    if (html.endsWith('+')) {
       setShowSlashMenu(true);
       setSelectedIndex(0);
-    } else if (showSlashMenu && !html.includes('/')) {
+    } else if (showSlashMenu && !html.includes('+')) {
       setShowSlashMenu(false);
     }
   };
 
   const selectBlockType = (type: Block['type']) => {
-    const newContent = block.content.replace(/\/$/, '');
+    const newContent = block.content.replace(/\+$/, '');
     onUpdate({ type, content: newContent });
     setShowSlashMenu(false);
   };
@@ -96,50 +85,37 @@ const EditableBlock: React.FC<{
 
   const getBlockStyle = () => {
     switch (block.type) {
-      case 'h1': return "text-[18px] font-bold mb-2 mt-4 text-[var(--text-main)]";
-      case 'h2': return "text-[16px] font-bold mb-1.5 mt-3 text-[var(--text-main)] opacity-90";
-      case 'h3': return "text-[14px] font-bold mb-1 mt-2 text-[var(--text-main)] opacity-80";
-      case 'quote': return "border-l-[3px] border-[var(--primary)]/30 pl-4 italic text-[var(--text-muted)] my-3 py-1 bg-[var(--bg-main)]/30 rounded-r-lg";
-      case 'task': return `text-[13px] font-medium flex items-center gap-3 py-1 ${block.checked ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'}`;
-      case 'bullet': return "text-[13px] font-medium flex items-start gap-3 py-1 text-[var(--text-main)]";
-      case 'number': return "text-[13px] font-medium flex items-start gap-3 py-1 text-[var(--text-main)]";
-      case 'divider': return "h-px bg-[var(--border-color)] my-6 w-full";
-      default: return "text-[13px] font-medium leading-relaxed text-[var(--text-main)] opacity-80 py-1";
+      case 'h1': return "text-2xl font-black mb-4 mt-8";
+      case 'h2': return "text-xl font-black mb-3 mt-6";
+      case 'h3': return "text-lg font-bold mb-2 mt-4";
+      case 'quote': return "border-l-4 border-[var(--primary)] pl-5 italic text-slate-500 my-4 py-2 bg-black/[0.02]";
+      case 'task': return `text-sm flex items-center gap-3 py-1 ${block.checked ? 'line-through opacity-50' : ''}`;
+      case 'bullet': return "text-sm flex items-start gap-4 py-1";
+      case 'divider': return "h-px bg-[var(--border-color)] my-8 w-full";
+      default: return "text-sm leading-relaxed opacity-90 py-1";
     }
   };
 
   return (
-    <div className={`relative group/block w-full flex items-start ${isFocused ? 'z-30' : 'z-10'}`}>
-      <div className="absolute -left-6 top-1.5 flex items-center opacity-0 group-hover/block:opacity-100 transition-opacity">
-        <button onClick={() => onAddBlock('text')} className="w-5 h-5 rounded hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
-          <i className="fa-solid fa-plus text-[9px]"></i>
-        </button>
-      </div>
-
+    <div 
+      className={`relative group/block w-full flex items-start ${isFocused ? 'z-30' : 'z-10'}`}
+      onContextMenu={(e) => onContextMenu(e, block)}
+    >
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 w-full">
+        <div className="flex items-start gap-3 w-full">
           {block.type === 'task' && (
-            <button 
-              onClick={() => onUpdate({ checked: !block.checked })} 
-              className={`w-4 h-4 rounded border mt-1 shrink-0 transition-all flex items-center justify-center ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--primary)]'}`}
-            >
-              {block.checked && <i className="fa-solid fa-check text-[8px]"></i>}
+            <button onClick={() => onUpdate({ checked: !block.checked })} className={`custom-checkbox border-2 mt-0.5 flex items-center justify-center transition-all ${block.checked ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-[var(--border-color)] bg-black/5'}`}>
+              {block.checked && <i className="fa-solid fa-check text-[10px]"></i>}
             </button>
           )}
           
-          {block.type === 'bullet' && (
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] opacity-40 mt-2.5 shrink-0" />
-          )}
-
-          {block.type === 'number' && (
-            <span className="text-[11px] font-black text-[var(--text-muted)] opacity-40 mt-1.5 shrink-0 w-4">{index + 1}.</span>
-          )}
+          {block.type === 'bullet' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] mt-2 shrink-0" />}
 
           <div 
             ref={contentRef} 
             contentEditable 
             suppressContentEditableWarning 
-            data-placeholder={block.type === 'text' ? "Додати опис... ('/' для меню)" : ""} 
+            data-placeholder={block.type === 'text' ? "Пишіть тут... ('+' для меню)" : ""} 
             onInput={handleInput} 
             onKeyDown={internalKeyDown} 
             onFocus={onFocus}
@@ -149,19 +125,15 @@ const EditableBlock: React.FC<{
       </div>
 
       {showSlashMenu && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--bg-card)] shadow-[0_10px_40px_rgba(0,0,0,0.25)] border border-[var(--border-color)] rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-          <div className="px-4 py-1 text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 opacity-50">Форматування</div>
-          <div className="max-h-72 overflow-y-auto no-scrollbar">
+        <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-2xl py-2 z-[100] tiktok-blur animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="px-4 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-[var(--border-color)] mb-1">Інструменти</div>
+          <div className="max-h-80 overflow-y-auto no-scrollbar">
             {BLOCK_TYPES.map((t, i) => (
-              <button 
-                key={t.id} 
-                onClick={() => selectBlockType(t.id as Block['type'])}
-                onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-colors ${selectedIndex === i ? 'bg-black/5' : ''}`}
-              >
-                <i className={`fa-solid ${t.icon} w-4 text-center text-[var(--text-muted)] text-[10px] ${selectedIndex === i ? 'text-[var(--primary)]' : ''}`}></i>
-                <div className="flex-1 min-w-0">
-                   <div className={`text-[12px] font-bold truncate ${selectedIndex === i ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{t.label}</div>
+              <button key={t.id} onClick={() => selectBlockType(t.id as Block['type'])} onMouseEnter={() => setSelectedIndex(i)} className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-all ${selectedIndex === i ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
+                <i className={`fa-solid ${t.icon} text-[10px] w-4 text-center`}></i>
+                <div className="min-w-0">
+                   <div className="text-[11px] font-black uppercase tracking-tight leading-none">{t.label}</div>
+                   <div className={`text-[7px] font-bold ${selectedIndex === i ? 'text-white/60' : 'text-slate-400'}`}>{t.desc}</div>
                 </div>
               </button>
             ))}
@@ -176,8 +148,8 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   const { diary, saveDiaryEntry } = useApp();
   const [currentId, setCurrentId] = useState<string | undefined>(id);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, blockId: string } | null>(null);
   
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -185,36 +157,14 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
     setCurrentId(id);
   }, [id]);
 
-  const parseMarkdownToBlocks = (md: string): Block[] => {
-    if (!md) return [{ id: 'b1', type: 'text', content: '' }];
-    const lines = md.split('\n');
-    return lines.map((line, i) => {
-      let type: Block['type'] = 'text';
-      let content = line.trim();
-      let checked = false;
-
-      if (line.startsWith('# ')) { type = 'h1'; content = line.replace('# ', ''); }
-      else if (line.startsWith('## ')) { type = 'h2'; content = line.replace('## ', ''); }
-      else if (line.startsWith('### ')) { type = 'h3'; content = line.replace('### ', ''); }
-      else if (line.startsWith('- [x] ')) { type = 'task'; content = line.replace('- [x] ', ''); checked = true; }
-      else if (line.startsWith('- [ ] ')) { type = 'task'; content = line.replace('- [ ] ', ''); }
-      else if (line.startsWith('- ')) { type = 'bullet'; content = line.replace('- ', ''); }
-      else if (line.startsWith('> ')) { type = 'quote'; content = line.replace('> ', ''); }
-      else if (line === '---') { type = 'divider'; content = ''; }
-
-      content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
-      return { id: `b-${i}-${Math.random()}`, type, content: content || '<br>', checked };
-    }).filter(b => b.content !== '' || b.type === 'divider');
-  };
-
   useEffect(() => {
     const content = standaloneMode ? initialContent : diary?.find(e => e.id === currentId)?.content;
     if (content) {
       try {
         const parsed = JSON.parse(content);
-        setBlocks(Array.isArray(parsed) ? parsed : parseMarkdownToBlocks(content));
+        setBlocks(Array.isArray(parsed) ? parsed : [{ id: 'b1', type: 'text', content }]);
       } catch (e) {
-        setBlocks(parseMarkdownToBlocks(content));
+        setBlocks([{ id: 'b1', type: 'text', content: content || '' }]);
       }
     } else {
       setBlocks([{ id: 'b1', type: 'text', content: '' }]);
@@ -230,12 +180,10 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
       const savedId = saveDiaryEntry(date, contentStr, currentId);
       if (!currentId) setCurrentId(savedId);
     }
-    setIsSaving(false);
   };
 
   useEffect(() => {
     if (blocks.length === 0) return;
-    setIsSaving(true);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(handleManualSave, 1000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
@@ -253,8 +201,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   const handleKeyDown = (e: React.KeyboardEvent, block: Block, currentHTML: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      const nextType = (block.type === 'bullet' || block.type === 'task' || block.type === 'number') ? block.type : 'text';
-      addBlock(block.id, nextType);
+      addBlock(block.id, (block.type === 'bullet' || block.type === 'task') ? block.type : 'text');
     }
     if (e.key === 'Backspace' && (currentHTML === '' || currentHTML === '<br>')) {
       e.preventDefault();
@@ -266,21 +213,17 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
         setBlocks(p => p.filter(b => b.id !== block.id));
       }
     }
-    if (e.key === 'ArrowUp') {
-        const idx = blocks.findIndex(b => b.id === block.id);
-        if (idx > 0) { e.preventDefault(); setFocusedBlockId(blocks[idx-1].id); }
-    }
-    if (e.key === 'ArrowDown') {
-        const idx = blocks.findIndex(b => b.id === block.id);
-        if (idx < blocks.length - 1) { e.preventDefault(); setFocusedBlockId(blocks[idx+1].id); }
-    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, block: Block) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, blockId: block.id });
   };
 
   return (
-    <div className="h-full flex flex-col bg-transparent relative">
-      {/* Додано pl-2 для падінгу зліва 8 пікселів */}
-      <div className="flex-1 overflow-y-auto no-scrollbar py-2 pl-2">
-        <div className="space-y-0.5">
+    <div className="h-full flex flex-col bg-transparent relative" onClick={() => setContextMenu(null)}>
+      <div className="flex-1 overflow-y-auto no-scrollbar py-10 px-8">
+        <div className="max-w-3xl mx-auto space-y-1">
           {blocks.map((block, idx) => (
             <EditableBlock 
               key={block.id} 
@@ -291,10 +234,35 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
               onKeyDown={handleKeyDown} 
               onFocus={() => setFocusedBlockId(block.id)} 
               onAddBlock={(type) => addBlock(block.id, type)}
+              onContextMenu={handleContextMenu}
             />
           ))}
         </div>
       </div>
+
+      {contextMenu && (
+        <div 
+          className="fixed z-[1000] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl rounded-2xl py-2 w-56 tiktok-blur animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <div className="px-4 py-1.5 text-[8px] font-black uppercase text-slate-400 tracking-widest border-b border-[var(--border-color)] mb-1">Форматування</div>
+          {BLOCK_TYPES.map(t => (
+            <button 
+              key={t.id} 
+              onClick={() => { setBlocks(prev => prev.map(b => b.id === contextMenu.blockId ? { ...b, type: t.id as any } : b)); setContextMenu(null); }}
+              className="w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <i className={`fa-solid ${t.icon} w-4 text-center text-[10px]`}></i>
+              <span className="text-[11px] font-bold uppercase tracking-tight">{t.label}</span>
+            </button>
+          ))}
+          <div className="h-px bg-[var(--border-color)] my-1"></div>
+          <button onClick={() => { setBlocks(prev => prev.filter(b => b.id !== contextMenu.blockId)); setContextMenu(null); }} className="w-full text-left px-4 py-2 flex items-center gap-3 text-rose-500 hover:bg-rose-50">
+            <i className="fa-solid fa-trash-can w-4 text-center text-[10px]"></i>
+            <span className="text-[11px] font-bold uppercase tracking-tight">Видалити</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
