@@ -84,6 +84,19 @@ interface AppContextType extends StoreState {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Функція для очищення об'єкта від undefined значень (Firebase їх не приймає)
+const sanitizeData = (obj: any): any => {
+  if (Array.isArray(obj)) return obj.map(sanitizeData);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, sanitizeData(v)])
+    );
+  }
+  return obj;
+};
+
 const ensureDefaults = (s: any): StoreState => {
   const seed = generateSeedData();
   return {
@@ -129,30 +142,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
 
-  // Ефект для ініціалізації
   useEffect(() => {
     const init = async () => {
       let local = localStorage.getItem(DATA_STORAGE_KEY);
       let data = local ? ensureDefaults(JSON.parse(local)) : ensureDefaults(null);
       if (user) {
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        if (docSnap.exists()) data = ensureDefaults(docSnap.data());
+        try {
+          const docSnap = await getDoc(doc(db, "users", user.uid));
+          if (docSnap.exists()) data = ensureDefaults(docSnap.data());
+        } catch (e) {
+          console.error("Firebase load error", e);
+        }
       }
       setState(data);
     };
     init();
   }, [user]);
 
-  // ЦЕНТРАЛЬНИЙ ЕФЕКТ ЗБЕРЕЖЕННЯ (Уникаємо перегонів)
   useEffect(() => {
     if (!state || !state.updatedAt) return;
     
-    // Зберігаємо в LocalStorage
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(state));
     
-    // Зберігаємо у Firebase
     if (user) {
-      setDoc(doc(db, "users", user.uid), state).catch(err => console.error("Firebase save error", err));
+      const cleanData = sanitizeData(state);
+      setDoc(doc(db, "users", user.uid), cleanData).catch(err => console.error("Firebase save error", err));
     }
   }, [state, user]);
 

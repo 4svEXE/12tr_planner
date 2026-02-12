@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, Project, TaskStatus, Priority } from '../types';
 import Typography from '../components/ui/Typography';
@@ -18,13 +18,15 @@ const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [mainTab, setMainTab] = useState<'tasks' | 'progress'>('tasks');
-  const [taskFilter, setTaskFilter] = useState<'all' | 'projects' | 'calendar'>('all');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'projects' | 'calendar'>('projects');
   const [progressPeriod, setProgressPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
+  // Керування тимчасовою видимістю виконаних айтемів (5 сек)
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  const [recentHabitCompletes, setRecentHabitCompletes] = useState<Set<string>>(new Set());
   
   const { detailsWidth, startResizing, isResizing } = useResizer(350, 1000);
 
@@ -68,21 +70,33 @@ const Dashboard: React.FC = () => {
     return { kpi, doneCount: doneTasks.length, totalCount: periodTasks.length, spheres };
   }, [tasks, projects, progressPeriod]);
 
-  const habitTasks = useMemo(() => 
-    tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))),
-  [tasks]);
+  const habitTasks = useMemo(() => {
+    return tasks.filter(t => {
+        if (t.isDeleted || t.isArchived) return false;
+        if (!(t.projectSection === 'habits' || t.tags.includes('habit'))) return false;
+        
+        const isDone = t.habitHistory?.[dateStr]?.status === 'completed';
+        // Показуємо якщо не виконано АБО виконано нещодавно (5 сек)
+        return !isDone || recentHabitCompletes.has(t.id);
+    });
+  }, [tasks, dateStr, recentHabitCompletes]);
 
   const habitCompletionRate = useMemo(() => {
-    if (habitTasks.length === 0) return 0;
-    const completedCount = habitTasks.filter(h => h.habitHistory?.[dateStr]?.status === 'completed').length;
-    return Math.round((completedCount / habitTasks.length) * 100);
-  }, [habitTasks, dateStr]);
+    const allHabits = tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit')));
+    if (allHabits.length === 0) return 0;
+    const completedCount = allHabits.filter(h => h.habitHistory?.[dateStr]?.status === 'completed').length;
+    return Math.round((completedCount / allHabits.length) * 100);
+  }, [tasks, dateStr]);
 
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
       if (t.isDeleted) return false;
-      if (t.status === TaskStatus.DONE && !completingIds.has(t.id)) return false;
       if (t.projectSection === 'habits' || t.category === 'note') return false;
+      
+      const isDone = t.status === TaskStatus.DONE;
+      // Якщо виконано, показуємо лише якщо в списку "нещодавно виконаних"
+      if (isDone && !completingIds.has(t.id)) return false;
+
       const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0,0,0,0) === todayTimestamp;
       if (taskFilter === 'calendar') return isScheduledForToday;
       if (taskFilter === 'projects') return !!t.projectId;
@@ -114,16 +128,43 @@ const Dashboard: React.FC = () => {
         next.add(task.id);
         return next;
       });
+      toggleTaskStatus(task);
+      // Прибираємо зі списку через 5 секунд
       setTimeout(() => {
-        toggleTaskStatus(task);
         setCompletingIds(prev => {
           const next = new Set(prev);
           next.delete(task.id);
           return next;
         });
-      }, 700);
+      }, 5000);
     } else {
       toggleTaskStatus(task);
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
+    }
+  };
+
+  const handleToggleHabitWithDelay = (habitId: string, isDone: boolean) => {
+    if (!isDone) {
+        setRecentHabitCompletes(prev => new Set(prev).add(habitId));
+        toggleHabitStatus(habitId, dateStr, 'completed');
+        setTimeout(() => {
+            setRecentHabitCompletes(prev => {
+                const next = new Set(prev);
+                next.delete(habitId);
+                return next;
+            });
+        }, 5000);
+    } else {
+        toggleHabitStatus(habitId, dateStr, 'none');
+        setRecentHabitCompletes(prev => {
+            const next = new Set(prev);
+            next.delete(habitId);
+            return next;
+        });
     }
   };
 
@@ -208,16 +249,23 @@ const Dashboard: React.FC = () => {
                                ))}
                             </div>
                          </div>
-                         <div className="grid grid-cols-1 gap-2">
-                            {filteredQuests.length > 0 ? filteredQuests.map(task => (
-                              <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className={`flex items-center gap-4 px-6 py-3.5 transition-all cursor-pointer shadow-sm rounded-[1.8rem] border ${selectedTaskId === task.id ? 'bg-indigo-50/50 border-indigo-200' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}>
-                                <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`custom-checkbox border-2 flex items-center justify-center shrink-0 transition-all ${task.status === TaskStatus.DONE || completingIds.has(task.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
-                                  <i className="fa-solid fa-check text-[9px]"></i>
-                                </button>
-                                <span className={`text-[14px] font-bold truncate flex-1 strike-anim ${task.status === TaskStatus.DONE || completingIds.has(task.id) ? 'is-striking text-[var(--text-muted)] opacity-60' : 'text-[var(--text-main)]'}`}>{task.title}</span>
-                                {task.priority === Priority.UI && <i className="fa-solid fa-fire text-rose-500 text-xs"></i>}
-                              </Card>
-                            )) : (
+                         <div className="grid grid-cols-1 gap-1.5">
+                            {filteredQuests.length > 0 ? filteredQuests.map(task => {
+                              const isDone = task.status === TaskStatus.DONE || completingIds.has(task.id);
+                              return (
+                                <div 
+                                  key={task.id} 
+                                  onClick={() => setSelectedTaskId(task.id)} 
+                                  className={`flex items-center gap-3 px-3.5 py-2.5 transition-all cursor-pointer shadow-sm rounded-xl border ${selectedTaskId === task.id ? 'bg-primary/5 border-primary/20' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}
+                                >
+                                  <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
+                                    <i className="fa-solid fa-check text-[8px]"></i>
+                                  </button>
+                                  <span className={`text-[12px] font-bold truncate flex-1 strike-anim ${isDone ? 'is-striking text-[var(--text-muted)] opacity-60' : 'text-[var(--text-main)]'}`}>{task.title}</span>
+                                  {task.priority === Priority.UI && <i className="fa-solid fa-fire text-rose-500 text-[10px]"></i>}
+                                </div>
+                              );
+                            }) : (
                               <div className="py-16 bg-black/[0.02] border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] flex flex-col items-center justify-center opacity-30 grayscale select-none">
                                  <i className="fa-solid fa-mountain-sun text-5xl mb-4 text-[var(--text-muted)]"></i>
                                  <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-[var(--text-muted)]">Горизонт чистий</Typography>
@@ -236,9 +284,9 @@ const Dashboard: React.FC = () => {
                             {habitTasks.length > 0 ? habitTasks.map(habit => {
                                const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                                return (
-                                 <button key={habit.id} onClick={() => toggleHabitStatus(habit.id, dateStr, isDone ? 'none' : 'completed')}
+                                 <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
                                   className={`shrink-0 w-32 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-indigo-200'}`}>
-                                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
+                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
                                       <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
                                    </div>
                                    <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>

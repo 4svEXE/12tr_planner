@@ -21,7 +21,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
-  // Animation handling
+  // Animation & Graceful hide handling
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({ pinned: false, unsorted: false, history: false });
@@ -48,22 +48,33 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
   };
 
   const handleToggleTaskWithDelay = (task: Task) => {
-    if (!showCompleted && task.status !== TaskStatus.DONE) {
+    const isNowDone = task.status !== TaskStatus.DONE;
+    
+    if (!showCompleted && isNowDone) {
+      // Додаємо в список тих, що мають бути видимими 5 секунд
       setCompletingIds(prev => {
         const next = new Set(prev);
         next.add(task.id);
         return next;
       });
+      
+      toggleTaskStatus(task);
+
+      // Прибираємо через 5 секунд
       setTimeout(() => {
-        toggleTaskStatus(task);
         setCompletingIds(prev => {
           const next = new Set(prev);
           next.delete(task.id);
           return next;
         });
-      }, 700);
+      }, 5000);
     } else {
       toggleTaskStatus(task);
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
     }
   };
 
@@ -131,11 +142,15 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
             const sectionTasks = tasks.filter(t => {
               if (t.isDeleted) return false;
               if (t.category === 'note') return false;
-              // Ключова зміна: тільки таски БЕЗ проєкту (Inbox)
               if (!showNextActions && !showCompleted && t.projectId) return false;
               
-              const isLogicallyActive = showCompleted ? (t.status === TaskStatus.DONE) : (t.status === targetStatus || completingIds.has(t.id));
-              return isLogicallyActive && section.filter(t);
+              const isDone = t.status === TaskStatus.DONE;
+              const isVisuallyActive = showCompleted ? isDone : (t.status === targetStatus || completingIds.has(t.id));
+              
+              // Якщо це звичайний Inbox (не архів), то ховаємо Done через 5 сек (якщо нема в completingIds)
+              if (!showCompleted && isDone && !completingIds.has(t.id)) return false;
+
+              return isVisuallyActive && section.filter(t);
             });
             
             if (sectionTasks.length === 0 && section.id === 'pinned') return null;
@@ -156,8 +171,8 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                   <div className="space-y-1 mt-1 border-t border-theme/50 pt-2">
                     {sectionTasks.map(task => {
                       const isSelected = selectedTaskId === task.id;
-                      const isCompleting = completingIds.has(task.id);
                       const isDone = task.status === TaskStatus.DONE;
+                      const isGracefullyVisible = completingIds.has(task.id);
                       const hasContent = task.content && task.content !== "[]" && task.content !== "";
                       
                       return (
@@ -165,17 +180,17 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                           key={task.id}
                           onClick={() => setSelectedTaskId(task.id)}
                           className={`flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer group relative border rounded-lg transition-all shadow-sm
-                            ${isSelected ? (showCompleted ? 'bg-emerald-50 border-emerald-200' : 'bg-primary/5 border-primary/20') : 'bg-card border-theme hover:border-primary/30'} ${isCompleting ? 'scale-[0.98]' : ''}`}
+                            ${isSelected ? (showCompleted ? 'bg-emerald-50 border-emerald-200' : 'bg-primary/5 border-primary/20') : 'bg-card border-theme hover:border-primary/30'} ${isGracefullyVisible ? 'scale-[0.98]' : ''}`}
                         >
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} 
-                            className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-black/5 hover:border-primary'}`}
+                            className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-black/5 hover:border-primary'}`}
                           >
-                            {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
+                            {isDone && <i className="fa-solid fa-check text-[7px]"></i>}
                           </button>
                           
                           <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                             <span className={`text-[11px] font-bold truncate leading-tight tracking-tight transition-colors strike-anim ${isDone || isCompleting ? 'is-striking text-muted' : 'text-main'}`}>
+                             <span className={`text-[11px] font-bold truncate leading-tight tracking-tight transition-colors strike-anim ${isDone ? 'is-striking text-muted' : 'text-main'}`}>
                                 {task.title}
                              </span>
 
