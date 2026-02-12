@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus } from '../types';
@@ -7,12 +6,23 @@ import Button from '../components/ui/Button';
 import HabitStatsSidebar from '../components/HabitStatsSidebar';
 import Card from '../components/ui/Card';
 
+const HABITS_TAB_KEY = '12tr_habits_active_tab';
+
 const HabitsView: React.FC = () => {
   const { tasks, addTask, updateTask, toggleHabitStatus, reorderTasks } = useApp();
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState('');
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  
+  // Restore tab preference
+  const [activeTab, setActiveTabState] = useState<'active' | 'archived'>(() => 
+    (localStorage.getItem(HABITS_TAB_KEY) as any) || 'active'
+  );
+
+  const setActiveTab = (tab: 'active' | 'archived') => {
+    setActiveTabState(tab);
+    localStorage.setItem(HABITS_TAB_KEY, tab);
+  };
   
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
@@ -98,7 +108,6 @@ const HabitsView: React.FC = () => {
     setActiveCell(null);
   };
 
-  // Logic remains for background sorting, but UI is removed
   const onDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.setData('habitId', id);
@@ -160,7 +169,7 @@ const HabitsView: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden relative">
-      <header className="z-20 bg-[var(--bg-card)]/80 backdrop-blur-xl border-b border-[var(--border-color)] px-5 py-3 flex items-center justify-between shadow-sm">
+      <header className="z-20 bg-[var(--bg-card)] border-b border-[var(--border-color)] px-5 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <Typography variant="h2" className="text-lg font-black">Звички</Typography>
           <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)] ml-2">
@@ -222,8 +231,8 @@ const HabitsView: React.FC = () => {
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     className={`group transition-all duration-200 ${
-                      isItemDragged ? 'z-50 bg-white shadow-2xl scale-[1.02] border-y-2 border-[var(--primary)]' : 
-                      isTarget ? 'border-t-4 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
+                      isItemDragged ? 'z-50 bg-[var(--bg-card)] shadow-2xl scale-[1.02] border-y border-[var(--primary)]' : 
+                      isTarget ? 'border-t-2 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
                     }`}
                   >
                     <td className="sticky left-0 z-30 bg-inherit py-2 px-3 flex items-center gap-2 md:gap-3 border-r border-solid border-[var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
@@ -286,7 +295,7 @@ const HabitsView: React.FC = () => {
       </div>
 
       {activeCell && activeHabitForModal && (
-        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 tiktok-blur">
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveCell(null)}></div>
           <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
             <header className="flex justify-between items-center mb-6">
@@ -357,7 +366,7 @@ const HabitsView: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 z-[750] flex items-center justify-center p-4 tiktok-blur">
+        <div className="fixed inset-0 z-[750] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAdding(false)}></div>
           <div className="bg-[var(--bg-card)] w-full max-w-xs rounded-[2rem] border border-[var(--border-color)] p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>

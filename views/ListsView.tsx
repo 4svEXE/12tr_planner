@@ -8,15 +8,24 @@ import ListContent from '../components/lists/ListContent';
 import QuickAddModal from '../components/lists/QuickAddModal';
 import ListEditModal from '../components/lists/ListEditModal';
 
+const LISTS_PROJECT_KEY = '12tr_lists_selected_project';
+
 const ListsView: React.FC = () => {
   const {
     tasks, projects, addProject, updateProject
   } = useApp();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    window.innerWidth < 1024 ? 'system_inbox' : 'system_inbox'
+  
+  // Restore selected project preference
+  const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(() => 
+    localStorage.getItem(LISTS_PROJECT_KEY) || 'system_inbox'
   );
+
+  const setSelectedProjectId = (id: string | null) => {
+    setSelectedProjectIdState(id);
+    if (id) localStorage.setItem(LISTS_PROJECT_KEY, id);
+  };
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);

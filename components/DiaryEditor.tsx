@@ -278,7 +278,8 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
 
   return (
     <div className="h-full flex flex-col bg-transparent relative">
-      <div className="flex-1 overflow-y-auto no-scrollbar py-2">
+      {/* Додано pl-2 для падінгу зліва 8 пікселів */}
+      <div className="flex-1 overflow-y-auto no-scrollbar py-2 pl-2">
         <div className="space-y-0.5">
           {blocks.map((block, idx) => (
             <EditableBlock 

@@ -87,18 +87,23 @@ const SettingsView: React.FC = () => {
   } = useApp();
   const { user, login, logout, isGuest } = useAuth();
   
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>('account');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(window.innerWidth < 1024 ? null : 'account');
   const [showCleanup, setShowCleanup] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  
   const [feedback, setFeedback] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  
   const { detailsWidth, startResizing, isResizing } = useResizer(400, 700);
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+    };
     window.addEventListener('resize', handleResize);
     const savedKey = localStorage.getItem('GEMINI_API_KEY') || '';
     setApiKey(savedKey);
@@ -110,12 +115,39 @@ const SettingsView: React.FC = () => {
     alert('API Ключ збережено. Тепер ви можете активувати ШІ.');
   };
 
-  const handleSendFeedback = (e: React.FormEvent) => {
+  const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedback.trim()) return;
-    setFeedbackSent(true);
-    setFeedback('');
-    setTimeout(() => setFeedbackSent(false), 3000);
+    if (!feedback.trim() || !user || isGuest) return;
+    
+    setIsSendingFeedback(true);
+    
+    const botToken = '8478384738:AAHFEv2vM3c1zok8VEND9e7E31ogLyWfjRE';
+    const chatId = '@feedback_12tr';
+    const message = `🚀 *Новий відгук (12TR Engine)*\n\n👤 *Від:* ${user.email}\n📝 *Текст:* ${feedback}`;
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'Markdown'
+        })
+      });
+
+      if (response.ok) {
+        setFeedbackSent(true);
+        setFeedback('');
+        setTimeout(() => setFeedbackSent(false), 3000);
+      } else {
+        throw new Error('Telegram API error');
+      }
+    } catch (error) {
+      alert('Помилка при відправці повідомлення. Перевірте з’єднання.');
+    } finally {
+      setIsSendingFeedback(false);
+    }
   };
 
   const sections = [
@@ -126,19 +158,24 @@ const SettingsView: React.FC = () => {
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
     { id: 'notifications', icon: 'fa-bell', label: 'Сповіщення', color: 'text-rose-500', desc: 'Push & Ритми' },
     { id: 'data', icon: 'fa-database', label: 'Дані та Сховище', color: 'text-rose-600', desc: 'Хмара та Очищення' },
-    { id: 'feedback', icon: 'fa-comment-dots', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
+    { id: 'feedback', icon: 'fa-paper-plane', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
   ];
 
-  const themesData: {id: ThemeType, label: string, main: string, accent: string}[] = [
-    { id: 'classic', label: 'Classic', main: '#ffffff', accent: '#f97316' },
-    { id: 'midnight', label: 'Midnight', main: '#020617', accent: '#10b981' },
-    { id: 'obsidian', label: 'Obsidian', main: '#000000', accent: '#8b5cf6' },
-    { id: 'cyberpunk', label: 'Cyberpunk', main: '#09090b', accent: '#fef08a' },
-    { id: 'dracula', label: 'Dracula', main: '#282a36', accent: '#ff79c6' },
-    { id: 'sakura', label: 'Sakura', main: '#fff1f2', accent: '#ec4899' },
-    { id: 'ocean', label: 'Ocean', main: '#f0f9ff', accent: '#0ea5e9' },
-    { id: 'forest', label: 'Forest', main: '#f0fdf4', accent: '#166534' },
-    { id: 'sepia', label: 'Sepia', main: '#f4ecd8', accent: '#704214' }
+  const themesData: {id: ThemeType, label: string, main: string, nav: string, accent: string}[] = [
+    { id: 'classic', label: 'Classic Light', main: '#ffffff', nav: '#ffffff', accent: '#f97316' },
+    { id: 'nordic', label: 'Nordic Frost', main: '#eceff4', nav: '#2e3440', accent: '#88c0d0' },
+    { id: 'espresso', label: 'Espresso', main: '#fafaf9', nav: '#292524', accent: '#d97706' },
+    { id: 'royal', label: 'Royal Navy', main: '#f5f3ff', nav: '#1e1b4b', accent: '#6366f1' },
+    { id: 'steel', label: 'Steel Industrial', main: '#f1f5f9', nav: '#334155', accent: '#0ea5e9' },
+    { id: 'abyssal', label: 'Abyssal Black', main: '#121212', nav: '#000000', accent: '#f97316' },
+    { id: 'midnight', label: 'Midnight', main: '#0f172a', nav: '#020617', accent: '#10b981' },
+    { id: 'obsidian', label: 'Obsidian', main: '#000000', nav: '#0a0a0a', accent: '#8b5cf6' },
+    { id: 'cyberpunk', label: 'Cyberpunk', main: '#09090b', nav: '#000000', accent: '#fef08a' },
+    { id: 'dracula', label: 'Dracula', main: '#282a36', nav: '#191a21', accent: '#ff79c6' },
+    { id: 'sakura', label: 'Sakura Night', main: '#fff1f2', nav: '#4c0519', accent: '#ec4899' },
+    { id: 'ocean', label: 'Deep Ocean', main: '#f0f9ff', nav: '#082f49', accent: '#0ea5e9' },
+    { id: 'forest', label: 'Deep Forest', main: '#f0fdf4', nav: '#064e3b', accent: '#22c55e' },
+    { id: 'sepia', label: 'Vintage Sepia', main: '#f4ecd8', nav: '#431407', accent: '#92400e' }
   ];
 
   const renderContent = () => {
@@ -216,18 +253,21 @@ const SettingsView: React.FC = () => {
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20">
              <Typography variant="tiny" className="text-slate-400 font-black uppercase tracking-widest ml-1">Доступні візуальні схеми</Typography>
-             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {themesData.map(t => (
                   <button 
                     key={t.id} 
                     onClick={() => setTheme(t.id)} 
-                    className={`p-2 rounded border-2 text-left transition-all ${theme === t.id ? 'border-[var(--primary)] bg-[var(--bg-main)] shadow-md' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--primary)]/30'}`}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all ${theme === t.id ? 'border-[var(--primary)] bg-[var(--bg-main)] shadow-md' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--primary)]/30'}`}
                   >
-                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-[6px] font-black uppercase tracking-widest truncate">{t.label}</span>
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.accent }}></div>
+                     <div className="flex justify-between items-center mb-2">
+                        <span className="text-[8px] font-black uppercase tracking-widest truncate">{t.label}</span>
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: t.accent }}></div>
                      </div>
-                     <div className="h-4 w-full rounded border border-[var(--border-color)]" style={{ backgroundColor: t.main }}></div>
+                     <div className="flex h-6 w-full rounded-lg border border-[var(--border-color)] overflow-hidden">
+                        <div className="w-1/4 h-full" style={{ backgroundColor: t.nav }}></div>
+                        <div className="w-3/4 h-full" style={{ backgroundColor: t.main }}></div>
+                     </div>
                   </button>
                 ))}
              </div>
@@ -327,11 +367,63 @@ const SettingsView: React.FC = () => {
       case 'feedback':
         return (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Typography variant="tiny" className="text-violet-500 font-black mb-2 uppercase">Ваш відгук</Typography>
-            <form onSubmit={handleSendFeedback} className="space-y-4">
-              <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Ваша ідея..." className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded p-4 text-xs font-medium outline-none min-h-[120px] resize-none leading-relaxed text-main" />
-              <button type="submit" disabled={!feedback.trim() || feedbackSent} className={`w-full py-3 rounded font-black uppercase tracking-widest text-[9px] transition-all shadow-lg ${feedbackSent ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white hover:scale-[1.01] active:scale-95'}`}>{feedbackSent ? 'ВІДПРАВЛЕНО!' : 'ВІДПРАВИТИ'}</button>
-            </form>
+            <Typography variant="tiny" className="text-violet-500 font-black mb-2 uppercase flex items-center gap-2">
+               <i className="fa-brands fa-telegram"></i> Зв'язок з розробниками
+            </Typography>
+            
+            {isGuest ? (
+               <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center">
+                  <i className="fa-solid fa-lock text-3xl text-slate-300 mb-4"></i>
+                  <Typography variant="h3" className="text-slate-500 mb-2">Авторизуйтесь</Typography>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Надсилати відгуки можуть лише залогінені користувачі, щоб ми могли зв'язатися з вами.</p>
+                  <button onClick={login} className="mt-6 px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">УВІЙТИ ЗАРАЗ</button>
+               </div>
+            ) : (
+               <form onSubmit={handleSendFeedback} className="space-y-4">
+                 <div className="space-y-1">
+                    <label className="text-[8px] font-black uppercase text-slate-400 ml-2 tracking-widest">Твоя ідея або баг-репорт</label>
+                    <textarea 
+                      value={feedback} 
+                      onChange={e => setFeedback(e.target.value)} 
+                      placeholder="Опишіть, що ви хотіли б змінити або додати..." 
+                      className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2rem] p-6 text-sm font-medium outline-none min-h-[160px] resize-none leading-relaxed text-main focus:ring-4 focus:ring-violet-500/10 transition-all shadow-inner" 
+                    />
+                 </div>
+                 <div className="bg-violet-50 p-4 rounded-2xl border border-violet-100 mb-2">
+                    <p className="text-[9px] font-bold text-violet-700 leading-tight">
+                       Твій email (${user?.email}) буде надіслано разом з повідомленням.
+                    </p>
+                 </div>
+                 <button 
+                  type="submit" 
+                  disabled={!feedback.trim() || feedbackSent || isSendingFeedback} 
+                  className={`w-full py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] transition-all shadow-xl flex items-center justify-center gap-3 ${
+                    feedbackSent 
+                    ? 'bg-emerald-500 text-white' 
+                    : isSendingFeedback 
+                      ? 'bg-slate-400 text-white cursor-not-allowed'
+                      : 'bg-indigo-600 text-white hover:scale-[1.01] active:scale-95 shadow-indigo-200'
+                  }`}
+                 >
+                   {isSendingFeedback ? (
+                     <>
+                        <i className="fa-solid fa-circle-notch animate-spin"></i>
+                        ВІДПРАВЛЯЮ...
+                     </>
+                   ) : feedbackSent ? (
+                     <>
+                        <i className="fa-solid fa-circle-check"></i>
+                        НАДІСЛАНО В TELEGRAM!
+                     </>
+                   ) : (
+                     <>
+                        <i className="fa-solid fa-paper-plane"></i>
+                        ВІДПРАВИТИ ВІДГУК
+                     </>
+                   )}
+                 </button>
+               </form>
+            )}
           </div>
         );
       default: return null;

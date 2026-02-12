@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Person, RelationshipLoop } from '../../types';
 import Typography from '../ui/Typography';
@@ -147,7 +146,7 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
                {editingNoteId === note.id ? (
                  <div className="flex gap-2">
                     <input autoFocus value={editNoteValue} onChange={e => setEditNoteValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && (onUpdate({...person, notes: person.notes.map(n => n.id === note.id ? {...n, text: editNoteValue} : n)}), setEditingNoteId(null))} className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-[var(--text-main)]" />
-                    <button onClick={() => {onUpdate({...person, notes: person.notes.map(n => n.id === note.id ? {...n, text: editNoteValue} : n)}); setEditingNoteId(null);}} className="text-emerald-500 font-black text-[9px] uppercase">OK</button>
+                    <button onClick={() => {onUpdate({...person, notes: person.notes.map(n => n.id === note.id ? {...n, text: editNoteValue} : n)}); setEditingNoteId(null);}} className="text-emerald-50 font-black text-[9px] uppercase">OK</button>
                  </div>
                ) : (
                  <div className="flex justify-between items-start gap-4">

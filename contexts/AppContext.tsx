@@ -5,6 +5,7 @@ import { db, doc, setDoc, getDoc } from '../services/firebase';
 import { useAuth } from './AuthContext';
 
 const DATA_STORAGE_KEY = '12tr_engine_data_v4';
+const UI_PREFS_KEY = '12tr_ui_preferences';
 
 interface AppContextType extends StoreState {
   setActiveTab: (tab: string) => void;
@@ -48,7 +49,7 @@ interface AppContextType extends StoreState {
   deleteHobby: (name: string) => void;
   saveDiaryEntry: (date: string, content: string, id?: string) => string;
   deleteDiaryEntry: (id: string) => void;
-  addPerson: (person: any) => void;
+  addPerson: (person: any) => string;
   updatePerson: (person: Person) => void;
   deletePerson: (id: string, permanent?: boolean) => void;
   restorePerson: (id: string) => void;
@@ -113,18 +114,53 @@ const ensureDefaults = (s: any): StoreState => {
 
 export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }> = ({ children }) => {
   const { user } = useAuth();
+  
+  // UI Preferences loading
+  const savedUI = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || '{}');
+
   const [state, setState] = useState<StoreState | null>(null);
-  const [activeTab, setActiveTab] = useState('today');
-  const [theme, setTheme] = useState<ThemeType>('classic');
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [detailsWidth, setDetailsWidth] = useState(450);
+  const [activeTab, setActiveTabState] = useState(savedUI.activeTab || 'today');
+  const [theme, setThemeState] = useState<ThemeType>(savedUI.theme || 'classic');
+  const [isSidebarCollapsed, setSidebarCollapsedState] = useState(savedUI.isSidebarCollapsed || false);
+  const [detailsWidth, setDetailsWidthState] = useState(savedUI.detailsWidth || 450);
   const [calendarDate, setCalendarDate] = useState(Date.now());
-  const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('month');
+  const [calendarViewMode, setCalendarViewModeState] = useState<CalendarViewMode>(savedUI.calendarViewMode || 'month');
   const [isReportWizardOpen, setIsReportWizardOpen] = useState(false);
   
   const [plannerProjectId, setPlannerProjectId] = useState<string | undefined>();
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+
+  // Persistence helpers for UI
+  const updateUIPreference = (key: string, value: any) => {
+    const current = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || '{}');
+    localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ ...current, [key]: value }));
+  };
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    updateUIPreference('activeTab', tab);
+  };
+
+  const setTheme = (t: ThemeType) => {
+    setThemeState(t);
+    updateUIPreference('theme', t);
+  };
+
+  const setSidebarCollapsed = (collapsed: boolean) => {
+    setSidebarCollapsedState(collapsed);
+    updateUIPreference('isSidebarCollapsed', collapsed);
+  };
+
+  const setDetailsWidth = (w: number) => {
+    setDetailsWidthState(w);
+    updateUIPreference('detailsWidth', w);
+  };
+
+  const setCalendarViewMode = (m: CalendarViewMode) => {
+    setCalendarViewModeState(m);
+    updateUIPreference('calendarViewMode', m);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -351,7 +387,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
         return finalId;
       },
       deleteDiaryEntry: (id) => pushUpdate({ ...state, diary: state.diary?.filter(e => e.id !== id) }),
-      addPerson: (p) => pushUpdate({ ...state, people: [...(state.people || []), { ...p, id: Math.random().toString(36).substr(2, 9), rating: 0, notes: [], memories: [], interactions: [], importantDates: [], hobbies: [], tags: [], socials: {}, loop: 'none', createdAt: Date.now(), updatedAt: Date.now() }] }),
+      addPerson: (p) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        pushUpdate({ ...state, people: [...(state.people || []), { ...p, id, rating: 0, notes: [], memories: [], interactions: [], importantDates: [], hobbies: [], tags: [], socials: {}, loop: 'none', createdAt: Date.now(), updatedAt: Date.now() }] });
+        return id;
+      },
       updatePerson: (p) => pushUpdate({ ...state, people: state.people?.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) }),
       deletePerson: (id, perm) => pushUpdate({ ...state, people: perm ? state.people?.filter(p => p.id !== id) : state.people?.map(p => p.id === id ? { ...p, isDeleted: true, updatedAt: Date.now() } : p) }),
       restorePerson: (id) => pushUpdate({ ...state, people: state.people?.map(p => p.id === id ? { ...p, isDeleted: false, updatedAt: Date.now() } : p) }),

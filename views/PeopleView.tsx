@@ -8,6 +8,8 @@ import Badge from '../components/ui/Badge';
 import PersonProfile from '../components/people/PersonProfile';
 import { useResizer } from '../hooks/useResizer';
 
+const PEOPLE_FILTER_KEY = '12tr_people_active_filter';
+
 // Внутрішній компонент модалки додавання
 const AddPersonModal: React.FC<{ 
   onClose: () => void, 
@@ -16,6 +18,14 @@ const AddPersonModal: React.FC<{
 }> = ({ onClose, onSave, relationshipTypes }) => {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('acquaintance');
+
+  const statusLabels: Record<string, string> = {
+    friend: 'Друг',
+    colleague: 'Колега',
+    family: 'Сім\'я',
+    mentor: 'Ментор',
+    acquaintance: 'Знайомий'
+  };
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -53,7 +63,7 @@ const AddPersonModal: React.FC<{
               className="w-full h-10 bg-input border-2 border-theme rounded-2xl px-4 text-sm font-bold outline-none focus:border-primary transition-all text-main appearance-none cursor-pointer shadow-inner"
             >
               {relationshipTypes.map(t => (
-                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                <option key={t} value={t}>{statusLabels[t] || t}</option>
               ))}
             </select>
           </div>
@@ -77,12 +87,31 @@ const AddPersonModal: React.FC<{
 const PeopleView: React.FC = () => {
   const { people, addPerson, relationshipTypes, tasks, toggleTaskStatus, deletePerson } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string | 'all'>('all');
+  
+  // Restore filter preference
+  const [activeFilter, setActiveFilterState] = useState<string | 'all'>(() => 
+    localStorage.getItem(PEOPLE_FILTER_KEY) || 'all'
+  );
+
+  const setActiveFilter = (filter: string) => {
+    setActiveFilterState(filter);
+    localStorage.setItem(PEOPLE_FILTER_KEY, filter);
+  };
+
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string>('dossier');
   const [isAdding, setIsAdding] = useState(false);
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const statusLabels: Record<string, string> = {
+    all: 'Всі',
+    friend: 'Друзі',
+    colleague: 'Колеги',
+    family: 'Сім\'я',
+    mentor: 'Ментори',
+    acquaintance: 'Знайомі'
+  };
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -125,19 +154,36 @@ const PeopleView: React.FC = () => {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-main overflow-hidden relative text-main transition-none">
       <div className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 ${isMobile && selectedPersonId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
-        <header className="p-4 md:p-6 bg-card border-b border-theme z-20 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-users-between-lines"></i></div>
-             <div>
-                <Typography variant="h2" className="text-lg md:text-xl leading-none font-black uppercase tracking-tight">Мережа</Typography>
-                <Typography variant="tiny" className="text-muted text-[8px]">Соціальні активи</Typography>
-             </div>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Шукати союзників..." className="flex-1 md:w-56 bg-main border border-theme rounded-xl py-2 px-4 text-[11px] font-bold outline-none text-main shadow-inner" />
-            {!isMobile && (
+        <header className="p-4 md:p-6 bg-card border-b border-theme z-20 flex flex-col shrink-0">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-users-between-lines"></i></div>
+               <div>
+                  <Typography variant="h2" className="text-lg md:text-xl leading-none font-black uppercase tracking-tight">Мережа</Typography>
+                  <Typography variant="tiny" className="text-muted text-[8px]">Соціальні активи</Typography>
+               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Шукати союзників..." className="hidden md:block w-56 bg-main border border-theme rounded-xl py-2 px-4 text-[11px] font-bold outline-none text-main shadow-inner" />
               <Button onClick={() => setIsAdding(true)} icon="fa-plus" size="sm" className="rounded-xl px-4 text-[9px] font-black uppercase">ДОДАТИ</Button>
-            )}
+            </div>
+          </div>
+
+          {/* Панель табів фільтрації */}
+          <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
+             {['all', ...relationshipTypes].map(type => (
+               <button 
+                key={type}
+                onClick={() => setActiveFilter(type)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+                  activeFilter === type 
+                  ? 'bg-primary text-white border-primary shadow-md' 
+                  : 'bg-main text-muted border-theme hover:bg-card'
+                }`}
+               >
+                 {statusLabels[type] || type}
+               </button>
+             ))}
           </div>
         </header>
 
@@ -167,7 +213,7 @@ const PeopleView: React.FC = () => {
                              <span className={`text-[7px] font-black uppercase tracking-widest ${trust.color}`}>{trust.label}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                             <Badge variant="slate" className="text-[6px] px-1.5 py-0">{person.status}</Badge>
+                             <Badge variant="slate" className="text-[6px] px-1.5 py-0">{statusLabels[person.status] || person.status}</Badge>
                              <span className="text-[8px] font-black text-primary uppercase">Karma {person.rating || 0}</span>
                           </div>
                        </div>
