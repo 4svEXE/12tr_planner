@@ -12,14 +12,14 @@ import MonthView from '../components/calendar/MonthView';
 import WeekView from '../components/calendar/WeekView';
 import DayView from '../components/calendar/DayView';
 import YearView from '../components/calendar/YearView';
-import { DaySchedule } from '../components/calendar/DayView'; 
+import { DaySchedule } from '../components/calendar/DayView';
 
 const Calendar: React.FC = () => {
-  const { 
-    tasks, addTask, scheduleTask, 
+  const {
+    tasks, addTask, scheduleTask,
     calendarDate, setCalendarDate, calendarViewMode, setCalendarViewMode
   } = useApp();
-  
+
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
@@ -53,7 +53,7 @@ const Calendar: React.FC = () => {
   };
 
   const onDrop = (e: React.DragEvent, timestamp: number) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setDragOverDay(null);
     const taskId = e.dataTransfer.getData('taskId');
     if (taskId) scheduleTask(taskId, timestamp);
@@ -61,11 +61,11 @@ const Calendar: React.FC = () => {
 
   const handleCreateRequest = (timestamp: number) => {
     const newId = addTask(
-      "", 
-      'unsorted', 
-      undefined, 
-      'actions', 
-      false, 
+      "",
+      'unsorted',
+      undefined,
+      'actions',
+      false,
       timestamp
     );
     setSelectedTaskId(newId);
@@ -91,7 +91,7 @@ const Calendar: React.FC = () => {
       <div className={`${isMobile ? (showBacklogMobile ? 'fixed inset-0 z-[150] w-full translate-x-0' : 'fixed inset-0 z-[150] w-full -translate-x-full') : 'relative'} transition-transform duration-300 h-full`}>
         <BacklogSidebar onSelectTask={handleSelectTask} />
         {isMobile && showBacklogMobile && (
-          <button 
+          <button
             onClick={() => setShowBacklogMobile(false)}
             className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[160]"
           >
@@ -101,12 +101,13 @@ const Calendar: React.FC = () => {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-full relative z-10">
-        <CalendarHeader 
-          currentDate={currentDate} 
-          viewMode={calendarViewMode} 
-          onNavigate={handleNavigate} 
-          onToday={handleToday} 
-          onSetViewMode={setCalendarViewMode} 
+        <CalendarHeader
+          currentDate={currentDate}
+          viewMode={calendarViewMode}
+          onNavigate={handleNavigate}
+          onToday={handleToday}
+          onSetViewMode={setCalendarViewMode}
+          onSetShowBacklog={setShowBacklogMobile}
         />
 
         <div className="flex-1 overflow-auto p-2 md:p-6 custom-scrollbar bg-[var(--bg-main)]">
@@ -115,31 +116,30 @@ const Calendar: React.FC = () => {
       </main>
 
       {/* Dynamic Right Sidebar: Task Details OR Day Schedule */}
-      <div 
-        className={`h-full border-l border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 ease-in-out shrink-0 relative z-[100] ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full absolute'
-        }`}
+      <div
+        className={`h-full border-l border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 ease-in-out shrink-0 relative z-[100] ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full absolute'
+          }`}
         style={{ width: isSidebarOpen ? (isMobile ? '100vw' : detailsWidth) : 0 }}
       >
         {isSidebarOpen && (
-           <>
-              {!isMobile && (
-                <div 
-                  onMouseDown={startResizing} 
-                  className={`absolute left-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[var(--primary)] z-[150] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent'}`}
-                ></div>
+          <>
+            {!isMobile && (
+              <div
+                onMouseDown={startResizing}
+                className={`absolute left-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[var(--primary)] z-[150] transition-colors ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent'}`}
+              ></div>
+            )}
+            <div className="h-full w-full overflow-hidden flex flex-col">
+              {selectedTaskId ? (
+                <TaskDetails
+                  task={tasks.find(t => t.id === selectedTaskId)!}
+                  onClose={() => setSelectedTaskId(null)}
+                />
+              ) : (
+                calendarViewMode === 'day' && <DaySchedule currentDate={currentDate} onBack={() => setShowScheduleMobile(false)} isMobile={isMobile} />
               )}
-              <div className="h-full w-full overflow-hidden flex flex-col">
-                {selectedTaskId ? (
-                  <TaskDetails 
-                    task={tasks.find(t => t.id === selectedTaskId)!} 
-                    onClose={() => setSelectedTaskId(null)} 
-                  />
-                ) : (
-                  calendarViewMode === 'day' && <DaySchedule currentDate={currentDate} onBack={() => setShowScheduleMobile(false)} isMobile={isMobile} />
-                )}
-              </div>
-           </>
+            </div>
+          </>
         )}
       </div>
     </div>

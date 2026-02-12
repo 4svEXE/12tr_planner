@@ -11,11 +11,12 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) => {
   const {
-    isSidebarCollapsed, setSidebarCollapsed, character
+    isSidebarCollapsed, setSidebarCollapsed, character,
+    diary = [], saveDiaryEntry, tasks, deleteTask
   } = useApp();
   const { user, login, isGuest } = useAuth();
-
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const sections = [
     {
@@ -45,19 +46,62 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     }
   ];
 
+  const handleDiaryDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverId(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (!taskId) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const dateStr = new Date().toLocaleDateString('en-CA');
+    const existingEntry = diary.find(d => d.date === dateStr);
+    const block = { id: Math.random().toString(36).substr(2, 9), type: 'bullet', content: task.title };
+
+    let newContent = '';
+    if (existingEntry) {
+      try {
+        const blocks = JSON.parse(existingEntry.content);
+        newContent = JSON.stringify([...blocks, block]);
+      } catch (e) {
+        newContent = JSON.stringify([{ id: 'b1', type: 'text', content: existingEntry.content }, block]);
+      }
+      saveDiaryEntry(dateStr, newContent, existingEntry.id);
+    } else {
+      newContent = JSON.stringify([block]);
+      saveDiaryEntry(dateStr, newContent);
+    }
+    deleteTask(taskId, true);
+  };
+
   const renderItem = (item: any) => {
     const isActive = activeTab === item.id;
+    const isDragTarget = dragOverId === item.id;
+
     return (
-      <div key={item.id} className="w-full flex items-center gap-2 group px-2">
+      <div
+        key={item.id}
+        className="w-full flex items-center gap-2 group px-2"
+        onDragOver={(e) => {
+          if (item.id === 'diary') {
+            e.preventDefault();
+            setDragOverId(item.id);
+          }
+        }}
+        onDragLeave={() => setDragOverId(null)}
+        onDrop={(e) => {
+          if (item.id === 'diary') handleDiaryDrop(e);
+        }}
+      >
         <button
           onClick={() => setActiveTab(item.id)}
           className={`flex-1 flex items-center gap-3 h-10 rounded-xl transition-all duration-200 relative ${isActive
             ? 'bg-[var(--primary)] text-white shadow-md'
-            : 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)]'
+            : isDragTarget ? 'bg-[var(--primary)]/20 shadow-inner' : 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)]'
             } ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
           title={isSidebarCollapsed ? item.label : ''}
         >
-          <div className={`w-5 flex justify-center text-[13px] shrink-0 ${isActive ? 'text-white' : item.color}`}>
+          <div className={`w-5 flex justify-center text-[13px] shrink-0 ${isActive || isDragTarget ? 'text-white' : item.color}`}>
             <i className={`fa-solid ${item.icon}`}></i>
           </div>
           {!isSidebarCollapsed && <span className="flex-1 text-left text-[11px] font-black tracking-tight truncate uppercase pt-0.5">{item.label}</span>}
