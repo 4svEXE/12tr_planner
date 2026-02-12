@@ -9,7 +9,7 @@ interface ListHeaderProps {
   isMobile: boolean;
   onBack: () => void;
   onUpdateProject: (p: Project) => void;
-  onAddSection: (pId: string, title: string) => void;
+  onAddSection: (pId: string) => void;
 }
 
 const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMobile, onBack, onUpdateProject, onAddSection }) => {
@@ -51,10 +51,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMo
   };
 
   const handleAddSectionAction = () => {
-    const title = prompt('Введіть назву нової секції:', 'Нова секція');
-    if (title) {
-      onAddSection(project.id, title);
-    }
+    onAddSection(project.id);
     setShowMenu(false);
   };
 

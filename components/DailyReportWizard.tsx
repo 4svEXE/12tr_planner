@@ -3,13 +3,20 @@ import { useApp } from '../contexts/AppContext';
 import Typography from './ui/Typography';
 import Button from './ui/Button';
 import Card from './ui/Card';
-import Badge from './ui/Badge';
+import Badge from '../components/ui/Badge';
 import { TaskStatus, Person, Task, AiSuggestion, ReportQuestion } from '../types';
 import { analyzeDailyReport } from '../services/geminiService';
 import DailyReportAiWizard from './DailyReportAiWizard';
 
 interface DailyReportWizardProps {
   onClose: () => void;
+}
+
+interface Block {
+  id: string;
+  type: 'h1' | 'h2' | 'h3' | 'text' | 'task' | 'quote' | 'bullet' | 'number' | 'divider' | 'callout';
+  content: string;
+  checked?: boolean;
 }
 
 const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
@@ -85,21 +92,41 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
     setPersonSearch('');
   };
 
-  const generateReportContent = () => {
-    let content = `### 🌟 Ретроспекція: ${new Date().toLocaleDateString('uk-UA')}\n\n`;
-    
+  const generateReportBlocks = (): Block[] => {
+    const blocks: Block[] = [];
+    const createId = () => Math.random().toString(36).substr(2, 9);
+
+    // Заголовок
+    blocks.push({
+      id: createId(),
+      type: 'h1',
+      content: `🌟 Звіт дня: ${new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`
+    });
+
+    blocks.push({ id: createId(), type: 'divider', content: '' });
+
     reportTemplate.forEach(q => {
       const ans = answers[q.id];
-      content += `#### ${q.text}\n`;
       
+      // Назва питання
+      blocks.push({
+        id: createId(),
+        type: 'h3',
+        content: q.text
+      });
+
       if (!ans && q.type !== 'habits') {
-        content += `_Без відповіді_\n\n`;
+        blocks.push({ id: createId(), type: 'text', content: '<i>Відповідь відсутня</i>' });
         return;
       }
 
       switch(q.type) {
         case 'mood':
-          content += `Стан: ${moodIcons[(ans.mood || 3) - 1]} | Енергія: ${ans.energy || 80}%\n\n`;
+          blocks.push({ 
+            id: createId(), 
+            type: 'text', 
+            content: `Стан: <b>${moodIcons[(ans.mood || 3) - 1]}</b> | Енергія: <b>${ans.energy || 80}%</b>` 
+          });
           break;
         case 'gratitude_people':
           const selectedPeople = ans.selectedPeople || [];
@@ -108,40 +135,42 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
             selectedPeople.forEach((pid: string) => {
               const p = allAvailablePeople.find(x => x.id === pid);
               const reason = peopleGratitude[pid] || 'Дякую за присутність';
-              if (p) content += `- **${p.name}**: ${reason}\n`;
+              if (p) blocks.push({ id: createId(), type: 'bullet', content: `<b>${p.name}</b>: ${reason}` });
             });
-          } else content += `_Вдячний за спокій та тишу_\n`;
-          content += '\n';
+          } else {
+            blocks.push({ id: createId(), type: 'bullet', content: 'Вдячний за спокій та тишу' });
+          }
           break;
         case 'victory':
           const victoryTask = tasks.find(t => t.id === ans.mainVictoryId);
           const vicText = ans.mainVictoryId?.startsWith('custom-') 
             ? ans.mainVictoryId.replace('custom-', '') 
             : (victoryTask?.title || ans.mainVictoryId || '—');
-          content += `🏆 **${vicText}**\n\n`; 
+          blocks.push({ id: createId(), type: 'quote', content: `🏆 <b>${vicText}</b>` });
           break;
         case 'habits':
           const hEntries = Object.entries(ans?.habitReflections || {});
           if (hEntries.length > 0) {
             hEntries.forEach(([id, text]) => {
               const h = tasks.find(t => t.id === id);
-              if (h) content += `- **${h.title}**: ${text}\n`;
+              if (h) blocks.push({ id: createId(), type: 'bullet', content: `<b>${h.title}</b>: ${text}` });
             });
           } else {
             const stillUncompleted = dailyHabits.filter(h => h.habitHistory?.[todayDateStr]?.status !== 'completed');
-            content += stillUncompleted.length > 0 
-              ? `_Пропущено ${stillUncompleted.length} звичок, причини не вказано._\n`
-              : `✅ Всі звички сьогодні виконано ідеально!\n`;
+            if (stillUncompleted.length > 0) {
+              blocks.push({ id: createId(), type: 'text', content: `<i>Пропущено ${stillUncompleted.length} звичок, причини не вказано.</i>` });
+            } else {
+              blocks.push({ id: createId(), type: 'text', content: '✅ Всі звички сьогодні виконано ідеально!' });
+            }
           }
-          content += '\n';
           break;
         default: 
-          content += `${ans || '—'}\n\n`;
+          blocks.push({ id: createId(), type: 'text', content: String(ans || '—') });
           break;
       }
     });
 
-    return content;
+    return blocks;
   };
 
   const handleFinish = async (runAi: boolean = false) => {
@@ -155,14 +184,13 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
       xp: character.xp + xpReward 
     });
 
-    // Логування вдячності союзникам
     reportTemplate.filter(q => q.type === 'gratitude_people').forEach(q => {
        const ans = answers[q.id];
        if (ans?.selectedPeople) {
          ans.selectedPeople.forEach((pid: string) => {
             const reason = ans.peopleGratitude[pid] || 'Дякую за день';
             addInteraction(pid, { 
-              summary: `[Ретро-Вдячність] ${reason}`, 
+              summary: `[Звіт-Вдячність] ${reason}`, 
               type: 'other', 
               date: Date.now(), 
               emotion: 'joy' 
@@ -171,13 +199,15 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
        }
     });
 
-    const content = generateReportContent();
-    saveDiaryEntry(todayDateStr, content);
+    const structuredContent = JSON.stringify(generateReportBlocks());
+    saveDiaryEntry(todayDateStr, structuredContent);
 
     if (runAi && aiEnabled) {
       setIsAiAnalyzing(true);
       try {
-        const suggestions = await analyzeDailyReport(content, character);
+        // AI аналізує текстове представлення для контексту
+        const textForAi = generateReportBlocks().map(b => b.content).join('\n');
+        const suggestions = await analyzeDailyReport(textForAi, character);
         setAiSuggestions(suggestions);
         setShowAiWizard(true);
       } catch (e) {
@@ -201,9 +231,9 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
               <i className="fa-solid fa-flag-checkered"></i>
            </div>
            <div>
-              <Typography variant="h3" className="text-2xl font-black uppercase tracking-tight mb-2 text-[var(--text-main)]">Досвід збережено</Typography>
+              <Typography variant="h3" className="text-2xl font-black uppercase tracking-tight mb-2 text-[var(--text-main)]">Підсумок дня створено</Typography>
               <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest leading-loose">
-                Ви успішно зафіксували підсумки дня.<br/>
+                Ви успішно зафіксували свій досвід.<br/>
                 <span className="text-[var(--primary)] font-black text-xs">Нагорода: +{150 + (answered * 25)} XP</span>
               </p>
            </div>
@@ -214,7 +244,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                 disabled={isAiAnalyzing || !aiEnabled} 
                 className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all disabled:opacity-50"
               >
-                 {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>} ШІ АНАЛІЗ ЗВІТУ
+                 {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>} АНАЛІЗУВАТИ ШІ
               </button>
            </Card>
         </div>
@@ -242,7 +272,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                 />
              </div>
              <div className="space-y-6">
-                <label className="text-[10px] font-black uppercase text-[var(--text-muted)] text-center block tracking-widest">Загальний Настрій</label>
+                <label className="text-[10px] font-black uppercase text-[var(--text-muted)] text-center block tracking-widest">Ваш Стан</label>
                 <div className="flex justify-between gap-3">
                    {[1,2,3,4,5].map(i => (
                      <button 
@@ -273,7 +303,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                {personSearch && (
                  <div className="absolute bottom-full md:top-auto md:bottom-full left-0 right-0 mb-2 md:mb-4 bg-[var(--bg-card)] border border-[var(--border-color)] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] rounded-[2rem] z-[3100] overflow-hidden animate-in fade-in slide-in-from-bottom-2 zoom-in-95 max-h-64 overflow-y-auto">
                     <div className="px-5 py-3 border-b border-[var(--border-color)] bg-black/[0.02]">
-                       <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Результати пошуку</span>
+                       <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Союзники</span>
                     </div>
                     {filteredSearchPeople.map(p => {
                        const isSel = selPeople.includes(p.id);
@@ -305,8 +335,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                     >
                        <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center shadow-md"><i className="fa-solid fa-user-plus text-xs"></i></div>
                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-black uppercase">Додати: "{personSearch}"</div>
-                          <div className="text-[7px] font-bold uppercase tracking-widest opacity-60">Новий союзник у системі</div>
+                          <div className="text-[11px] font-black uppercase">Новий герой: "{personSearch}"</div>
                        </div>
                     </button>
                  </div>
@@ -329,7 +358,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                        <input 
                         value={peopleGrat[pid] || ''} 
                         onChange={e => updateAnswer(currentQuestion.id, { selectedPeople: selPeople, peopleGratitude: { ...peopleGrat, [pid]: e.target.value } })} 
-                        placeholder="За що саме?.." 
+                        placeholder="Кілька слів подяки..." 
                         className="w-full bg-[var(--bg-input)] border-none rounded-xl px-4 py-2.5 text-[11px] font-bold outline-none italic text-[var(--text-main)]" 
                        />
                     </div>
@@ -384,15 +413,15 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                       }}
                       className="h-9 px-4 rounded-xl bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                      >
-                        <i className="fa-solid fa-check"></i> ВИКОНАНО
+                        <i className="fa-solid fa-check"></i> ТАК
                      </button>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[7px] font-black uppercase text-slate-400 ml-1">Аналіз невдачі</label>
+                    <label className="text-[7px] font-black uppercase text-slate-400 ml-1">Чому не вдалося?</label>
                     <input 
                       value={habitRefs[h.id] || ''} 
                       onChange={e => updateAnswer(currentQuestion.id, { habitReflections: { ...habitRefs, [h.id]: e.target.value } })} 
-                      placeholder="Чому пропущено? Що змінити?.." 
+                      placeholder="Причина чи інсайт..." 
                       className="w-full bg-[var(--bg-input)] border-none rounded-xl px-4 py-3 text-[11px] font-bold outline-none italic text-[var(--text-main)]" 
                     />
                   </div>
@@ -400,7 +429,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
              )) : (
                <div className="py-20 text-center opacity-10 grayscale flex flex-col items-center select-none">
                   <i className="fa-solid fa-circle-check text-6xl mb-4 text-[var(--text-main)]"></i>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)]">Все виконано!</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)]">Всі ритуали виконано!</p>
                </div>
              )}
           </div>
@@ -413,7 +442,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
               value={ans || ''} 
               onChange={e => updateAnswer(currentQuestion.id, e.target.value)} 
               className="w-full bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-[2.5rem] p-8 text-sm font-medium min-h-[250px] outline-none focus:border-[var(--primary)]/30 transition-all shadow-inner leading-relaxed text-[var(--text-main)]" 
-              placeholder="Опишіть тут..." 
+              placeholder="Впишіть ваші думки..." 
             />
           </div>
         );
@@ -439,7 +468,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                  <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{reportTemplate.length} ПИТАНЬ</span>
               </div>
               <Typography variant="h2" className="text-xl md:text-2xl leading-tight font-black uppercase tracking-tighter text-[var(--text-main)] pr-6">
-                {isLastStep ? 'Завершення' : currentQuestion.text}
+                {isLastStep ? 'Завершення звіту' : currentQuestion.text}
               </Typography>
            </div>
            <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all shrink-0"><i className="fa-solid fa-xmark text-xl"></i></button>
@@ -463,7 +492,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
                 className="flex-[2] h-16 shadow-xl uppercase font-black tracking-[0.2em] text-[11px] rounded-2xl group" 
                 onClick={() => setStepIndex(stepIndex + 1)}
                >
-                 Продовжити <i className="fa-solid fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                 Далі <i className="fa-solid fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                </Button>
              </>
            ) : (

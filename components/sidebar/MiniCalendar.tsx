@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -73,7 +72,7 @@ const MiniCalendar: React.FC = () => {
   };
 
   return (
-    <div className="p-1 w-full">
+    <div className="p-1 w-full bg-transparent">
       <div className="flex justify-between items-center gap-0.5">
         {weekDays.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString();
@@ -84,10 +83,10 @@ const MiniCalendar: React.FC = () => {
               onClick={() => handleDateClick(d)} 
               className="flex flex-col items-center gap-0.5 group flex-1 min-w-0 transition-transform active:scale-90"
             >
-              <span className={`text-[5px] md:text-[6px] font-black uppercase leading-none transition-colors ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] opacity-50'}`}>
+              <span className={`text-[5px] md:text-[6px] font-black uppercase leading-none transition-colors ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-sidebar)] opacity-50'}`}>
                 {d.toLocaleString('uk-UA', { weekday: 'short' }).slice(0, 2)}
               </span>
-              <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center text-[8px] md:text-[9px] font-black transition-all ${isToday ? 'bg-[var(--primary)] text-white shadow-lg ring-1 ring-[var(--primary)]/20' : 'text-[var(--text-main)] hover:bg-[var(--bg-card)] hover:shadow-sm hover:text-[var(--primary)]'}`}>
+              <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center text-[8px] md:text-[9px] font-black transition-all ${isToday ? 'bg-[var(--primary)] text-white shadow-lg ring-1 ring-[var(--primary)]/20' : 'text-[var(--text-sidebar)] hover:bg-black/5 hover:shadow-sm'}`}>
                 {d.getDate()}
               </div>
               <div className="h-0.5 flex items-center justify-center gap-0.5">

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Task, TaskStatus, Project, Priority, RecurrenceType } from '../types';
@@ -28,7 +27,6 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
     return projects.find(p => p.id === 'planner_strategic_config');
   }, [projects, projectId, activeProject]);
 
-  // FIX: Парсинг JSON опису у звичайний текст для Vision
   const plainVision = useMemo(() => {
     const desc = strategicProject?.description || '';
     if (!desc) return 'Ваша мета на цей цикл...';
@@ -38,11 +36,10 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
         return parsed
           .map(block => block.content)
           .join(' ')
-          .replace(/<[^>]*>?/gm, '') // видаляємо HTML теги
+          .replace(/<[^>]*>?/gm, '') 
           .slice(0, 100);
       }
     } catch (e) {
-      // Якщо це не JSON, повертаємо як є
     }
     return desc.slice(0, 100);
   }, [strategicProject?.description]);
@@ -163,7 +160,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
     const id = Math.random().toString(36).substr(2, 9);
     updateTask({
       id,
-      title,
+      title: status === TaskStatus.DONE ? TaskStatus.NEXT_ACTION : TaskStatus.NEXT_ACTION,
       status: TaskStatus.NEXT_ACTION,
       priority: isFocus ? Priority.UI : Priority.NUI,
       difficulty: 1,
@@ -233,11 +230,8 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
             </div>
           ) : (
             <div className="space-y-1">
-              
-              {/* 12TR STRATEGIC ROW: BIG 3 & VISION */}
               <div className="bg-card border-b border-theme shadow-sm px-4 py-1.5 sticky top-0 z-20">
                  <div className="flex flex-col md:flex-row items-center gap-4">
-                    {/* Vision Summary - FIX: Plain text displayed here */}
                     <div className="hidden xl:flex items-center gap-3 border-r border-theme pr-4 max-w-xs overflow-hidden">
                        <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] shadow-lg shrink-0"><i className="fa-solid fa-mountain"></i></div>
                        <div className="min-w-0">
@@ -266,9 +260,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                  </div>
               </div>
 
-              {/* TACTICAL NAVIGATION & LEAD INDICATORS */}
               <div className="bg-card border-b border-theme px-4 py-1 flex flex-col md:flex-row items-center gap-4 z-10">
-                 {/* COMPACT EXECUTION SCORE */}
                  <div className="flex items-center gap-3 shrink-0">
                     <div className="flex items-center gap-2 bg-slate-900 px-2 py-1 rounded-lg text-white border border-white/5">
                         <div className="text-[10px] font-black leading-none" style={{ color: projectColor }}>{weekExecutionStats.score}</div>
@@ -282,15 +274,12 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                           </div>
                         </div>
                     </div>
-                    
-                    {/* LEAD INDICATOR PLACEHOLDER */}
                     <div className="flex items-center gap-2 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
                        <i className="fa-solid fa-chart-line text-emerald-600 text-[8px]"></i>
                        <span className="text-[8px] font-black text-emerald-700 uppercase tracking-tighter">Lead: Optimal</span>
                     </div>
                  </div>
 
-                 {/* WEEK SELECTOR */}
                  <div className="flex-1 flex items-center bg-main p-0.5 rounded-lg border border-theme overflow-x-auto no-scrollbar">
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(w => (
                       <button key={w} onClick={() => setSelectedWeek(w)} className={`flex-1 h-5 min-w-[32px] rounded-md text-[8px] font-black transition-all ${selectedWeek === w ? 'bg-white text-primary shadow-sm border border-theme' : w === actualCurrentWeek ? 'text-orange-600' : 'text-slate-400 hover:bg-black/5'}`} style={selectedWeek === w ? { color: projectColor, borderColor: `${projectColor}30` } : {}}>
@@ -300,7 +289,6 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                  </div>
               </div>
 
-              {/* MAIN CONTENT GRID WITH SCRATCHPAD */}
               <div className="px-4 py-2 flex flex-col xl:flex-row gap-4">
                 <div className="flex-1">
                   <WeeklyGrid 
@@ -315,7 +303,6 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                   />
                 </div>
 
-                {/* TACTICAL SCRATCHPAD (12TR SIDEBAR) */}
                 <div className="w-full xl:w-64 flex flex-col shrink-0 gap-3">
                    <div className="bg-card border border-theme rounded-xl flex flex-col shadow-sm overflow-hidden h-full min-h-[300px]">
                       <header className="p-3 border-b border-theme bg-slate-50/50 flex items-center justify-between">
@@ -352,31 +339,21 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                               </div>
                            </div>
                          ))}
-                         {scratchpadTasks.length === 0 && (
-                           <div className="py-10 text-center opacity-20">
-                              <i className="fa-solid fa-inbox text-2xl mb-2"></i>
-                              <p className="text-[8px] font-black uppercase">Буфер порожній</p>
-                           </div>
-                         )}
                       </div>
-                      <footer className="p-3 bg-slate-50 border-t border-theme">
-                         <p className="text-[7px] text-slate-400 font-bold leading-tight">Перетягуйте завдання з буфера в сітку днів для планування.</p>
-                      </footer>
                    </div>
                 </div>
               </div>
 
-              {/* BOTTOM RETRO & AI COACHING */}
               <div className="max-w-[1600px] mx-auto px-4 pb-20">
                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     <div className="lg:col-span-8 border border-theme rounded-xl bg-card flex flex-col md:flex-row items-center gap-3 p-2 shadow-sm">
                       <div className="flex items-center gap-2 shrink-0 px-2 opacity-50">
                         <i className="fa-solid fa-feather-pointed text-[8px] text-primary" style={{ color: projectColor }}></i>
-                        <span className="font-black uppercase text-[6px] tracking-widest text-slate-400">Ретро W{selectedWeek}</span>
+                        <span className="font-black uppercase text-[6px] tracking-widest text-slate-400">Підсумок W{selectedWeek}</span>
                       </div>
-                      <input value={weekReview.comment} onChange={e => handleUpdateWeekReview(e.target.value)} placeholder="Перемоги та уроки тижня..." className="flex-1 w-full bg-main border border-theme rounded-lg px-3 py-1.5 text-[10px] font-bold outline-none focus:ring-1 focus:ring-primary/20 text-slate-700" />
+                      <input value={weekReview.comment} onChange={e => handleUpdateWeekReview(e.target.value)} placeholder="Результати тижня..." className="flex-1 w-full bg-main border border-theme rounded-lg px-3 py-1.5 text-[10px] font-bold outline-none focus:ring-1 focus:ring-primary/20 text-slate-700" />
                       <button onClick={() => {
-                        const content = `### 📅 ТИЖНЕВИЙ ЗВІТ (W${selectedWeek})\n\n**Результат:** ${weekExecutionStats.percent}%\n\n#### 🎯 Weekly Big 3:\n` + weeklyGoals.map(g => `- [${g.status === TaskStatus.DONE ? 'x' : ' '}] ${g.title}`).join('\n') + `\n\n#### 📝 Ретро:\n${weekReview.comment || 'Коментар не додано.'}`;
+                        const content = `### 📅 ТИЖНЕВИЙ ЗВІТ (W${selectedWeek})\n\n**Результат:** ${weekExecutionStats.percent}%\n\n#### 🎯 Weekly Big 3:\n` + weeklyGoals.map(g => `- [${g.status === TaskStatus.DONE ? 'x' : ' '}] ${g.title}`).join('\n') + `\n\n#### 📝 Підсумок:\n${weekReview.comment || 'Коментар не додано.'}`;
                         saveDiaryEntry(new Date().toISOString().split('T')[0], content);
                         alert('Звіт збережено!');
                       }} className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest shrink-0 shadow-sm transition-all hover:brightness-110 active:scale-95">Зберегти звіт</button>
@@ -400,7 +377,6 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
         </div>
       </div>
 
-      {/* SIDEBARS */}
       <div className={`fixed top-0 right-0 h-full bg-card border-l border-theme z-[100] shadow-2xl transition-transform duration-500 flex flex-col ${showNotes ? 'translate-x-0' : 'translate-x-full'}`} style={{ width: '450px', maxWidth: '100vw' }}>
         <header className="p-4 border-b border-theme flex justify-between items-center shrink-0">
            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-sm"><i className="fa-solid fa-box-archive"></i></div><Typography variant="h2" className="text-xs font-black uppercase tracking-tight">Project Backlog</Typography></div>

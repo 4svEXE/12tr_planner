@@ -48,13 +48,11 @@ const DiaryView: React.FC = () => {
     return groups;
   }, [sortedDiary]);
 
-  // Логіка генерації днів для вбудованого календаря
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
     if (isCalendarExpanded || !isMobile) {
-      // Повна сітка місяця
       const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const days: (Date | null)[] = [];
@@ -63,10 +61,9 @@ const DiaryView: React.FC = () => {
       while (days.length % 7 !== 0) days.push(null);
       return days;
     } else {
-      // Режим тижня (7 днів навколо обраної дати)
       const sel = new Date(selectedDate);
       const start = new Date(sel);
-      start.setDate(sel.getDate() - sel.getDay() + (sel.getDay() === 0 ? -6 : 1)); // Понеділок
+      start.setDate(sel.getDate() - sel.getDay() + (sel.getDay() === 0 ? -6 : 1)); 
       return Array.from({ length: 7 }, (_, i) => {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
@@ -75,11 +72,18 @@ const DiaryView: React.FC = () => {
     }
   }, [currentMonth, isCalendarExpanded, isMobile, selectedDate]);
 
+  const handleDeleteEntry = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Видалити цей запис назавжди?')) {
+      deleteDiaryEntry(id);
+      if (editingEntryId === id) setEditingEntryId(null);
+    }
+  };
+
   const renderInlineCalendar = () => {
     return (
       <div className={`bg-[var(--bg-card)] border-b border-[var(--border-color)] transition-all duration-300 overflow-hidden ${isCalendarExpanded ? 'pb-4' : 'pb-2'}`}>
         <div className="max-w-4xl mx-auto px-4">
-          {/* Header Календаря */}
           <div className="flex items-center justify-between py-2 mb-2">
             <Typography variant="tiny" className="text-[var(--text-main)] font-black capitalize text-[10px] tracking-widest">
               {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
@@ -94,7 +98,6 @@ const DiaryView: React.FC = () => {
             </div>
           </div>
 
-          {/* Сітка днів */}
           <div className={`grid grid-cols-7 gap-1 transition-all duration-500`}>
             {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => (
               <div key={w} className="text-[7px] font-black text-[var(--text-muted)] opacity-30 text-center uppercase mb-1">{w}</div>
@@ -115,9 +118,6 @@ const DiaryView: React.FC = () => {
                   <span className={`text-[10px] md:text-sm font-black ${isSelected ? 'text-white' : isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{date.getDate()}</span>
                   {hasEntry && (
                     <div className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-[var(--primary)]'}`}></div>
-                  )}
-                  {isSelected && isCalendarExpanded && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full border-2 border-[var(--primary)] animate-ping"></div>
                   )}
                 </button>
               );
@@ -142,17 +142,15 @@ const DiaryView: React.FC = () => {
                 onClick={() => setIsReportWizardOpen(true)} 
                 className="px-4 h-9 md:h-10 bg-[var(--primary)] text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-[var(--primary)]/20 transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
                >
-                Підсумки
+                Звіт дня
                </button>
             </div>
           </div>
         </header>
 
-        {/* Вбудований календар угорі (Inline) */}
         {renderInlineCalendar()}
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Десктопний сайдбар - тепер прихований, бо календар став Inline */}
           <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
             <div className="p-4 bg-indigo-50/50 rounded-3xl border border-indigo-100 mb-4">
                <Typography variant="tiny" className="text-indigo-600 font-black mb-2 uppercase text-[8px] tracking-widest">Статистика</Typography>
@@ -164,7 +162,6 @@ const DiaryView: React.FC = () => {
           
           <main className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-8 bg-[var(--bg-main)]/30">
             <div className="max-w-3xl mx-auto space-y-6 pb-40">
-              {/* Фільтрація записів за обраною датою */}
               {Object.entries(groupedByMonth).length > 0 ? (Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, monthEntries]) => (
                 <div key={month} className="space-y-3">
                   <div className="flex items-center gap-3 px-2">
@@ -185,7 +182,7 @@ const DiaryView: React.FC = () => {
                     return (
                       <Card key={entry.id} padding="none" onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
                         className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-[2rem] cursor-pointer overflow-hidden transition-all group ${isSelected ? 'ring-1 ring-[var(--primary)] border-[var(--primary)] shadow-xl' : 'shadow-sm hover:shadow-md'}`}>
-                        <div className="flex items-center gap-5 p-4 md:p-6">
+                        <div className="flex items-center gap-5 p-4 md:p-6 relative">
                           <div className="w-10 md:w-14 flex flex-col items-center shrink-0 border-r border-[var(--border-color)] pr-4">
                              <span className="text-[8px] md:text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
                              <span className={`text-base md:text-2xl font-black transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
@@ -197,6 +194,12 @@ const DiaryView: React.FC = () => {
                                <span className="text-[7px] font-black text-[var(--text-muted)] uppercase opacity-30">Updated {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                           </div>
+                          <button 
+                            onClick={(e) => handleDeleteEntry(e, entry.id)}
+                            className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center shadow-sm"
+                          >
+                            <i className="fa-solid fa-trash-can text-[10px]"></i>
+                          </button>
                         </div>
                       </Card>
                     );
@@ -213,7 +216,6 @@ const DiaryView: React.FC = () => {
           </main>
         </div>
 
-        {/* Мобільний FAB */}
         {isMobile && !editingEntryId && (
           <button 
             onClick={() => { setEditingEntryId('new'); }}
@@ -224,7 +226,6 @@ const DiaryView: React.FC = () => {
         )}
       </div>
 
-      {/* Оверлей редактора */}
       <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] z-[2100] transition-all duration-300 ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
          <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col">
             {editingEntryId && (
@@ -234,7 +235,12 @@ const DiaryView: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs shadow-sm"><i className="fa-solid fa-pen-nib"></i></div>
                     <Typography variant="h3" className="text-xs font-black uppercase tracking-widest">Редактор</Typography>
                   </div>
-                  <button onClick={() => setEditingEntryId(null)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark text-lg"></i></button>
+                  <div className="flex items-center gap-2">
+                    {editingEntryId !== 'new' && (
+                      <button onClick={(e) => handleDeleteEntry(e, editingEntryId)} className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can"></i></button>
+                    )}
+                    <button onClick={() => setEditingEntryId(null)} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark text-lg"></i></button>
+                  </div>
                 </header>
                 <div className="flex-1 overflow-hidden">
                   <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
@@ -244,7 +250,7 @@ const DiaryView: React.FC = () => {
                     onClick={() => setEditingEntryId(null)}
                     className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all"
                    >
-                     Зберегти запис
+                     Зберегти та вийти
                    </button>
                 </footer>
               </div>

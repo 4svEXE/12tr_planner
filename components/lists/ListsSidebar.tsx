@@ -55,7 +55,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
         <Typography variant="h2" className="text-lg font-black uppercase tracking-tight" style={{ color: 'var(--text-sidebar)' }}>Записник</Typography>
         {isMobile && (
           <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center active:scale-90 transition-all">
-             <i className="fa-solid fa-xmark text-lg"></i>
+             <i className="fa-solid fa-xmark text-lg" style={{ color: 'var(--text-sidebar)' }}></i>
           </button>
         )}
       </header>
@@ -70,7 +70,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
             >
               <i className={`fa-solid fa-inbox text-[12px] w-5 text-center ${selectedProjectId === 'system_inbox' ? 'text-white' : 'text-blue-400'}`}></i>
               <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_inbox' ? 'text-white' : ''}`}>Вхідні</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_inbox' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{inboxCount}</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_inbox' ? 'bg-white/20 text-white' : 'bg-black/5'}`} style={selectedProjectId !== 'system_inbox' ? { color: 'var(--text-sidebar)' } : {}}>{inboxCount}</span>
             </button>
 
             <button 
@@ -79,7 +79,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
             >
               <i className={`fa-solid fa-calendar-day text-[12px] w-5 text-center ${selectedProjectId === 'system_calendar' ? 'text-white' : 'text-rose-400'}`}></i>
               <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_calendar' ? 'text-white' : ''}`}>Календар</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_calendar' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{calendarCount}</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_calendar' ? 'bg-white/20 text-white' : 'bg-black/5'}`} style={selectedProjectId !== 'system_calendar' ? { color: 'var(--text-sidebar)' } : {}}>{calendarCount}</span>
             </button>
 
             <button 
@@ -88,7 +88,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
             >
               <i className={`fa-solid fa-note-sticky text-[12px] w-5 text-center ${selectedProjectId === 'system_notes' ? 'text-white' : 'text-indigo-400'}`}></i>
               <span className={`text-[12px] truncate flex-1 text-left font-bold tracking-tight ${selectedProjectId === 'system_notes' ? 'text-white' : ''}`}>Нотатки</span>
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_notes' ? 'bg-white/20 text-white' : 'bg-black/5'}`}>{notesCount}</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedProjectId === 'system_notes' ? 'bg-white/20 text-white' : 'bg-black/5'}`} style={selectedProjectId !== 'system_notes' ? { color: 'var(--text-sidebar)' } : {}}>{notesCount}</span>
             </button>
         </div>
 
@@ -99,12 +99,12 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
                 onClick={() => setIsCollectionsExpanded(!isCollectionsExpanded)}
                 className="flex items-center gap-2 cursor-pointer flex-1"
               >
-                <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isCollectionsExpanded ? 'rotate-90' : ''}`}></i>
-                <span className="text-[8px] font-black uppercase tracking-[0.2em]">Колекції</span>
+                <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isCollectionsExpanded ? 'rotate-90' : ''}`} style={{ color: 'var(--text-sidebar)' }}></i>
+                <span className="text-[8px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-sidebar)' }}>Колекції</span>
               </div>
               <div className="flex gap-2">
-                 <button onClick={() => onOpenListModal({ type: 'folder' })} className="hover:scale-110 transition-transform p-1" title="Нова папка"><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
-                 <button onClick={() => onOpenListModal({ type: 'list' })} className="hover:scale-110 transition-transform p-1" title="Новий список"><i className="fa-solid fa-plus text-[10px]"></i></button>
+                 <button onClick={() => onOpenListModal({ type: 'folder' })} className="hover:scale-110 transition-transform p-1" title="Нова папка" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
+                 <button onClick={() => onOpenListModal({ type: 'list' })} className="hover:scale-110 transition-transform p-1" title="Новий список" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-plus text-[10px]"></i></button>
               </div>
           </div>
 
@@ -143,8 +143,8 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
             onClick={() => setIsArchiveExpanded(!isArchiveExpanded)}
             className="px-4 mb-1 flex items-center gap-2 cursor-pointer group/sec opacity-50"
           >
-            <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isArchiveExpanded ? 'rotate-90' : ''}`}></i>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Системний архів</span>
+            <i className={`fa-solid fa-chevron-right text-[7px] transition-transform duration-200 ${isArchiveExpanded ? 'rotate-90' : ''}`} style={{ color: 'var(--text-sidebar)' }}></i>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-sidebar)' }}>Системний архів</span>
           </div>
           
           {isArchiveExpanded && (
@@ -160,7 +160,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all hover:bg-white/10"
                 >
                   <i className={`fa-solid ${item.icon} w-5 text-center ${item.color} text-[12px]`}></i>
-                  <span className="text-[10px] font-black uppercase tracking-tight">{item.label}</span>
+                  <span className="text-[10px] font-black uppercase tracking-tight" style={{ color: 'var(--text-sidebar)' }}>{item.label}</span>
                 </button>
               ))}
             </div>
@@ -168,7 +168,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
         </div>
 
         <div className="p-4 border-t border-black/10">
-            <div className="bg-[var(--bg-main)] rounded-2xl p-2 shadow-inner border border-black/10">
+            <div className="bg-[var(--bg-input)] rounded-2xl p-2 shadow-inner border border-black/5 overflow-hidden">
                <MiniCalendar />
             </div>
         </div>
