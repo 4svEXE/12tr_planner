@@ -8,7 +8,10 @@ import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  EmailAuthProvider,
+  linkWithCredential
 } from '../services/firebase';
 
 interface AuthContextType {
@@ -21,6 +24,8 @@ interface AuthContextType {
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string) => Promise<void>;
   sendResetEmail: (e: string) => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
+  addPasswordToAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   continueAsGuest: () => void;
 }
@@ -90,6 +95,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendVerificationEmail = async () => {
+    try {
+      if (!auth.currentUser) throw new Error('No authenticated user');
+      await sendEmailVerification(auth.currentUser);
+    } catch (error) {
+      console.error("Email verification failed", error);
+      throw error;
+    }
+  };
+
+  const addPasswordToAccount = async (email: string, password: string) => {
+    try {
+      if (!auth.currentUser) throw new Error('No authenticated user');
+      const credential = EmailAuthProvider.credential(email, password);
+      await linkWithCredential(auth.currentUser, credential);
+    } catch (error) {
+      console.error("Add password failed", error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
     localStorage.setItem('12tr_guest_mode', 'true');
@@ -106,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{ 
       user, loading, isGuest, isAuthModalOpen, setIsAuthModalOpen, 
-      login, loginWithEmail, registerWithEmail, sendResetEmail, logout, continueAsGuest 
+      login, loginWithEmail, registerWithEmail, sendResetEmail, sendVerificationEmail, addPasswordToAccount, logout, continueAsGuest 
     }}>
       {children}
     </AuthContext.Provider>

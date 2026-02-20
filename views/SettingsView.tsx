@@ -85,13 +85,19 @@ const SettingsView: React.FC = () => {
     diaryNotificationTime, setDiaryNotificationTime,
     setActiveTab
   } = useApp();
-  const { user, login, logout, isGuest } = useAuth();
+  const { user, login, logout, isGuest, loginWithEmail, registerWithEmail, sendResetEmail, sendVerificationEmail, addPasswordToAccount } = useAuth();
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(window.innerWidth < 1024 ? null : 'account');
   const [showCleanup, setShowCleanup] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [linkPassword, setLinkPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   
   const [feedback, setFeedback] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -109,6 +115,125 @@ const SettingsView: React.FC = () => {
     setApiKey(savedKey);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (user?.email) {
+      setAuthEmail(user.email);
+    }
+  }, [user?.email]);
+
+  const resolveAuthError = (err: any) => {
+    const code = err?.code || err?.message || '';
+    if (code.includes('auth/email-already-in-use') || code.includes('email-already-in-use')) return 'Цей email уже використовується.';
+    if (code.includes('auth/invalid-email') || code.includes('invalid-email')) return 'Некоректний email.';
+    if (code.includes('auth/user-not-found') || code.includes('user-not-found')) return 'Користувача з таким email не знайдено.';
+    if (code.includes('auth/wrong-password') || code.includes('wrong-password')) return 'Невірний пароль.';
+    if (code.includes('auth/invalid-credential') || code.includes('invalid-credential')) return 'Невірні облікові дані.';
+    if (code.includes('auth/weak-password') || code.includes('weak-password')) return 'Пароль має бути не менше 6 символів.';
+    if (code.includes('auth/requires-recent-login')) return 'Для цієї дії повторно увійдіть у акаунт.';
+    if (code.includes('auth/provider-already-linked')) return 'Пароль уже додано до цього акаунта.';
+    if (code.includes('auth/credential-already-in-use')) return 'Цей email уже прив’язаний до іншого методу входу.';
+    return 'Сталася помилка автентифікації. Спробуйте ще раз.';
+  };
+
+  const resetAuthMessages = () => {
+    setAuthError(null);
+    setAuthSuccess(null);
+  };
+
+  const handleSignup = async () => {
+    resetAuthMessages();
+    if (!authEmail || !authPassword) {
+      setAuthError('Вкажіть email та пароль.');
+      return;
+    }
+    setIsAuthSubmitting(true);
+    try {
+      await registerWithEmail(authEmail.trim(), authPassword);
+      setAuthSuccess('Акаунт створено успішно.');
+      setAuthPassword('');
+    } catch (err: any) {
+      console.error('Signup failed', err);
+      setAuthError(resolveAuthError(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleLoginWithEmail = async () => {
+    resetAuthMessages();
+    if (!authEmail || !authPassword) {
+      setAuthError('Вкажіть email та пароль.');
+      return;
+    }
+    setIsAuthSubmitting(true);
+    try {
+      await loginWithEmail(authEmail.trim(), authPassword);
+      setAuthSuccess('Вхід виконано успішно.');
+      setAuthPassword('');
+    } catch (err: any) {
+      console.error('Login failed', err);
+      setAuthError(resolveAuthError(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    resetAuthMessages();
+    if (!authEmail) {
+      setAuthError('Вкажіть email для відновлення пароля.');
+      return;
+    }
+    setIsAuthSubmitting(true);
+    try {
+      await sendResetEmail(authEmail.trim());
+      setAuthSuccess('Лист для скидання пароля відправлено.');
+    } catch (err: any) {
+      console.error('Reset password failed', err);
+      setAuthError(resolveAuthError(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    resetAuthMessages();
+    setIsAuthSubmitting(true);
+    try {
+      await sendVerificationEmail();
+      setAuthSuccess('Лист підтвердження email відправлено.');
+    } catch (err: any) {
+      console.error('Send verification failed', err);
+      setAuthError(resolveAuthError(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleAddPassword = async () => {
+    resetAuthMessages();
+    const email = user?.email || authEmail;
+    if (!email) {
+      setAuthError('Email не знайдено для поточного акаунта.');
+      return;
+    }
+    if (!linkPassword || linkPassword.length < 6) {
+      setAuthError('Пароль має бути не менше 6 символів.');
+      return;
+    }
+    setIsAuthSubmitting(true);
+    try {
+      await addPasswordToAccount(email, linkPassword);
+      setAuthSuccess('Пароль успішно додано до Google-акаунта.');
+      setLinkPassword('');
+    } catch (err: any) {
+      console.error('Add password to account failed', err);
+      setAuthError(resolveAuthError(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
 
   const handleSaveApiKey = () => {
     localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
@@ -179,40 +304,83 @@ const SettingsView: React.FC = () => {
     { id: 'paper', label: 'Ink Paper', main: '#fcfcfc', nav: '#f1f5f9', accent: '#334155' }
   ];
 
+  const hasPasswordProvider = !!user?.providerData?.some(p => p.providerId === 'password');
+  const hasGoogleProvider = !!user?.providerData?.some(p => p.providerId === 'google.com');
+
   const renderContent = () => {
     switch (selectedSectionId) {
       case 'account':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             {isGuest ? (
-               <Card padding="lg" className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none shadow-xl relative overflow-hidden">
-                  <div className="relative z-10 flex flex-col items-center text-center">
-                     <div className="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center text-3xl mb-6 shadow-inner"><i className="fa-solid fa-cloud-arrow-up"></i></div>
-                     <Typography variant="h2" className="text-white text-xl mb-2">Хмарна синхронізація</Typography>
-                     <p className="text-xs text-white/70 mb-8 max-w-[240px]">Увійдіть через Google, щоб ваші квести та союзники були доступні на всіх пристроях.</p>
-                     <button onClick={login} className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" />
-                        Увійти з Google
-                     </button>
+            {(authError || authSuccess) && (
+              <Card className={`${authError ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} p-4`}>
+                <p className={`text-[10px] font-black uppercase tracking-widest ${authError ? 'text-rose-600' : 'text-emerald-700'}`}>
+                  {authError || authSuccess}
+                </p>
+              </Card>
+            )}
+
+            {isGuest && (
+              <Card padding="lg" className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-none shadow-xl relative overflow-hidden">
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center text-3xl mb-6 shadow-inner"><i className="fa-solid fa-cloud-arrow-up"></i></div>
+                  <Typography variant="h2" className="text-white text-xl mb-2">Авторизація та синхронізація</Typography>
+                  <p className="text-xs text-white/70 mb-8 max-w-[240px]">Використайте Google або email/password для входу на всіх пристроях.</p>
+                  <button onClick={login} className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" />
+                    Увійти з Google
+                  </button>
+                </div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-10 -mt-10"></div>
+              </Card>
+            )}
+
+            <Card className="p-6 border-theme bg-white space-y-4">
+              <Typography variant="h3" className="text-sm font-black uppercase">Вхід / Реєстрація (Email)</Typography>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Email</label>
+                <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="you@example.com" className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-semibold outline-none focus:border-indigo-500" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Password</label>
+                <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="minimum 6 symbols" className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-semibold outline-none focus:border-indigo-500" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button disabled={isAuthSubmitting} onClick={handleSignup} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50">Sign Up</button>
+                <button disabled={isAuthSubmitting} onClick={handleLoginWithEmail} className="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50">Login</button>
+              </div>
+              <button disabled={isAuthSubmitting} onClick={handleResetPassword} className="w-full py-2.5 bg-amber-50 text-amber-700 rounded-xl font-black text-[9px] uppercase tracking-widest border border-amber-200 disabled:opacity-50">Reset Password</button>
+            </Card>
+
+            {!isGuest && (
+              <Card className="p-6 border-theme bg-white">
+                <div className="flex items-center gap-4 mb-6">
+                  <img src={user?.photoURL || ''} className="w-12 h-12 rounded-2xl border-2 border-slate-100 shadow-sm" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-black text-slate-800 truncate">{user?.displayName || 'User'}</div>
+                    <div className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-tight">{user?.email}</div>
                   </div>
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-10 -mt-10"></div>
-               </Card>
-             ) : (
-               <div className="space-y-4">
-                  <Card className="p-6 border-theme bg-white">
-                     <div className="flex items-center gap-4 mb-6">
-                        <img src={user?.photoURL || ''} className="w-12 h-12 rounded-2xl border-2 border-slate-100 shadow-sm" />
-                        <div className="min-w-0">
-                           <div className="text-sm font-black text-slate-800 truncate">{user?.displayName}</div>
-                           <div className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-tight">{user?.email}</div>
-                        </div>
-                        <Badge variant="emerald" className="ml-auto text-[7px]">ACTIVE</Badge>
-                     </div>
-                     <div className="h-px bg-slate-50 mb-6"></div>
-                     <button onClick={logout} className="w-full py-3 bg-rose-50 text-rose-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all">Вийти з акаунта</button>
-                  </Card>
-               </div>
-             )}
+                  <Badge variant="emerald" className="ml-auto text-[7px]">ACTIVE</Badge>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <button disabled={isAuthSubmitting || !user || user.emailVerified} onClick={handleSendVerification} className="w-full py-3 bg-sky-50 text-sky-700 rounded-xl font-black text-[9px] uppercase tracking-widest border border-sky-200 disabled:opacity-50">
+                    {user?.emailVerified ? 'Email підтверджено' : 'Надіслати Email Verification'}
+                  </button>
+
+                  {hasGoogleProvider && !hasPasswordProvider && (
+                    <div className="space-y-2 p-3 rounded-xl bg-violet-50 border border-violet-100">
+                      <label className="text-[9px] font-black uppercase text-violet-700 ml-1">Додати пароль до Google-акаунта</label>
+                      <input type="password" value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} placeholder="new password" className="w-full h-10 bg-white border border-violet-200 rounded-xl px-4 text-sm font-semibold outline-none focus:border-violet-500" />
+                      <button disabled={isAuthSubmitting} onClick={handleAddPassword} className="w-full py-3 bg-violet-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest disabled:opacity-50">Додати пароль</button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px bg-slate-50 mb-6"></div>
+                <button onClick={logout} className="w-full py-3 bg-rose-50 text-rose-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all">Вийти з акаунта</button>
+              </Card>
+            )}
           </div>
         );
       case 'report':

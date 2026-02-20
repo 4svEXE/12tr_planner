@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Typography from '../components/ui/Typography';
 
@@ -13,6 +13,20 @@ const AuthView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const mapAuthError = (err: any): string => {
+    const code = err?.code || '';
+    if (code === 'auth/user-not-found') return 'Користувача не знайдено';
+    if (code === 'auth/wrong-password') return 'Невірний пароль';
+    if (code === 'auth/invalid-credential') return 'Невірний email або пароль';
+    if (code === 'auth/email-already-in-use') return 'Цей email вже використовується';
+    if (code === 'auth/invalid-email') return 'Некоректний email';
+    if (code === 'auth/weak-password') return 'Пароль має бути не менше 6 символів';
+    if (code === 'auth/too-many-requests') return 'Забагато спроб. Спробуйте пізніше';
+    if (code === 'auth/network-request-failed') return 'Проблема мережі. Перевірте інтернет';
+    if (code === 'auth/operation-not-allowed') return 'Email/Password вхід вимкнений у Firebase';
+    return 'Помилка автентифікації. Спробуйте ще раз.';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -20,7 +34,7 @@ const AuthView: React.FC = () => {
 
     try {
       if (mode === 'login') {
-        await loginWithEmail(email, password);
+        await loginWithEmail(email.trim(), password);
       } else if (mode === 'register') {
         if (password !== confirmPassword) {
           setError('Паролі не збігаються');
@@ -30,39 +44,35 @@ const AuthView: React.FC = () => {
           setError('Пароль має бути не менше 6 символів');
           return;
         }
-        await registerWithEmail(email, password);
-      } else if (mode === 'reset') {
-        await sendResetEmail(email);
+        await registerWithEmail(email.trim(), password);
+      } else {
+        await sendResetEmail(email.trim());
         setSuccess('Інструкції надіслано на вашу пошту');
         setTimeout(() => setMode('login'), 3000);
       }
     } catch (err: any) {
-      const msg = err.message || '';
-      if (msg.includes('user-not-found')) setError('Користувача не знайдено');
-      else if (msg.includes('wrong-password')) setError('Невірний пароль');
-      else if (msg.includes('email-already-in-use')) setError('Цей email вже використовується');
-      else if (msg.includes('invalid-email')) setError('Некоректний email');
-      else setError('Помилка автентифікації. Спробуйте ще раз.');
+      console.error('Auth submit failed', err);
+      setError(mapAuthError(err));
     }
   };
 
   const handleGoogleLogin = async () => {
+    setError(null);
+    setSuccess(null);
     try {
       await login();
     } catch (err) {
+      console.error('Google login failed', err);
       setError('Не вдалося увійти через Google');
     }
   };
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/70 backdrop-blur-2xl animate-in fade-in duration-500 p-4">
-      {/* Dynamic Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-orange-600/20 blur-[120px] rounded-full pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none animate-pulse" style={{ animationDelay: '1.5s' }}></div>
 
       <div className="relative z-10 max-w-md w-full px-6 py-10 md:px-10 md:py-12 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_32px_120px_rgba(0,0,0,0.6)] text-center flex flex-col items-center animate-in zoom-in-95 duration-300 overflow-hidden">
-
-        {/* Close Button */}
         <button
           onClick={() => setIsAuthModalOpen(false)}
           className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-all group"
@@ -70,17 +80,15 @@ const AuthView: React.FC = () => {
           <i className="fa-solid fa-xmark text-sm group-hover:scale-125 transition-transform"></i>
         </button>
 
-        {/* Branding */}
         <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-600 rounded-[1.8rem] flex items-center justify-center text-white text-4xl shadow-2xl shadow-orange-500/30 mb-6 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
           <i className="fa-solid fa-bolt-lightning"></i>
         </div>
 
         <Typography variant="h1" className="text-white text-3xl mb-1 font-black tracking-tighter">12TR ENGINE</Typography>
         <Typography variant="tiny" className="text-orange-400 font-bold tracking-[0.3em] mb-8 uppercase opacity-80">
-          {mode === 'login' ? 'Швидкий вхід' : mode === 'register' ? 'Новий Гравець' : 'Відновлення доступу'}
+          {mode === 'login' ? 'Швидкий вхід' : mode === 'register' ? 'Новий гравець' : 'Відновлення доступу'}
         </Typography>
 
-        {/* Error/Success Messages */}
         {error && (
           <div className="w-full bg-rose-500/10 border border-rose-500/20 rounded-2xl p-3 mb-6 animate-in slide-in-from-top-2">
             <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center justify-center gap-2">
@@ -89,7 +97,14 @@ const AuthView: React.FC = () => {
           </div>
         )}
 
-        {/* Main Form */}
+        {success && (
+          <div className="w-full bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-6 animate-in slide-in-from-top-2">
+            <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest flex items-center justify-center gap-2">
+              <i className="fa-solid fa-circle-check"></i> {success}
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="w-full space-y-4 mb-8">
           <div className="space-y-1.5 text-left">
             <div className="relative">
@@ -152,11 +167,10 @@ const AuthView: React.FC = () => {
           </button>
         </form>
 
-        {/* Auth Mode Toggle */}
         <div className="w-full space-y-6">
           <div className="flex items-center gap-4 text-white/10">
             <div className="h-px flex-1 bg-current"></div>
-            <span className="text-[8px] font-black uppercase tracking-widest text-white/20">АБО ГУГЛ</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-white/20">АБО GOOGLE</span>
             <div className="h-px flex-1 bg-current"></div>
           </div>
 
@@ -175,23 +189,39 @@ const AuthView: React.FC = () => {
                 className="w-full py-3 text-[8px] font-bold uppercase tracking-widest text-orange-400 opacity-60 hover:opacity-100 transition-all flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                Відкрити в пріоритетному браузері ПК
+                Відкрити у пріоритетному браузері ПК
               </button>
             )}
 
             {mode === 'login' ? (
               <button
-                onClick={() => { setMode('register'); setError(null); }}
+                onClick={() => { setMode('register'); setError(null); setSuccess(null); }}
                 className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all"
               >
                 Немає акаунту? <span className="text-orange-500">Реєстрація</span>
               </button>
             ) : (
               <button
-                onClick={() => { setMode('login'); setError(null); }}
+                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
                 className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all"
               >
                 Вже є акаунт? <span className="text-orange-500">Увійти</span>
+              </button>
+            )}
+
+            {mode !== 'reset' ? (
+              <button
+                onClick={() => { setMode('reset'); setError(null); setSuccess(null); }}
+                className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white/70 transition-all"
+              >
+                Forgot Password?
+              </button>
+            ) : (
+              <button
+                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
+                className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white/70 transition-all"
+              >
+                Back To Login
               </button>
             )}
 

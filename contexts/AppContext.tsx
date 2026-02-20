@@ -124,7 +124,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
 
   const [state, setState] = useState<StoreState | null>(null);
   const [activeTab, setActiveTabState] = useState(savedUI.activeTab || 'today');
-  const [theme, setThemeState] = useState<ThemeType>(savedUI.theme || 'classic');
+  const [theme, setThemeState] = useState<ThemeType>(savedUI.theme || 'midnight');
   const [isSidebarCollapsed, setSidebarCollapsedState] = useState(savedUI.isSidebarCollapsed || false);
   const [detailsWidth, setDetailsWidthState] = useState(savedUI.detailsWidth || 450);
   const [calendarDate, setCalendarDate] = useState(Date.now());

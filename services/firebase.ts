@@ -8,7 +8,10 @@ import {
   User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  EmailAuthProvider,
+  linkWithCredential
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
 
@@ -37,6 +40,9 @@ export {
   onSnapshot,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  EmailAuthProvider,
+  linkWithCredential
 };
 export type User = FirebaseUser;

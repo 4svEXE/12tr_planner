@@ -25,10 +25,35 @@ import { TaskStatus, Task } from './types';
 const isExe = /12TR-Engine/i.test(navigator.userAgent) || (window as any).process?.versions?.electron;
 
 const WindowTitleBar: React.FC = () => {
-  const { theme } = useApp();
-  const closeApp = () => (window as any).ipcRenderer?.send('close-window') || window.close();
-  const minApp = () => (window as any).ipcRenderer?.send('minimize-window');
-  const maxApp = () => (window as any).ipcRenderer?.send('maximize-window');
+  const getNativeWindow = () => {
+    try {
+      const w = window as any;
+      const electron = w.require?.('electron');
+      return electron?.remote?.getCurrentWindow?.();
+    } catch {
+      return null;
+    }
+  };
+
+  const closeApp = () => {
+    const nativeWindow = getNativeWindow();
+    if (nativeWindow?.close) return nativeWindow.close();
+    (window as any).ipcRenderer?.send?.('close-window');
+    window.close();
+  };
+
+  const minApp = () => {
+    const nativeWindow = getNativeWindow();
+    if (nativeWindow?.minimize) return nativeWindow.minimize();
+    (window as any).ipcRenderer?.send?.('minimize-window');
+  };
+
+  const maxApp = () => {
+    const nativeWindow = getNativeWindow();
+    if (nativeWindow?.isMaximized?.() && nativeWindow?.unmaximize) return nativeWindow.unmaximize();
+    if (nativeWindow?.maximize) return nativeWindow.maximize();
+    (window as any).ipcRenderer?.send?.('maximize-window');
+  };
 
   if (!isExe) return null;
 
@@ -69,7 +94,7 @@ const MainLayout: React.FC = () => {
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme || 'classic');
+    document.documentElement.setAttribute('data-theme', theme || 'midnight');
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
