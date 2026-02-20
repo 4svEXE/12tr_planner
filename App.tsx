@@ -15,7 +15,6 @@ import PeopleView from './views/PeopleView';
 import SettingsView from './views/SettingsView';
 import ShoppingView from './views/ShoppingView';
 import PlannerView from './views/PlannerView';
-import StrategyMap from './views/StrategyMap';
 import DeepFocus from './views/DeepFocus';
 import ListsView from './views/ListsView';
 import AiChat from './components/AiChat';
@@ -185,7 +184,7 @@ const MainLayout: React.FC = () => {
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp)).length,
-    inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && !t.projectId && !t.scheduledDate).length,
+    inbox: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.INBOX && !t.projectId && !t.scheduledDate && t.projectSection !== 'habits' && !t.tags.includes('habit')).length,
     next_actions: tasks.filter(t => !t.isDeleted && t.status === TaskStatus.NEXT_ACTION).length,
     calendar: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && !!t.scheduledDate).length,
     projects: projects.filter(p => p.type === 'goal' && p.status === 'active').length,
@@ -197,7 +196,6 @@ const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'today': return <Dashboard />;
       case 'planner': return <PlannerView projectId={plannerProjectId} onExitProjectMode={() => setPlannerProjectId(undefined)} />;
-      case 'map': return <StrategyMap />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;
       case 'diary': return <DiaryView />;

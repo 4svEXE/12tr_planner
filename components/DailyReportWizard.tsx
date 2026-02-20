@@ -25,7 +25,7 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
     addPerson, saveDiaryEntry, toggleHabitStatus, addInteraction, aiEnabled, reportTemplate = [], diary = []
   } = useApp();
 
-  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayDateStr = new Date().toLocaleDateString('en-CA');
   const hasEntryToday = useMemo(() => (diary || []).some(e => e.date === todayDateStr), [diary, todayDateStr]);
 
   const [stepIndex, setStepIndex] = useState(0);

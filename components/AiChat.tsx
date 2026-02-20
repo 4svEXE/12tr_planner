@@ -32,15 +32,18 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return;
-    
+
     const userMsg: Message = { role: 'user', text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
+      const apiKey = localStorage.getItem('GEMINI_API_KEY') || '';
+      if (!apiKey) throw new Error('API Key missing');
+
+      const ai = new GoogleGenAI({ apiKey });
+
       const systemContext = `
         Ти — Стратегічне Ядро системи 12TR. Твоя мета — допомагати Гравцю бути продуктивним через GTD та гейміфікацію.
         
@@ -56,7 +59,7 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
       `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.5-flash',
         contents: [
           { role: 'user', parts: [{ text: systemContext + "\n\nЗапит користувача: " + text }] }
         ]
@@ -83,8 +86,8 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
           <div>
             <Typography variant="h3" className="text-sm">ШІ-Стратег</Typography>
             <div className="flex items-center gap-1.5">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-               <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">Active Link</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">Active Link</span>
             </div>
           </div>
         </div>
@@ -96,35 +99,34 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
       <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 no-scrollbar">
         {messages.length === 0 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="bg-[var(--primary)]/5 p-5 rounded-3xl border border-[var(--primary)]/10 text-xs font-medium leading-relaxed italic text-slate-600">
-               "Вітаю, {character.name}. Я твій цифровий наставник. Можу розібрати хаос у вхідних, скласти план прокачки або знайти важливі факти про твоїх союзників. Чим займемося?"
-             </div>
-             
-             <div className="space-y-2">
-                <Typography variant="tiny" className="text-slate-400 px-1">Пропозиції Ядра</Typography>
-                <div className="grid grid-cols-1 gap-2">
-                   {suggestions.map(s => (
-                     <button 
-                      key={s.label}
-                      onClick={() => handleSend(s.label)}
-                      className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold text-slate-700 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all text-left"
-                     >
-                       <i className={`fa-solid ${s.icon} text-[var(--primary)] opacity-60`}></i>
-                       {s.label}
-                     </button>
-                   ))}
-                </div>
-             </div>
+            <div className="bg-[var(--primary)]/5 p-5 rounded-3xl border border-[var(--primary)]/10 text-xs font-medium leading-relaxed italic text-slate-600">
+              "Вітаю, {character.name}. Я твій цифровий наставник. Можу розібрати хаос у вхідних, скласти план прокачки або знайти важливі факти про твоїх союзників. Чим займемося?"
+            </div>
+
+            <div className="space-y-2">
+              <Typography variant="tiny" className="text-slate-400 px-1">Пропозиції Ядра</Typography>
+              <div className="grid grid-cols-1 gap-2">
+                {suggestions.map(s => (
+                  <button
+                    key={s.label}
+                    onClick={() => handleSend(s.label)}
+                    className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold text-slate-700 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all text-left"
+                  >
+                    <i className={`fa-solid ${s.icon} text-[var(--primary)] opacity-60`}></i>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
-            <div className={`max-w-[85%] p-4 rounded-2xl text-[12px] leading-relaxed ${
-              m.role === 'user' 
-                ? 'bg-[var(--primary)] text-white shadow-lg rounded-tr-none' 
-                : 'bg-white border border-slate-100 shadow-sm text-slate-800 rounded-tl-none font-medium'
-            }`}>
+            <div className={`max-w-[85%] p-4 rounded-2xl text-[12px] leading-relaxed ${m.role === 'user'
+              ? 'bg-[var(--primary)] text-white shadow-lg rounded-tr-none'
+              : 'bg-white border border-slate-100 shadow-sm text-slate-800 rounded-tl-none font-medium'
+              }`}>
               {m.text}
             </div>
           </div>
@@ -132,9 +134,9 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
         {isTyping && (
           <div className="flex justify-start">
             <div className="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-               <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce"></div>
-               <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-               <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+              <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce"></div>
+              <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+              <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]"></div>
             </div>
           </div>
         )}
@@ -143,13 +145,13 @@ const AiChat: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, on
       {/* pb-[84px] враховує висоту мобільного навбару */}
       <footer className="p-6 border-t border-[var(--border-color)] bg-white/50 pb-[84px] md:pb-6">
         <form onSubmit={e => { e.preventDefault(); handleSend(input); }} className="flex gap-2 relative">
-          <input 
+          <input
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Запитати Ядро..."
             className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3 px-4 pr-12 text-sm font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-main"
           />
-          <button 
+          <button
             type="submit"
             disabled={!input.trim() || isTyping}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center shadow-lg disabled:opacity-30 active:scale-90 transition-all"

@@ -19,8 +19,8 @@ interface ExplorerNodeProps {
 }
 
 const ExplorerNode: React.FC<ExplorerNodeProps> = ({
-  project, level, expandedFolders, selectedProjectId, 
-  onToggle, onSelect, onAddChild, onEdit, onDelete, onMoveNode, onUpdateTask, 
+  project, level, expandedFolders, selectedProjectId,
+  onToggle, onSelect, onAddChild, onEdit, onDelete, onMoveNode, onUpdateTask,
   allTasks, allProjects
 }) => {
   const isFolder = project.type === 'folder';
@@ -40,7 +40,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsLocalDragOver(false);
-    
+
     const taskId = e.dataTransfer.getData('taskId');
     const sourceProjectId = e.dataTransfer.getData('projectId');
 
@@ -52,9 +52,18 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
     }
   };
 
-  const displayEmoji = project.description && project.description.startsWith('EMOJI:') 
-    ? project.description.replace('EMOJI:', '') 
-    : (isFolder ? (isExpanded ? '📂' : '📁') : '📝');
+  const iconContent = React.useMemo(() => {
+    if (project.description?.startsWith('ICON:')) {
+      const iconName = project.description.replace('ICON:', '');
+      return <i className={`fa-solid ${iconName} text-[11px]`}></i>;
+    }
+    if (project.description?.startsWith('EMOJI:')) {
+      return <span>{project.description.replace('EMOJI:', '')}</span>;
+    }
+    return isFolder
+      ? <i className={`fa-solid ${isExpanded ? 'fa-folder-open' : 'fa-folder'} text-[11px]`}></i>
+      : <i className="fa-solid fa-rectangle-list text-[11px]"></i>;
+  }, [project.description, isFolder, isExpanded]);
 
   return (
     <div className="flex flex-col">
@@ -71,25 +80,24 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
         onDragLeave={() => setIsLocalDragOver(false)}
         onDrop={handleDrop}
         onClick={() => isFolder ? onToggle(project.id) : onSelect(project.id)}
-        className={`flex items-center py-1.5 px-3 cursor-pointer group transition-all relative rounded-xl mx-0.5 h-8 ${
-          isSelected
-            ? 'text-[var(--primary)]'
-            : isLocalDragOver
-              ? 'bg-[var(--primary)]/5 border-dashed border-2 border-[var(--primary)]'
-              : 'text-[var(--text-main)] hover:bg-black/5'
-        }`}
+        className={`flex items-center py-1 px-3 cursor-pointer group transition-all relative rounded-xl mx-0.5 h-7 ${isSelected
+          ? 'text-[var(--primary)]'
+          : isLocalDragOver
+            ? 'bg-[var(--primary)]/5 border-dashed border-2 border-[var(--primary)]'
+            : 'text-[var(--text-main)] hover:bg-black/5'
+          }`}
         style={{ marginLeft: `${level * 12}px` }}
       >
         {isFolder ? (
-          <div className="w-3 flex justify-center shrink-0 mr-1 transition-transform duration-200">
+          <div className="w-1 flex justify-center shrink-0 mr-1 transition-transform duration-200">
             <i className={`fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[7px] ${isSelected ? 'text-[var(--primary)]' : 'text-slate-400'}`}></i>
           </div>
         ) : (
-          <div className="w-3 mr-1 shrink-0" />
+          <div className="mr-1 shrink-0" />
         )}
-        
-        <span className="text-[12px] w-5 text-center shrink-0 mr-1 filter grayscale-[0.5] group-hover:grayscale-0 transition-all">
-          {displayEmoji}
+
+        <span className={`text-[12px] w-5 text-center shrink-0 mr-1 filter grayscale-[0.5] group-hover:grayscale-0 transition-all ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
+          {iconContent}
         </span>
 
         <span className={`text-[12px] font-bold truncate flex-1 tracking-tight h-full flex items-center ${isSelected ? 'border-b-2 border-[var(--primary)]' : ''}`}>{project.name}</span>
@@ -105,7 +113,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
           <button onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] ${isSelected ? 'hover:bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-rose-500/10 hover:text-rose-500 text-slate-400'}`} title="Видалити"><i className="fa-solid fa-trash-can"></i></button>
         </div>
       </div>
-      
+
       {isExpanded && (
         <div className="mt-0.5 space-y-0.5">
           {children.map(child => (
@@ -120,7 +128,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
               onAddChild={onAddChild}
               onEdit={onEdit}
               onDelete={onDelete}
-              onDeleteSection={() => {}}
+              onDeleteSection={() => { }}
               onMoveNode={onMoveNode}
               onUpdateTask={onUpdateTask}
               allTasks={allTasks}

@@ -23,19 +23,7 @@ const BriefingCard: React.FC<BriefingCardProps> = ({ aiEnabled, briefing, loadin
   }
 
   if (!aiEnabled) {
-    return (
-      <Card blur className="bg-slate-50 border-slate-100 border-dashed">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
-            <i className="fa-solid fa-robot"></i>
-          </div>
-          <div>
-            <Typography variant="h3" className="text-slate-400">AI Асистент вимкнено</Typography>
-            <Typography variant="body" className="text-slate-300">Увімкніть ШІ в налаштуваннях для отримання брифінгів.</Typography>
-          </div>
-        </div>
-      </Card>
-    );
+    return null;
   }
 
   return (
@@ -51,17 +39,17 @@ const BriefingCard: React.FC<BriefingCardProps> = ({ aiEnabled, briefing, loadin
             {briefing?.questOfDay || "Завершити найважливішу справу з беклогу."}
           </Typography>
           <div className="flex items-center gap-3 text-emerald-600">
-             <i className="fa-solid fa-circle-check text-xs"></i>
-             <Typography variant="body" className="font-bold text-[13px]">Нагорода: +500 XP & 50 Золота</Typography>
+            <i className="fa-solid fa-circle-check text-xs"></i>
+            <Typography variant="body" className="font-bold text-[13px]">Нагорода: +500 XP & 50 Золота</Typography>
           </div>
         </div>
-        
+
         <div className="w-full md:w-64 space-y-4">
           <div className="p-4 bg-white/60 rounded-2xl border border-white shadow-sm">
-             <Typography variant="tiny" className="text-slate-400 mb-2">Порада Майстра</Typography>
-             <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">
-               "{briefing?.motivation || "Найскладніший крок — перший. Зроби його зараз."}"
-             </p>
+            <Typography variant="tiny" className="text-slate-400 mb-2">Порада Майстра</Typography>
+            <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">
+              "{briefing?.motivation || "Найскладніший крок — перший. Зроби його зараз."}"
+            </p>
           </div>
         </div>
       </div>

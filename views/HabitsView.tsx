@@ -112,15 +112,20 @@ const HabitsView: React.FC = () => {
     setDraggedId(id);
     e.dataTransfer.setData('habitId', id);
     e.dataTransfer.effectAllowed = 'move';
-    const ghost = e.currentTarget as HTMLElement;
-    setTimeout(() => ghost.classList.add('opacity-40'), 0);
+    const row = e.currentTarget as HTMLElement;
+    // Створюємо кастомний image для драгу (опціонально), або просто робимо оверлей
+    setTimeout(() => {
+      row.style.opacity = '0.2';
+      row.style.background = 'var(--primary)';
+    }, 0);
   };
 
   const onDragEnd = (e: React.DragEvent) => {
     setDraggedId(null);
     setTouchTargetId(null);
-    const ghost = e.currentTarget as HTMLElement;
-    ghost.classList.remove('opacity-40');
+    const row = e.currentTarget as HTMLElement;
+    row.style.opacity = '1';
+    row.style.background = '';
   };
 
   const onDragOver = (e: React.DragEvent, id: string) => {
@@ -188,22 +193,30 @@ const HabitsView: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="primary" size="sm" icon="fa-plus" onClick={() => setIsAdding(true)} className="rounded-lg px-3 py-1.5 text-[10px]">ДОДАТИ</Button>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-70 hover:opacity-100 transition-all group"
+          >
+            <i className="fa-solid fa-plus-circle text-xs transition-transform group-hover:rotate-90"></i>
+            <span>Додати</span>
+          </button>
         </div>
       </header>
 
       <div className="flex-1 overflow-x-auto custom-scrollbar z-10 no-scrollbar">
         <div className="min-w-full inline-block align-middle p-0">
-          <table className="w-full border-separate border-spacing-0 table-fixed">
+          <table className="border-separate border-spacing-0 table-fixed">
             <thead>
               <tr className="bg-[var(--bg-main)]">
-                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-2 text-left w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem] border-b border-[var(--border-color)]">
-                  <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-[0.2em] ml-2">Активність</span>
+                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem] border-b border-[var(--border-color)]">
+                  <div className="h-full w-full flex items-center px-3 py-2">
+                    <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-[0.2em] ml-8">Звичка</span>
+                  </div>
                 </th>
                 {days.map(d => {
                   const isToday = d.dateStr === new Date().toISOString().split('T')[0];
                   return (
-                    <th key={d.dateStr} className={`p-1 w-12 text-center border-b border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
+                    <th key={d.dateStr} className={`p-1 w-16 min-w-[4rem] text-center border-b border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
                       <div className={`text-[6px] font-black uppercase leading-none mb-0.5 ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>{isToday ? 'СЬОГ' : d.label}</div>
                       <div className={`text-[9px] font-black leading-none ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.date}</div>
                     </th>
@@ -234,20 +247,27 @@ const HabitsView: React.FC = () => {
                       isTarget ? 'border-t-2 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
                       }`}
                   >
-                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-10 px-3 flex items-center gap-2 md:gap-3 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[40vw] min-w-[40vw] md:w-56 md:min-w-[14rem]" onClick={() => setSelectedHabitId(habit.id)}>
-                      <div className="relative w-6 h-6 md:w-7 md:h-7 flex items-center justify-center shrink-0">
-                        <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
-                          <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
-                          <circle cx="16" cy="16" r="14" fill="transparent" stroke={color} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - Math.min(streak, 30) / 30)} strokeLinecap="round" className="transition-all duration-700 ease-in-out" />
-                        </svg>
-                        <span className="absolute text-[6px] font-black flex flex-col items-center leading-none" style={{ color }}>
-                          <span>{streak}</span>
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
-                          {habit.title}
-                          {streak >= 3 && <span className="text-[var(--primary)] text-[7px] animate-pulse">🔥</span>}
+                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-9 p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                      <div className="flex items-center gap-2 md:gap-3 px-3 h-full w-full">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-4 flex justify-center cursor-grab active:cursor-grabbing text-slate-300 hover:text-[var(--primary)] transition-colors">
+                            <i className="fa-solid fa-grip-vertical text-[10px]"></i>
+                          </div>
+                          <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
+                            <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
+                              <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
+                              <circle cx="16" cy="16" r="14" fill="transparent" stroke={color} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - Math.min(streak, 30) / 30)} strokeLinecap="round" className="transition-all duration-700 ease-in-out" />
+                            </svg>
+                            <span className="absolute text-[7px] font-black flex flex-col items-center leading-none" style={{ color }}>
+                              <span>{streak}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] md:text-[13px] font-bold text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
+                            {habit.title}
+                            {streak >= 3 && <span className="text-[var(--primary)] text-[7px] animate-pulse">🔥</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -260,12 +280,12 @@ const HabitsView: React.FC = () => {
 
                       return (
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
-                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-10 flex flex-col items-center justify-center transition-all group/btn`}>
-                            <div className="relative">
+                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-9 flex flex-col items-center justify-center transition-all group/btn`}>
+                            <div className="relative transform transition-transform group-hover/btn:scale-110">
                               {status === 'completed' ? (
-                                <i className="fa-solid fa-check text-base" style={{ color }}></i>
+                                <i className="fa-solid fa-check text-lg" style={{ color }}></i>
                               ) : status === 'skipped' ? (
-                                <i className="fa-solid fa-xmark text-rose-500 text-base"></i>
+                                <i className="fa-solid fa-xmark text-rose-400 text-lg"></i>
                               ) : (
                                 <span className={`text-[11px] font-black transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
                               )}

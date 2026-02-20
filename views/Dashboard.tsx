@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
 import MiniCalendar from '../components/sidebar/MiniCalendar';
+import BriefingCard from '../components/dashboard/BriefingCard';
 
 const Dashboard: React.FC = () => {
   const {
@@ -23,12 +24,35 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(false);
 
   // Керування тимчасовою видимістю виконаних айтемів (5 сек)
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   const [recentHabitCompletes, setRecentHabitCompletes] = useState<Set<string>>(new Set());
+  const [briefing, setBriefing] = useState<any>(null);
+  const [isBriefingLoading, setIsBriefingLoading] = useState(false);
 
   const { detailsWidth, startResizing, isResizing } = useResizer(350, 1000);
+
+  useEffect(() => {
+    if (aiEnabled && !briefing) {
+      const fetchBriefing = async () => {
+        const key = localStorage.getItem('GEMINI_API_KEY');
+        if (!key) return;
+        setIsBriefingLoading(true);
+        try {
+          const { getCharacterDailyBriefing } = await import('../services/geminiService');
+          const data = await getCharacterDailyBriefing(character, tasks, projects);
+          setBriefing(data);
+        } catch (e) {
+          console.error("Briefing error", e);
+        } finally {
+          setIsBriefingLoading(false);
+        }
+      };
+      fetchBriefing();
+    }
+  }, [aiEnabled, character, tasks, projects, briefing]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -133,7 +157,7 @@ const Dashboard: React.FC = () => {
       const isScheduledForToday = t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp;
       if (taskFilter === 'calendar') return isScheduledForToday;
       if (taskFilter === 'projects') return !!t.projectId;
-      return isScheduledForToday || t.status === TaskStatus.NEXT_ACTION || (t.status === TaskStatus.INBOX && !t.scheduledDate && !t.projectId);
+      return isScheduledForToday || t.status === TaskStatus.NEXT_ACTION;
     });
     return active.sort((a, b) => {
       const pWeight = { [Priority.UI]: 4, [Priority.UNI]: 3, [Priority.NUI]: 2, [Priority.NUNI]: 1 };
@@ -219,10 +243,19 @@ const Dashboard: React.FC = () => {
 
   const handleAiAnalysis = async () => {
     if (!aiEnabled) return alert("Увімкніть ШІ в налаштуваннях");
+    const key = localStorage.getItem('GEMINI_API_KEY');
+    if (!key) return alert("Будь ласка, додайте Gemini API Key в налаштуваннях");
+
     setIsAiAnalyzing(true);
-    await new Promise(r => setTimeout(r, 1500));
-    alert(`ШІ аналіз: Твій KPI складає ${stats.kpi}%. Найбільший фокус зараз на сфері ${Object.entries(stats.spheres).sort((a: any, b: any) => b[1].total - a[1].total)[0][0]}. Продовжуй в тому ж дусі!`);
-    setIsAiAnalyzing(false);
+    try {
+      const { getStrategicAnalysis } = await import('../services/geminiService');
+      const analysis = await getStrategicAnalysis(character, tasks, stats);
+      alert(`ШІ АНАЛІЗ:\n\n${analysis}`);
+    } catch (error) {
+      alert("ШІ занадто зайнятий обчисленнями... Спробуйте пізніше.");
+    } finally {
+      setIsAiAnalyzing(false);
+    }
   };
 
   return (
@@ -256,6 +289,8 @@ const Dashboard: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-10 pb-32">
             {mainTab === 'tasks' ? (
               <>
+                <BriefingCard aiEnabled={aiEnabled} briefing={briefing} loading={isBriefingLoading} />
+
                 {isEveningReviewTime && (
                   <Card className="bg-[var(--primary)] text-white p-6 rounded-[2.5rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 overflow-hidden relative">
                     <div className="flex items-center gap-5 relative z-10">
@@ -320,43 +355,50 @@ const Dashboard: React.FC = () => {
 
                     <section className="space-y-4">
                       <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">Дисципліна ({habitCompletionRate}%)</Typography>
+                        <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => setIsHabitsCollapsed(!isHabitsCollapsed)}>
+                          <div className={`w-6 h-6 rounded-lg bg-[var(--primary)]/5 flex items-center justify-center transition-all group-hover:bg-[var(--primary)]/10 text-[var(--primary)]`}>
+                            <i className={`fa-solid ${isHabitsCollapsed ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`}></i>
+                          </div>
+                          <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40 group-hover:opacity-100 transition-opacity">Дисципліна ({habitCompletionRate}%)</Typography>
+                        </div>
                         <button onClick={() => setActiveTab('habits')} className="text-[8px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline">До налаштувань</button>
                       </div>
-                      <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2">
-                        {habitCompletionRate === 100 && tasks.some(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))) ? (
-                          <div className="w-full py-8 bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 rounded-[2.5rem] flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg mb-4">
-                              <i className="fa-solid fa-trophy"></i>
+                      {!isHabitsCollapsed && (
+                        <div className="flex overflow-x-auto no-scrollbar gap-1 pb-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                          {habitCompletionRate === 100 && tasks.some(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))) ? (
+                            <div className="w-full py-8 bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 rounded-[2.5rem] flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
+                              <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg mb-4">
+                                <i className="fa-solid fa-trophy"></i>
+                              </div>
+                              <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-emerald-600">Всі звички виконано!</Typography>
+                              <p className="text-[10px] font-bold mt-2 uppercase tracking-tight text-emerald-700/50 text-center px-6">
+                                Ви виконали всі свої звички {habitStreak} {habitStreak === 1 ? 'день' : (habitStreak > 1 && habitStreak < 5) ? 'дні' : 'днів'} підряд. Так тримати!
+                              </p>
                             </div>
-                            <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-emerald-600">Всі звички виконано!</Typography>
-                            <p className="text-[10px] font-bold mt-2 uppercase tracking-tight text-emerald-700/50 text-center px-6">
-                              Ви виконали всі свої звички {habitStreak} {habitStreak === 1 ? 'день' : (habitStreak > 1 && habitStreak < 5) ? 'дні' : 'днів'} підряд. Так тримати!
-                            </p>
-                          </div>
-                        ) : habitTasks.length > 0 ? (
-                          habitTasks.map(habit => {
-                            const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
-                            return (
-                              <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
-                                className={`shrink-0 w-32 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
-                                  <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
-                                </div>
-                                <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <button
-                            onClick={() => setActiveTab('habits')}
-                            className="w-full py-8 border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] bg-black/[0.02] flex flex-col items-center justify-center opacity-40 hover:opacity-100 transition-all group"
-                          >
-                            <i className="fa-solid fa-plus text-xl mb-2 text-[var(--primary)] group-hover:scale-125 transition-transform"></i>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--primary)]">Створити перший ритуал</span>
-                          </button>
-                        )}
-                      </div>
+                          ) : habitTasks.length > 0 ? (
+                            habitTasks.map(habit => {
+                              const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
+                              return (
+                                <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
+                                  className={`shrink-0 w-32 p-2 rounded-[2rem] transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50_ border-emerald-200 text-emerald-600_' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500_ text-white_ shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
+                                    <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
+                                  </div>
+                                  <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <button
+                              onClick={() => setActiveTab('habits')}
+                              className="w-full py-8 border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] bg-black/[0.02] flex flex-col items-center justify-center opacity-40 hover:opacity-100 transition-all group"
+                            >
+                              <i className="fa-solid fa-plus text-xl mb-2 text-[var(--primary)] group-hover:scale-125 transition-transform"></i>
+                              <span className="text-[9px] font-black uppercase tracking-widest text-[var(--primary)]">Створити перший ритуал</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </section>
                   </div>
 

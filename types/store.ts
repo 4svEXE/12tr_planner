@@ -9,19 +9,7 @@ import { TimeBlock, RoutinePreset } from './journal';
 import { ShoppingStore, ShoppingItem } from './shopping';
 import { ThemeType } from './base';
 
-export interface AquariumObject {
-  id: string;
-  type: 'fish' | 'decor' | 'effect';
-  species: string;
-  name: string;
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
-  scale: number;
-  flip: boolean;
-  color: string;
-  beautyPoints: number;
-  incomeBonus: number;
-}
+
 
 export interface StoreState {
   tasks: Task[];
@@ -40,7 +28,7 @@ export interface StoreState {
   aiEnabled?: boolean;
   diaryNotificationEnabled?: boolean;
   diaryNotificationTime?: string;
-  timeBlocks?: TimeBlock[]; 
+  timeBlocks?: TimeBlock[];
   blockHistory?: Record<string, Record<string, 'pending' | 'completed' | 'missed'>>;
   routinePresets?: RoutinePreset[];
   activeTab?: string;
@@ -50,12 +38,6 @@ export interface StoreState {
   updatedAt?: number;
   shoppingStores?: ShoppingStore[];
   shoppingItems?: ShoppingItem[];
-  // Fishdom Engine 2.0
-  aquariumObjects?: AquariumObject[];
-  lastGoldCollectAt?: number;
-  lastFedAt?: number;
-  foodInventory?: number;
-  aquariumBeauty?: number;
 }
 
 export interface TwelveWeekYear {

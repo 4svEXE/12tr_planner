@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, StoreState, AquariumObject, ThemeType, CalendarViewMode, ShoppingStore, ShoppingItem, Interaction, Memory, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ReportQuestion, ReportPreset, Person, TwelveWeekYear } from '../types';
+import { Task, Project, Character, Tag, Hobby, TaskStatus, Priority, StoreState, ThemeType, CalendarViewMode, ShoppingStore, ShoppingItem, Interaction, Memory, DiaryEntry, InboxCategory, TimeBlock, RoutinePreset, ReportQuestion, ReportPreset, Person, TwelveWeekYear } from '../types';
 import { generateSeedData } from '../services/seedService';
 import { db, doc, setDoc, getDoc, onSnapshot } from '../services/firebase';
 import { useAuth } from './AuthContext';
@@ -25,10 +25,7 @@ interface AppContextType extends StoreState {
   addProjectSection: (projectId: string, title: string) => void;
   renameProjectSection: (projectId: string, sectionId: string, title: string) => void;
   deleteProjectSection: (projectId: string, sectionId: string) => void;
-  buyAquariumObject: (type: 'fish' | 'decor' | 'effect', species: string, cost: number, beauty: number, income: number) => void;
-  collectAquariumGold: () => void;
-  feedFish: () => void;
-  moveAquariumObject: (id: string, x: number, y: number) => void;
+
   toggleHabitStatus: (id: string, date: string, status?: any, note?: string) => void;
   addStore: (n: string) => void;
   updateStore: (s: ShoppingStore) => void;
@@ -115,11 +112,7 @@ const ensureDefaults = (s: any): StoreState => {
     reportPresets: (s?.reportPresets && s.reportPresets.length > 0) ? s.reportPresets : seed.reportPresets,
     shoppingStores: s?.shoppingStores || [],
     shoppingItems: s?.shoppingItems || [],
-    aquariumObjects: s?.aquariumObjects || seed.aquariumObjects,
-    lastGoldCollectAt: s?.lastGoldCollectAt || Date.now(),
-    lastFedAt: s?.lastFedAt || Date.now(),
-    foodInventory: s?.foodInventory || 5,
-    aquariumBeauty: s?.aquariumBeauty || 10,
+
     character: s?.character || seed.character,
     cycle: s?.cycle || seed.cycle
   };
@@ -263,62 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
 
   if (!state) return null;
 
-  const buyAquariumObject = (type: any, species: string, cost: number, beauty: number, income: number) => {
-    pushUpdate(prev => {
-      if (prev.character.gold < cost) {
-        alert("Недостатньо золота!");
-        return prev;
-      }
-      const newObj: AquariumObject = {
-        id: Math.random().toString(36).substr(2, 9),
-        type, species, beautyPoints: beauty, incomeBonus: income,
-        name: species,
-        x: 20 + Math.random() * 60,
-        y: 20 + Math.random() * 60,
-        scale: type === 'fish' ? 0.8 + Math.random() * 0.4 : 1,
-        flip: Math.random() > 0.5,
-        color: type === 'fish' ? ['#f97316', '#0ea5e9', '#ec4899', '#facc15', '#a855f7'][Math.floor(Math.random() * 5)] : '#ffffff'
-      };
-      return {
-        ...prev,
-        aquariumObjects: [...(prev.aquariumObjects || []), newObj],
-        aquariumBeauty: (prev.aquariumBeauty || 0) + beauty,
-        character: { ...prev.character, gold: prev.character.gold - cost, updatedAt: Date.now() }
-      };
-    });
-  };
 
-  const feedFish = () => {
-    pushUpdate(prev => {
-      if ((prev.foodInventory || 0) <= 0) {
-        alert("Немає корму!");
-        return prev;
-      }
-      return {
-        ...prev,
-        foodInventory: (prev.foodInventory || 0) - 1,
-        lastFedAt: Date.now(),
-        character: { ...prev.character, xp: prev.character.xp + 20, updatedAt: Date.now() }
-      };
-    });
-  };
-
-  const collectAquariumGold = () => {
-    pushUpdate(prev => {
-      const now = Date.now();
-      const hours = (now - (prev.lastGoldCollectAt || now)) / 3600000;
-      if (hours < 1) return prev;
-      const fedHours = (now - (prev.lastFedAt || now)) / 3600000;
-      const efficiency = fedHours > 24 ? 0.1 : 1.0;
-      const baseIncome = prev.aquariumObjects?.reduce((acc, o) => acc + (o.incomeBonus || 0), 0) || 10;
-      const income = Math.floor(hours * baseIncome * efficiency);
-      return {
-        ...prev,
-        lastGoldCollectAt: now,
-        character: { ...prev.character, gold: prev.character.gold + income, updatedAt: now }
-      };
-    });
-  };
 
 
 
@@ -373,8 +311,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
           character: { ...prev.character, gold: prev.character.gold + bonusGold, xp: prev.character.xp + 50, updatedAt: Date.now() }
         };
       }),
-      buyAquariumObject, collectAquariumGold, feedFish,
-      moveAquariumObject: (id, x, y) => pushUpdate(prev => ({ ...prev, aquariumObjects: prev.aquariumObjects?.map(o => o.id === id ? { ...o, x, y } : o) })),
+
       updateProject: (p) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) })),
       addProject: (p) => {
         const id = Math.random().toString(36).substr(2, 9);
@@ -465,11 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
           if (categories.includes('routine')) { next.timeBlocks = seed.timeBlocks; next.routinePresets = []; }
           if (categories.includes('character')) {
             next.character = seed.character;
-            next.aquariumObjects = seed.aquariumObjects;
-            next.lastGoldCollectAt = Date.now();
-            next.lastFedAt = Date.now();
-            next.foodInventory = 5;
-            next.aquariumBeauty = 10;
+
           }
           return next;
         });

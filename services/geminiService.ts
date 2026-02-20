@@ -4,7 +4,8 @@ import { Character, Task, Project, TaskStatus, Person } from "../types";
 
 // Функція для отримання актуального ключа
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const key = localStorage.getItem('GEMINI_API_KEY') || '';
+  return new GoogleGenAI({ apiKey: key });
 };
 
 export const getCharacterDailyBriefing = async (character: Character, tasks: Task[], projects: Project[]) => {
@@ -28,7 +29,7 @@ export const getCharacterDailyBriefing = async (character: Character, tasks: Tas
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -74,7 +75,7 @@ export const analyzeDailyReport = async (reportContent: string, character: Chara
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -101,7 +102,7 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
   const ai = getAiClient();
   const memoriesStr = person.memories.map(m => `${m.date}: ${m.event}`).join('\n');
   const notesStr = person.notes.map(n => `${n.date}: ${n.text}`).join('\n');
-  
+
   const trustLevel = person.rating >= 51 ? 'ЛЕГЕНДАРНИЙ ПАРТНЕР' : person.rating >= 21 ? 'СОЮЗНИК' : 'ЗНАЙОМИЙ';
 
   const prompt = `
@@ -120,7 +121,7 @@ export const analyzePersonPortrait = async (person: Person, userCharacter: Chara
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -147,7 +148,7 @@ export const analyzeSocialPresence = async (platform: string, handle: string, co
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: "application/json" }
   });
@@ -159,7 +160,7 @@ export const planProjectStrategically = async (title: string, desc: string, char
   const ai = getAiClient();
   const prompt = `Допоможи спланувати проєкт: "${title}". Опис: ${desc}. Герой: ${character.name}. Відповідай JSON: {nextActions: [], subprojects: [{title: "", tasks: []}], habits: []} УКРАЇНСЬКОЮ.`;
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: "application/json" }
   });
@@ -170,9 +171,31 @@ export const processInboxWithAi = async (tasks: any[], character: Character, peo
   const ai = getAiClient();
   const prompt = `Розклади вхідні завдання по категоріях (tasks, notes, project). Герой: ${character.name}. Відомі люди: ${people.join(", ")}. Відповідай масивом JSON УКРАЇНСЬКОЮ.`;
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: "application/json" }
   });
   return JSON.parse(response.text || '[]');
+};
+
+export const getStrategicAnalysis = async (character: Character, tasks: Task[], stats: any) => {
+  const ai = getAiClient();
+  const prompt = `
+    Зіграй роль ШІ-Стратега системи 12TR.
+    Проаналізуй поточний стан Гравця:
+    - Герой: ${character.name}, LVL ${character.level}
+    - KPI: ${stats.kpi}%
+    - Баланс сфер: ${JSON.stringify(stats.spheres)}
+    - Поточні квести: ${tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE).map(t => t.title).join(', ')}
+
+    Надай лаконічний стратегічний аналіз УКРАЇНСЬКОЮ МОВОЮ (макс 120 слів). 
+    Вкажи на слабкі місця, дай пораду щодо пріоритетів та надихни.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt
+  });
+
+  return response.text || "Аналіз недоступний.";
 };

@@ -16,9 +16,9 @@ const ListsView: React.FC = () => {
   } = useApp();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  
+
   // Restore selected project preference
-  const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(() => 
+  const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(() =>
     localStorage.getItem(LISTS_PROJECT_KEY) || 'system_inbox'
   );
 
@@ -26,13 +26,13 @@ const ListsView: React.FC = () => {
     setSelectedProjectIdState(id);
     if (id) localStorage.setItem(LISTS_PROJECT_KEY, id);
   };
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  
+
   const [listModal, setListModal] = useState<{ isOpen: boolean; initialData?: any; parentId?: string } | null>(null);
-  
+
   const { detailsWidth, startResizing, isResizing } = useResizer(350, 700);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ const ListsView: React.FC = () => {
       return { id: 'system_inbox', name: 'Вхідні', color: 'var(--primary)', type: 'list', sections: [{ id: 'actions', title: 'Несортоване' }] } as any;
     }
     if (selectedProjectId === 'system_calendar') {
-      return { id: 'system_calendar', name: 'Календар', color: '#f43f5e', type: 'list', viewMode: 'timeline', sections: [{ id: 'actions', title: 'Заплановано' }] } as any;
+      return { id: 'system_calendar', name: 'Календар', color: '#f43f5e', type: 'list', sections: [{ id: 'actions', title: 'Заплановано' }] } as any;
     }
     if (selectedProjectId === 'system_notes') {
       return { id: 'system_notes', name: 'Нотатки', color: '#818cf8', type: 'list', sections: [{ id: 'actions', title: 'Всі нотатки' }] } as any;
@@ -80,7 +80,7 @@ const ListsView: React.FC = () => {
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
       {isMobile && isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] animate-in fade-in duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -91,8 +91,8 @@ const ListsView: React.FC = () => {
         ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
         h-full
       `}>
-        <ListsSidebar 
-          selectedProjectId={selectedProjectId} 
+        <ListsSidebar
+          selectedProjectId={selectedProjectId}
           onSelectProject={(id) => {
             setSelectedProjectId(id);
             if (isMobile) setIsSidebarOpen(false);
@@ -102,10 +102,10 @@ const ListsView: React.FC = () => {
           onClose={() => setIsSidebarOpen(false)}
         />
       </div>
-      
+
       <main className="flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full">
         {activeProject ? (
-          <ListContent 
+          <ListContent
             project={activeProject}
             tasks={projectTasks}
             selectedTaskId={selectedTaskId}
@@ -116,8 +116,8 @@ const ListsView: React.FC = () => {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-10">
-             <i className="fa-solid fa-layer-group text-9xl mb-4"></i>
-             <button onClick={() => setIsSidebarOpen(true)} className="px-6 py-3 bg-black text-white rounded-2xl font-black uppercase text-[10px] tracking-widest opacity-100">Відкрити списки</button>
+            <i className="fa-solid fa-layer-group text-9xl mb-4"></i>
+            <button onClick={() => setIsSidebarOpen(true)} className="px-6 py-3 bg-black text-white rounded-2xl font-black uppercase text-[10px] tracking-widest opacity-100">Відкрити списки</button>
           </div>
         )}
       </main>
@@ -137,19 +137,27 @@ const ListsView: React.FC = () => {
       </div>
 
       {isQuickAddOpen && activeProject && (
-        <QuickAddModal 
-          project={activeProject} 
-          onClose={() => setIsQuickAddOpen(false)} 
+        <QuickAddModal
+          project={activeProject}
+          onClose={() => setIsQuickAddOpen(false)}
         />
       )}
 
       {listModal?.isOpen && (
-        <ListEditModal 
+        <ListEditModal
           initialData={listModal.initialData}
           parentId={listModal.parentId}
           onClose={() => setListModal(null)}
           onSave={handleSaveListModal}
         />
+      )}
+      {isMobile && !isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed bottom-20 left-4 w-12 h-12 rounded-2xl bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xl flex items-center justify-center z-[1000] border border-[var(--border-color)] active:scale-95 transition-all"
+        >
+          <i className="fa-solid fa-bars text-lg"></i>
+        </button>
       )}
     </div>
   );

@@ -24,7 +24,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
   const [inputValue, setInputValue] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [shouldEditLastSection, setShouldEditLastSection] = useState(false);
-  
+
   const sectionInputRef = useRef<HTMLInputElement>(null);
   const taskInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,7 +58,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
     } else if (sortBy === 'date') {
       result.sort((a, b) => b.createdAt - a.createdAt);
     }
-    
+
     return result;
   }, [tasks, showCompleted, sortBy]);
 
@@ -68,17 +68,16 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
       'Майбутнє': [],
       'Без дати': []
     };
-    const today = new Date().setHours(0,0,0,0);
-
+    const todayStr = new Date().toLocaleDateString('en-CA');
     filteredTasks.forEach(t => {
       if (!t.scheduledDate) {
         groups['Без дати'].push(t);
       } else {
-        const d = new Date(t.scheduledDate).setHours(0,0,0,0);
-        if (d === today) groups['Сьогодні'].push(t);
-        else if (d > today) groups['Майбутнє'].push(t);
+        const taskDateStr = new Date(t.scheduledDate).toLocaleDateString('en-CA');
+        if (taskDateStr === todayStr) groups['Сьогодні'].push(t);
+        else if (taskDateStr > todayStr) groups['Майбутнє'].push(t);
         else {
-          const label = new Date(t.scheduledDate).toLocaleDateString('uk-UA', {day:'numeric', month:'short'});
+          const label = new Date(t.scheduledDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
           if (!groups[label]) groups[label] = [];
           groups[label].push(t);
         }
@@ -87,7 +86,7 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
     return groups;
   }, [filteredTasks]);
 
-  const sections: ProjectSectionData[] = project?.sections || [{ id: 'actions', title: 'Загальне' }];
+  const sections: ProjectSectionData[] = (project?.sections && project.sections.length > 0) ? project.sections : [{ id: 'actions', title: 'Загальне' }];
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,19 +140,19 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
   };
 
   const renderTask = (task: Task) => (
-    <TaskItem 
-      key={task.id} 
-      task={task} 
-      isSelected={selectedTaskId === task.id} 
-      isEditing={editingTaskId === task.id} 
-      inputValue={inputValue} 
-      onSelect={onSelectTask} 
-      onToggleStatus={toggleTaskStatus} 
-      onDelete={deleteTask} 
-      onInputChange={setInputValue} 
-      onFinishEdit={handleFinishTaskEdit} 
+    <TaskItem
+      key={task.id}
+      task={task}
+      isSelected={selectedTaskId === task.id}
+      isEditing={editingTaskId === task.id}
+      inputValue={inputValue}
+      onSelect={onSelectTask}
+      onToggleStatus={toggleTaskStatus}
+      onDelete={deleteTask}
+      onInputChange={setInputValue}
+      onFinishEdit={handleFinishTaskEdit}
       inputRef={taskInputRef}
-      showDetails={showDetails} 
+      showDetails={showDetails}
     />
   );
 
@@ -161,22 +160,22 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-main)] h-full overflow-hidden relative">
-      <ListHeader 
-        project={project} 
+      <ListHeader
+        project={project}
         tasks={tasks}
-        taskCount={filteredTasks.length} 
-        isMobile={isMobile} 
-        onBack={onBack} 
-        onUpdateProject={updateProject} 
-        onAddSection={handleAddSectionAction} 
+        taskCount={filteredTasks.length}
+        isMobile={isMobile}
+        onBack={onBack}
+        onUpdateProject={updateProject}
+        onAddSection={handleAddSectionAction}
       />
-      
+
       {viewMode === 'list' && !isMobile && (
         <div className="mb-1">
-          <QuickAddTask 
-            value={quickTaskValue} 
-            onChange={setQuickTaskValue} 
-            onSubmit={handleAddTask} 
+          <QuickAddTask
+            value={quickTaskValue}
+            onChange={setQuickTaskValue}
+            onSubmit={handleAddTask}
           />
         </div>
       )}
@@ -191,24 +190,24 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
 
               return (
                 <div key={section.id} className="space-y-0.5 mb-4 last:mb-0">
-                  <div 
+                  <div
                     onDragOver={e => e.preventDefault()}
                     onDrop={e => handleDropToSection(e, section.id)}
                     className="flex items-center group/sec relative h-8"
                   >
                     <div className="flex items-center gap-2 flex-1 pl-2">
                       {isSectionEditing ? (
-                        <input 
-                          ref={sectionInputRef} 
-                          autoFocus 
-                          value={inputValue} 
-                          onChange={e => setInputValue(e.target.value)} 
-                          onBlur={() => { if(inputValue.trim()) renameProjectSection(project.id, section.id, inputValue); setEditingSectionId(null); }} 
-                          onKeyDown={e => e.key === 'Enter' && (inputValue.trim() && renameProjectSection(project.id, section.id, inputValue), setEditingSectionId(null))} 
-                          className="text-[9px] font-black uppercase text-[var(--text-main)] tracking-[0.15em] bg-transparent border-b border-[var(--primary)] outline-none px-0" 
+                        <input
+                          ref={sectionInputRef}
+                          autoFocus
+                          value={inputValue}
+                          onChange={e => setInputValue(e.target.value)}
+                          onBlur={() => { if (inputValue.trim()) renameProjectSection(project.id, section.id, inputValue); setEditingSectionId(null); }}
+                          onKeyDown={e => e.key === 'Enter' && (inputValue.trim() && renameProjectSection(project.id, section.id, inputValue), setEditingSectionId(null))}
+                          className="text-[9px] font-black uppercase text-[var(--text-main)] tracking-[0.15em] bg-transparent border-b border-[var(--primary)] outline-none px-0"
                         />
                       ) : (
-                        <span 
+                        <span
                           onDoubleClick={() => { setEditingSectionId(section.id); setInputValue(section.title); }}
                           className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-[0.15em] opacity-80 shrink-0 cursor-text hover:text-[var(--text-main)] transition-colors"
                         >
@@ -238,30 +237,45 @@ const ListContent: React.FC<ListContentProps> = ({ project, tasks, selectedTaskI
               );
             })}
             {!isSystem && (
-              <button 
+              <button
                 onClick={handleAddSectionAction}
-                className="w-full mt-6 py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 hover:bg-white transition-all group flex items-center justify-center gap-2"
+                className="w-full mt-4 py-3 border border-dashed border-[var(--border-color)] opacity-40 rounded-xl text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:opacity-100 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <i className="fa-solid fa-plus-square group-hover:scale-110 transition-transform"></i>
-                Додати нову секцію
+                <i className="fa-solid fa-plus text-[10px]"></i>
+                <span>Додати секцію</span>
               </button>
             )}
           </>
         ) : (
-          /* Kanban and Timeline views rendered here ... */
-          <div className="space-y-4">
-             {/* Render other views simplified for brevity or keeping original */}
+          <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+            {Object.entries(timelineGroups).filter(([_, items]) => items.length > 0).map(([label, items]) => (
+              <div key={label} className="space-y-4">
+                <div className="flex items-center gap-4 px-2">
+                  <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] shrink-0">{label}</span>
+                  <div className="h-[1px] flex-1 bg-primary/10"></div>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5 px-1">
+                  {items.map(renderTask)}
+                </div>
+              </div>
+            ))}
+            {Object.values(timelineGroups).every(items => items.length === 0) && (
+              <div className="py-20 text-center opacity-30 flex flex-col items-center">
+                <i className="fa-solid fa-calendar-xmark text-5xl mb-4"></i>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">Немає запланованих завдань</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {isMobile && onOpenQuickAdd && (
-        <button 
+        <button
           onClick={onOpenQuickAdd}
-          className="fixed right-6 bottom-24 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[500] hover:scale-110 active:scale-95 transition-all border-4 border-white"
+          className="fixed bottom-20 right-4 w-12 h-12 rounded-2xl bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[1000] border border-[var(--border-color)] active:scale-95 transition-all"
           title="Додати завдання"
         >
-          <i className="fa-solid fa-plus text-2xl"></i>
+          <i className="fa-solid fa-plus text-lg"></i>
         </button>
       )}
     </div>

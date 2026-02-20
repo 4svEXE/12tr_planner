@@ -38,7 +38,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
     {
       title: "RPG Світ",
       items: [
-        { id: 'map', icon: 'fa-fish-fins', label: 'Акваріум', color: 'text-sky-400' },
         { id: 'focus', icon: 'fa-bullseye', label: 'Фокус', color: 'text-rose-600' },
         { id: 'people', icon: 'fa-user-ninja', label: 'Люди', color: 'text-slate-500' },
         { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки', color: 'text-amber-700' },
@@ -170,23 +169,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </aside>
 
       {/* Мобільний навбар */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-[1110] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-[1090] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
           { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
           { id: 'lists', icon: 'fa-layer-group', label: 'Списки' },
           { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
           { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
-          { id: 'menu', icon: 'fa-bars', label: 'Меню', isTrigger: true },
         ].map(item => (
           <button
             key={item.id}
-            onClick={() => item.isTrigger ? setShowMobileMenu(!showMobileMenu) : (setActiveTab(item.id), setShowMobileMenu(false))}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${(!item.isTrigger && activeTab === item.id) || (item.isTrigger && showMobileMenu) ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+            onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
           >
             <i className={`fa-solid ${item.icon} text-lg`}></i>
             <span className="text-[6px] font-black uppercase tracking-tighter mt-0.5">{item.label}</span>
           </button>
         ))}
+        {/* Бургер меню праворуч */}
+        <button
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${showMobileMenu ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+        >
+          <i className={`fa-solid ${showMobileMenu ? 'fa-xmark' : 'fa-bars'} text-lg`}></i>
+          <span className="text-[6px] font-black uppercase tracking-tighter mt-0.5">Меню</span>
+        </button>
       </div>
 
       {showMobileMenu && (

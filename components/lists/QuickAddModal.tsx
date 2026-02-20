@@ -33,12 +33,12 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
 
   const handleAdd = () => {
     if (!title.trim()) return;
-    
+
     const category = project.id === 'system_notes' ? 'note' : 'tasks';
     const pId = (project.id === 'system_inbox' || project.id === 'system_notes') ? undefined : project.id;
-    
+
     const id = addTask(title.trim(), category, pId, 'actions');
-    
+
     if (selectedDate || selectedTags.length > 0 || content.trim() || associatedPersonId) {
       const updates: any = {};
       if (selectedDate) updates.scheduledDate = selectedDate;
@@ -47,7 +47,7 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
       if (content.trim()) {
         updates.content = JSON.stringify([{ id: 'b1', type: 'text', content: content.trim() }]);
       }
-      
+
       setTimeout(() => {
         updateTask({ id, ...updates } as any);
       }, 0);
@@ -76,17 +76,16 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-end justify-center no-print">
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" 
-        onClick={onClose} 
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+        onClick={onClose}
       />
-      
-      <div 
-        className={`w-full max-w-lg bg-[var(--bg-card)] rounded-t-[2.5rem] shadow-[0_-20px_60px_rgba(0,0,0,0.2)] border-t border-[var(--border-color)] flex flex-col relative z-10 transition-all duration-500 ease-out animate-in slide-in-from-bottom-full ${
-          isExpanded ? 'h-[85vh]' : 'h-auto max-h-[70vh]'
-        }`}
+
+      <div
+        className={`w-full max-w-lg bg-[var(--bg-card)] rounded-t-[2.5rem] shadow-[0_-20px_60px_rgba(0,0,0,0.2)] border-t border-[var(--border-color)] flex flex-col relative z-10 transition-all duration-500 ease-out animate-in slide-in-from-bottom-full ${isExpanded ? 'h-[85vh]' : 'h-auto max-h-[70vh]'
+          }`}
       >
-        <div 
+        <div
           className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing"
           onClick={() => setIsExpanded(!isExpanded)}
         >
@@ -94,14 +93,18 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
         </div>
 
         <div className="px-6 pb-6 flex flex-col flex-1 overflow-hidden">
-          <input
-            ref={inputRef}
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Що потрібно зробити?"
-            className="w-full text-lg font-bold border-none p-0 focus:ring-0 placeholder:text-[var(--text-muted)] opacity-50 text-[var(--text-main)] mb-4 bg-transparent"
-          />
+          <div className="relative group/input mb-6">
+            <input
+              ref={inputRef}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Що потрібно зробити?"
+              className="w-full text-xl font-bold border-none p-0 focus:ring-0 placeholder:text-[var(--text-muted)] opacity-50 focus:opacity-100 text-[var(--text-main)] bg-transparent transition-all duration-300"
+            />
+            <div className="absolute -bottom-1 left-0 w-1/4 h-[2px] bg-gradient-to-r from-[var(--primary)] to-transparent opacity-0 group-focus-within/input:opacity-100 group-focus-within/input:w-full transition-all duration-500 rounded-full shadow-[0_2px_10px_var(--primary)]" />
+            <div className="absolute -bottom-1 left-0 w-full h-[1px] bg-[var(--border-color)] opacity-20" />
+          </div>
 
           {(isExpanded || content) && (
             <textarea
@@ -137,23 +140,23 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
           <div className="flex items-center justify-between gap-4 mt-auto">
             <div className="flex items-center gap-1">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${selectedDate ? 'bg-indigo-50 text-indigo-600' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
                 >
                   <i className="fa-regular fa-calendar text-lg"></i>
                 </button>
                 {showDatePicker && (
-                  <TaskDatePicker 
-                    task={{ scheduledDate: selectedDate } as any} 
-                    onUpdate={(u) => { setSelectedDate(u.scheduledDate); setShowDatePicker(false); }} 
-                    onClose={() => setShowDatePicker(false)} 
+                  <TaskDatePicker
+                    task={{ scheduledDate: selectedDate } as any}
+                    onUpdate={(u) => { setSelectedDate(u.scheduledDate); setShowDatePicker(false); }}
+                    onClose={() => setShowDatePicker(false)}
                   />
                 )}
               </div>
 
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowTagPicker(!showTagPicker)}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${selectedTags.length > 0 ? 'bg-amber-50 text-amber-600' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
                 >
@@ -161,11 +164,11 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
                 </button>
                 {showTagPicker && (
                   <div className="absolute bottom-full left-0 mb-2 w-64 bg-[var(--bg-card)] shadow-2xl border border-[var(--border-color)] rounded-[1.5rem] p-3 z-50 animate-in zoom-in-95 origin-bottom-left tiktok-blur">
-                    <HashtagAutocomplete 
-                      mode="tags" 
-                      value={tagInput} 
-                      onChange={setTagInput} 
-                      onSelectTag={(tag, pid) => { toggleTag(tag, pid); setTagInput(''); }} 
+                    <HashtagAutocomplete
+                      mode="tags"
+                      value={tagInput}
+                      onChange={setTagInput}
+                      onSelectTag={(tag, pid) => { toggleTag(tag, pid); setTagInput(''); }}
                       placeholder="Пошук тегів чи людей..."
                       className="mb-2"
                     />
@@ -173,7 +176,7 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
                 )}
               </div>
 
-              <button 
+              <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isExpanded ? 'bg-[var(--primary)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
               >
@@ -181,7 +184,7 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
               </button>
             </div>
 
-            <Button 
+            <Button
               disabled={!title.trim()}
               onClick={handleAdd}
               className="h-12 px-8 rounded-2xl shadow-xl shadow-[var(--primary)]/20 font-black uppercase text-[10px] tracking-[0.2em]"
@@ -190,7 +193,7 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({ project, onClose }) => {
             </Button>
           </div>
         </div>
-        
+
         <div className="h-4 md:h-0" />
       </div>
     </div>

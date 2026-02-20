@@ -1,4 +1,4 @@
-import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory, ReportQuestion, ReportPreset, AquariumObject } from '../types';
+import { Task, Project, Person, Tag, Hobby, DiaryEntry, ShoppingStore, ShoppingItem, TaskStatus, Priority, TimeBlock, Character, TwelveWeekYear, InboxCategory, ReportQuestion, ReportPreset } from '../types';
 
 export const generateSeedData = () => {
   const now = new Date();
@@ -57,21 +57,7 @@ export const generateSeedData = () => {
     { id: 'actions', title: 'Дії', icon: 'fa-bolt', isPinned: true, scope: 'actions', updatedAt: Date.now() }
   ];
 
-  const aquariumObjects: AquariumObject[] = [
-    {
-      id: 'fish-1',
-      type: 'fish',
-      species: 'Guppy',
-      name: 'Мандрівник',
-      x: 50,
-      y: 50,
-      scale: 1,
-      flip: false,
-      color: '#f97316',
-      beautyPoints: 2,
-      incomeBonus: 2
-    }
-  ];
+
 
   const character: Character = {
     name: 'Мандрівник',
@@ -88,6 +74,6 @@ export const generateSeedData = () => {
 
   return {
     tags, hobbies, projects, people: [], tasks: [], diary: [], timeBlocks, character, cycle, reportTemplate, reportPresets,
-    inboxCategories, aquariumObjects
+    inboxCategories
   };
 };
