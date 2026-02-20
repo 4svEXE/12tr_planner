@@ -151,7 +151,7 @@ const NotesView: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Пошук нотаток..." 
-              className="w-full h-7 bg-black/[0.03] border border-transparent focus:border-[var(--primary)]/30 focus:bg-white rounded-lg pl-8 pr-3 text-[11px] font-medium outline-none transition-all"
+              className="w-full h-7 bg-black/[0.03] border border-transparent focus:border-[var(--primary)]/30 focus:bg-[var(--bg-card)] rounded-lg pl-8 pr-3 text-[11px] font-medium text-[var(--text-main)] outline-none transition-all"
             />
           </div>
         </header>
@@ -230,7 +230,7 @@ const NotesView: React.FC = () => {
                 onBlur={handleFinishCreation}
                 onKeyDown={e => e.key === 'Enter' && handleFinishCreation()}
                 placeholder="Назва..."
-                className="flex-1 bg-white border border-[var(--border-color)] rounded-md px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
+                className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md px-2 text-[11px] font-bold h-6 outline-none text-[var(--text-main)] shadow-sm"
               />
             </div>
           )}
@@ -264,7 +264,7 @@ const NotesView: React.FC = () => {
         {selectedNoteId ? (
           <div className="h-full flex flex-col animate-in fade-in duration-500">
             {/* Breadcrumbs Header */}
-            <header className="h-10 border-b border-[var(--border-color)] bg-white/50 backdrop-blur-sm px-6 flex items-center gap-2 shrink-0">
+            <header className="h-10 border-b border-[var(--border-color)] bg-[var(--bg-card)]/70 backdrop-blur-sm px-6 flex items-center gap-2 shrink-0">
               {isMobile && (
                 <button onClick={() => setSelectedNoteId(null)} className="w-8 h-8 rounded-lg hover:bg-black/5 flex items-center justify-center text-slate-400 mr-2"><i className="fa-solid fa-chevron-left text-xs"></i></button>
               )}
@@ -334,7 +334,7 @@ const NotesView: React.FC = () => {
                 <Typography variant="tiny" className="font-black text-[var(--text-muted)] uppercase tracking-widest text-[9px]">Недавні зміни</Typography>
                 <div className="space-y-2">
                    {tasks.filter(t => t.category === 'note' && !t.isDeleted).sort((a,b) => b.updatedAt - a.updatedAt).slice(0, 5).map(note => (
-                     <div key={note.id} onClick={() => setSelectedNoteId(note.id)} className="p-3 bg-[var(--bg-main)] hover:bg-white rounded-xl border border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-all cursor-pointer group flex items-center gap-3">
+                     <div key={note.id} onClick={() => setSelectedNoteId(note.id)} className="p-3 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-all cursor-pointer group flex items-center gap-3">
                         <i className="fa-solid fa-file-lines text-[10px] text-[var(--text-muted)] group-hover:text-[var(--primary)]"></i>
                         <span className="text-[10px] font-bold text-[var(--text-main)] truncate flex-1 uppercase tracking-tight">{note.title}</span>
                      </div>

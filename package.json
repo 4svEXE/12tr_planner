@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "build:exe": "npx nativefier \"https://one2tr.onrender.com\" --name \"12TR Engine\" --single-instance --user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 12TR-Engine\" --internal-urls \"(one2tr\\.onrender\\.com)\" --hide-window-frame --disable-context-menu --browser-window-options \"{ \\\"webPreferences\\\": { \\\"nativeWindowOpen\\\": true, \\\"externalLinks\\\": true } }\"",
+    "build:exe": "npx nativefier \"https://one2tr.onrender.com\" --name \"12TR Engine\" --single-instance --user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 12TR-Engine\" --internal-urls \"(one2tr\\.onrender\\.com)\" --disable-context-menu --browser-window-options \"{ \\\"webPreferences\\\": { \\\"nativeWindowOpen\\\": true, \\\"externalLinks\\\": true } }\"",
     "cap:init": "npx cap init \"12TR Engine\" \"com.one2tr.engine\" --web-dir dist",
     "cap:add": "npx cap add android",
     "cap:sync": "npx cap sync",

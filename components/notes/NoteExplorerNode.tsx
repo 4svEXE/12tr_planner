@@ -77,10 +77,10 @@ const NoteExplorerNode: React.FC<NoteExplorerNodeProps> = ({
         onClick={() => isFolder ? onToggle(id) : onSelect(id)}
         className={`flex items-center gap-2 py-1 px-3 cursor-pointer group transition-all border-l-2 relative ${
           isSelected
-            ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]'
+            ? 'bg-[var(--primary)]/12 border-[var(--primary)] text-[var(--text-main)]'
             : isDragOver
               ? 'bg-[var(--primary)]/5 border-[var(--primary)]/50'
-              : 'border-transparent text-[var(--text-main)] hover:bg-black/5'
+              : 'border-transparent text-[var(--text-main)] hover:bg-[var(--bg-main)]/70'
         }`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
@@ -102,7 +102,7 @@ const NoteExplorerNode: React.FC<NoteExplorerNodeProps> = ({
             onChange={e => setInputValue(e.target.value)}
             onBlur={() => onFinishRename(id, inputValue)}
             onKeyDown={e => e.key === 'Enter' && onFinishRename(id, inputValue)}
-            className="flex-1 bg-white border border-[var(--primary)]/30 rounded px-1 text-[11px] font-bold h-6 outline-none shadow-sm"
+            className="flex-1 bg-[var(--bg-card)] border border-[var(--primary)]/30 rounded px-1 text-[11px] font-bold h-6 outline-none text-[var(--text-main)] shadow-sm"
             onClick={e => e.stopPropagation()}
           />
         ) : (
@@ -111,9 +111,9 @@ const NoteExplorerNode: React.FC<NoteExplorerNodeProps> = ({
 
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
           {isFolder && (
-            <button onClick={(e) => { e.stopPropagation(); onStartCreation('note', id); }} className="w-6 h-6 hover:bg-black/10 rounded flex items-center justify-center text-[9px] text-[var(--text-muted)] hover:text-[var(--primary)]" title="Додати нотатку"><i className="fa-solid fa-plus"></i></button>
+            <button onClick={(e) => { e.stopPropagation(); onStartCreation('note', id); }} className="w-6 h-6 hover:bg-[var(--bg-main)] rounded flex items-center justify-center text-[9px] text-[var(--text-muted)] hover:text-[var(--primary)]" title="Додати нотатку"><i className="fa-solid fa-plus"></i></button>
           )}
-          <button onClick={(e) => { e.stopPropagation(); onStartRename(id, name); }} className="w-6 h-6 hover:bg-black/10 rounded flex items-center justify-center text-[9px] text-[var(--text-muted)] hover:text-[var(--text-main)]" title="Перейменувати"><i className="fa-solid fa-pencil"></i></button>
+          <button onClick={(e) => { e.stopPropagation(); onStartRename(id, name); }} className="w-6 h-6 hover:bg-[var(--bg-main)] rounded flex items-center justify-center text-[9px] text-[var(--text-muted)] hover:text-[var(--text-main)]" title="Перейменувати"><i className="fa-solid fa-pencil"></i></button>
           <button onClick={(e) => { e.stopPropagation(); onDelete(id); }} className="w-6 h-6 hover:bg-rose-500/10 hover:text-rose-500 rounded flex items-center justify-center text-[9px] text-[var(--text-muted)]" title="Видалити"><i className="fa-solid fa-trash-can"></i></button>
         </div>
       </div>
@@ -187,7 +187,7 @@ const NoteExplorerNode: React.FC<NoteExplorerNodeProps> = ({
                    }
                 }}
                 placeholder="Назва..."
-                className="flex-1 bg-white border border-[var(--border-color)] rounded px-2 text-[11px] font-bold h-6 outline-none shadow-sm"
+                className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded px-2 text-[11px] font-bold h-6 outline-none text-[var(--text-main)] shadow-sm"
               />
             </div>
           )}

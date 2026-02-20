@@ -35,6 +35,8 @@ const WindowTitleBar: React.FC = () => {
     }
   };
 
+  const hasNativeWindowApi = !!getNativeWindow();
+
   const closeApp = () => {
     const nativeWindow = getNativeWindow();
     if (nativeWindow?.close) return nativeWindow.close();
@@ -55,7 +57,7 @@ const WindowTitleBar: React.FC = () => {
     (window as any).ipcRenderer?.send?.('maximize-window');
   };
 
-  if (!isExe) return null;
+  if (!isExe || !hasNativeWindowApi) return null;
 
   return (
     <div className="h-8 bg-[var(--bg-card)] border-b border-[var(--border-color)] flex items-center justify-between px-3 select-none z-[1000] shrink-0" style={{ WebkitAppRegion: 'drag' } as any}>
