@@ -117,7 +117,7 @@ const GoalCard: React.FC<GoalCardProps> = ({
       <div className="flex items-stretch">
         <div className="w-2 shrink-0 transition-all" style={{ backgroundColor: goal.color || 'var(--primary)' }}></div>
         <div onClick={onToggle} className="flex-1 p-4 cursor-pointer flex items-center gap-4 group">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform group-hover:scale-105 relative" style={{ backgroundColor: goal.color || 'var(--primary)' }}>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transition-transform relative" style={{ backgroundColor: goal.color || 'var(--primary)' }}>
             <i className="fa-solid fa-flag-checkered text-base md:text-lg"></i>
             {goal.sphere && (
               <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-lg bg-white shadow-md flex items-center justify-center text-[9px] text-slate-900 border border-slate-50"><i className={`fa-solid ${sphereIcons[goal.sphere] || 'fa-mountain'}`}></i></div>

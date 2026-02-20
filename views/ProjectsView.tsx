@@ -13,6 +13,7 @@ import { planProjectStrategically } from '../services/geminiService';
 import StructureView from './StructureView';
 import PlannerView from './PlannerView';
 import GoalCard from '../components/projects/GoalCard';
+import ProjectDetails from '../components/ProjectDetails';
 
 const GoalModal: React.FC<{
   onClose: () => void,
@@ -65,16 +66,7 @@ const GoalModal: React.FC<{
             <input autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text" autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Напр: Досягти фінансової свободи" className="w-full h-8 bg-[var(--bg-input)] border border-[var(--border-color)] !rounded-[4px] px-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[8px] font-black uppercase text-rose-500 mb-1 block tracking-widest">Lag Measure (Результат)</label>
-              <input autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text" value={lagMeasure} onChange={e => setLagMeasure(e.target.value)} placeholder="Напр: $10,000 капіталу" className="w-full h-8 bg-[var(--bg-input)] border border-[var(--border-color)] !rounded-[4px] px-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all" />
-            </div>
-            <div>
-              <label className="text-[8px] font-black uppercase text-emerald-600 mb-1 block tracking-widest">Lead Measure (Дія)</label>
-              <input autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text" value={leadMeasure} onChange={e => setLeadMeasure(e.target.value)} placeholder="Напр: 2 години аналізу/день" className="w-full h-8 bg-[var(--bg-input)] border border-[var(--border-color)] !rounded-[4px] px-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -162,6 +154,7 @@ const ProjectsView: React.FC = () => {
   const [activeTab, setActiveTabLocal] = useState<'active' | 'archived'>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedSphere, setSelectedSphere] = useState<string>('all');
 
   const { detailsWidth, startResizing, isResizing } = useResizer(400, 800);
@@ -264,9 +257,9 @@ const ProjectsView: React.FC = () => {
                 goal={goal}
                 isExpanded={selectedGoalId === goal.id}
                 onToggle={() => setSelectedGoalId(selectedGoalId === goal.id ? null : goal.id)}
-                onTaskClick={setSelectedTaskId}
-                onHabitClick={setSelectedHabitId}
-                onSubProjectClick={(id) => setSelectedGoalId(id)}
+                onTaskClick={(id) => { setSelectedTaskId(id); setSelectedHabitId(null); setSelectedProjectId(null); }}
+                onHabitClick={(id) => { setSelectedHabitId(id); setSelectedTaskId(null); setSelectedProjectId(null); }}
+                onSubProjectClick={(id) => { setSelectedProjectId(id); setSelectedTaskId(null); setSelectedHabitId(null); }}
                 onPlannerClick={handlePlannerClick}
                 onEdit={setEditingGoal}
                 selectedTaskId={selectedTaskId}
@@ -284,7 +277,7 @@ const ProjectsView: React.FC = () => {
       </div>
 
       <div
-        className={`bg-[var(--bg-card)] shrink-0 relative transition-none border-l border-[var(--border-color)] flex flex-col ${selectedTaskId || selectedHabitId ? '' : 'hidden lg:flex'}`}
+        className={`bg-[var(--bg-card)] shrink-0 relative transition-none border-l border-[var(--border-color)] flex flex-col ${selectedTaskId || selectedHabitId || selectedProjectId ? '' : 'hidden lg:flex'}`}
         style={!isMobile ? { width: detailsWidth } : { width: '100vw', position: 'fixed', inset: 0, zIndex: 110 }}
       >
         {!isMobile && (
@@ -299,6 +292,11 @@ const ProjectsView: React.FC = () => {
               onClose={() => setSelectedHabitId(null)}
               onUpdate={(u) => updateTask({ ...tasks.find(t => t.id === selectedHabitId)!, ...u })}
               onToggleStatus={toggleHabitStatus}
+            />
+          ) : selectedProjectId ? (
+            <ProjectDetails
+              project={projects.find(p => p.id === selectedProjectId)!}
+              onClose={() => setSelectedProjectId(null)}
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-5 grayscale pointer-events-none select-none">
