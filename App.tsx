@@ -28,49 +28,72 @@ const WindowTitleBar: React.FC = () => {
   const getNativeWindow = () => {
     try {
       const w = window as any;
-      const electron = w.require?.('electron');
-      return electron?.remote?.getCurrentWindow?.();
+      // Many Electron-based apps expose electron or remote
+      const electron = w.electron || w.require?.('electron');
+      const remote = electron?.remote || w.remote;
+      return remote?.getCurrentWindow?.() || w.nativeWindowApi;
     } catch {
       return null;
     }
   };
 
-  const hasNativeWindowApi = !!getNativeWindow();
+  const nativeWindow = getNativeWindow();
 
   const closeApp = () => {
-    const nativeWindow = getNativeWindow();
     if (nativeWindow?.close) return nativeWindow.close();
-    (window as any).ipcRenderer?.send?.('close-window');
+    if ((window as any).ipcRenderer) return (window as any).ipcRenderer.send('close-window');
     window.close();
   };
 
   const minApp = () => {
-    const nativeWindow = getNativeWindow();
     if (nativeWindow?.minimize) return nativeWindow.minimize();
-    (window as any).ipcRenderer?.send?.('minimize-window');
+    if ((window as any).ipcRenderer) return (window as any).ipcRenderer.send('minimize-window');
+    console.log('Minimize not supported in this environment');
   };
 
   const maxApp = () => {
-    const nativeWindow = getNativeWindow();
-    if (nativeWindow?.isMaximized?.() && nativeWindow?.unmaximize) return nativeWindow.unmaximize();
-    if (nativeWindow?.maximize) return nativeWindow.maximize();
-    (window as any).ipcRenderer?.send?.('maximize-window');
+    if (nativeWindow?.isMaximized?.()) {
+      if (nativeWindow.unmaximize) return nativeWindow.unmaximize();
+    } else {
+      if (nativeWindow?.maximize) return nativeWindow.maximize();
+    }
+    if ((window as any).ipcRenderer) return (window as any).ipcRenderer.send('maximize-window');
+    console.log('Maximize not supported in this environment');
   };
 
-  if (!isExe || !hasNativeWindowApi) return null;
+  // Show only if we are in the EXE
+  if (!isExe) return null;
 
   return (
     <div className="h-8 bg-[var(--bg-card)] border-b border-[var(--border-color)] flex items-center justify-between px-3 select-none z-[1000] shrink-0" style={{ WebkitAppRegion: 'drag' } as any}>
       <div className="flex items-center gap-2">
-        <div className="w-4 h-4 rounded bg-[var(--primary)] flex items-center justify-center text-[10px] text-white">
+        <div className="w-4 h-4 rounded-md bg-[var(--primary)] flex items-center justify-center text-[10px] text-white shadow-lg shadow-[var(--primary)]/20">
           <i className="fa-solid fa-mountain"></i>
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">12TR Engine</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] opacity-70">12TR Engine</span>
       </div>
       <div className="flex items-center h-full no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <button onClick={minApp} className="h-full px-3 hover:bg-black/5 text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-minus text-[10px]"></i></button>
-        <button onClick={maxApp} className="h-full px-3 hover:bg-black/5 text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-square text-[8px]"></i></button>
-        <button onClick={closeApp} className="h-full px-3 hover:bg-rose-500 hover:text-white text-[var(--text-muted)] transition-colors"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+        <button
+          onClick={minApp}
+          title="Згорнути"
+          className="h-full px-4 hover:bg-black/5 dark:hover:bg-white/5 text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center justify-center"
+        >
+          <i className="fa-solid fa-minus text-[10px]"></i>
+        </button>
+        <button
+          onClick={maxApp}
+          title="Розгорнути"
+          className="h-full px-4 hover:bg-black/5 dark:hover:bg-white/5 text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center justify-center"
+        >
+          <i className="fa-regular fa-square text-[10px]"></i>
+        </button>
+        <button
+          onClick={closeApp}
+          title="Закрити"
+          className="h-full px-4 hover:bg-rose-500 hover:text-white text-[var(--text-muted)] flex items-center justify-center"
+        >
+          <i className="fa-solid fa-xmark text-[12px]"></i>
+        </button>
       </div>
     </div>
   );
@@ -241,7 +264,7 @@ const MainLayout: React.FC = () => {
           <div className="w-24 h-24 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center text-4xl mb-6"><i className="fa-solid fa-bullseye"></i></div>
           <h2 className="text-3xl font-black mb-4">Глибокий Фокус</h2>
           <p className="text-sm text-[var(--text-muted)] max-w-xs mb-8 font-medium">Сесія концентрації без відволікань.</p>
-          <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all">УВІЙТИ В ПОТІК</button>
+          <button onClick={() => setShowFocusMode(true)} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-xl">УВІЙТИ В ПОТІК</button>
         </div>
       );
       default: return <Dashboard />;
@@ -251,7 +274,7 @@ const MainLayout: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-[var(--bg-main)]">
       <WindowTitleBar />
-      <div className="flex flex-1 text-[var(--text-main)] transition-colors duration-500 overflow-hidden">
+      <div className="flex flex-1 text-[var(--text-main)] overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
         <main className="flex-1 overflow-y-auto relative">
           {renderContent()}
@@ -268,7 +291,7 @@ const MainLayout: React.FC = () => {
           </div>
           {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
           {aiEnabled && !isAiOpen && (
-            <button onClick={() => setIsAiOpen(true)} className="fixed bottom-[80px] md:bottom-8 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[490] hover:scale-110 active:scale-95 transition-all border-4 border-white">
+            <button onClick={() => setIsAiOpen(true)} className="fixed bottom-[80px] md:bottom-8 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[490] border-4 border-white">
               <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
             </button>
           )}
@@ -282,7 +305,7 @@ const MainLayout: React.FC = () => {
 
 const App: React.FC = () => {
   const { user, isAuthModalOpen, loading } = useAuth();
-  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-[#020617]"><i className="fa-solid fa-mountain animate-pulse text-orange-500 text-4xl"></i></div>;
+  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-[#020617]"><i className="fa-solid fa-mountain text-orange-500 text-4xl"></i></div>;
   return (
     <AppProvider userId={user?.uid || 'guest'}>
       <MainLayout />

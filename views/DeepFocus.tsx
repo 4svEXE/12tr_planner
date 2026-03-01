@@ -69,8 +69,8 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
 
   if (isSetup) {
     return (
-      <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] flex flex-col items-center justify-center p-8 transition-all duration-500 animate-in fade-in">
-        <button onClick={onExit} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center transition-all">
+      <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] flex flex-col items-center justify-center p-8">
+        <button onClick={onExit} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center">
           <i className="fa-solid fa-xmark"></i>
         </button>
 
@@ -85,9 +85,9 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
               <button
                 key={m}
                 onClick={() => startTimer(m)}
-                className="py-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl text-[var(--text-main)] hover:border-[var(--primary)]/50 transition-all group shadow-sm"
+                className="py-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl text-[var(--text-main)] hover:border-[var(--primary)]/50 group shadow-sm"
               >
-                <div className="text-2xl font-black group-hover:scale-110 transition-transform">{m}</div>
+                <div className="text-2xl font-black">{m}</div>
                 <div className="text-[10px] font-black uppercase opacity-40">хвилин</div>
               </button>
             ))}
@@ -102,18 +102,18 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] flex flex-col items-center justify-center p-8 transition-none animate-in zoom-in-95 duration-500">
+    <div className="fixed inset-0 z-[200] bg-[var(--bg-main)] flex flex-col items-center justify-center p-8">
       <div className="absolute top-8 right-8 flex gap-4">
         <button
           onClick={() => { setIsActive(false); setIsSetup(true); }}
-          className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center transition-all"
+          className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center"
           title="Скинути"
         >
           <i className="fa-solid fa-rotate-left"></i>
         </button>
         <button
           onClick={onExit}
-          className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center transition-all"
+          className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 text-[var(--text-main)] flex items-center justify-center"
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
@@ -121,7 +121,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
 
       <div className="text-center space-y-12 max-w-2xl w-full">
         <div className="space-y-4">
-          <div className="text-[var(--primary)] font-black tracking-widest text-xs uppercase animate-pulse">Глибокий фокус активовано</div>
+          <div className="text-[var(--primary)] font-black tracking-widest text-xs uppercase">Глибокий фокус активовано</div>
           <h2 className="text-4xl md:text-5xl font-heading font-black text-[var(--text-main)] leading-tight opacity-20">
             ТИША. КОНЦЕНТРАЦІЯ. РЕЗУЛЬТАТ.
           </h2>
@@ -140,7 +140,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
         <div className="flex justify-center gap-6">
           <button
             onClick={() => setIsActive(!isActive)}
-            className={`px-12 py-5 rounded-3xl font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all ${isActive ? 'bg-black/5 text-[var(--text-main)] border border-[var(--border-color)]' : 'bg-[var(--primary)] text-white'
+            className={`px-12 py-5 rounded-3xl font-black text-lg shadow-2xl ${isActive ? 'bg-black/5 text-[var(--text-main)] border border-[var(--border-color)]' : 'bg-[var(--primary)] text-white'
               }`}
           >
             {isActive ? 'ПАУЗА' : 'ПРОДОВЖИТИ'}
@@ -151,7 +151,7 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
       <div className="absolute bottom-12 flex flex-col items-center gap-4">
         <div className="flex gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[var(--primary)] animate-bounce' : 'bg-[var(--text-muted)]/20'}`} style={{ animationDelay: `${i * 0.1}s` }}></div>
+            <div key={i} className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[var(--primary)]' : 'bg-[var(--text-muted)]/20'}`}></div>
           ))}
         </div>
         <div className="text-[var(--text-muted)] text-[10px] font-black tracking-[0.3em] uppercase opacity-40">

@@ -18,8 +18,14 @@ const EXPANDED_NODES_KEY = '12tr_sidebar_expanded_nodes';
 const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelectProject, onOpenListModal, isMobile, onClose }) => {
   const { projects, tasks, updateProject, deleteProject, deleteProjectSection, updateTask, setActiveTab } = useApp();
 
-  const [isCollectionsExpanded, setIsCollectionsExpanded] = useState(true);
-  const [isArchiveExpanded, setIsArchiveExpanded] = useState(true);
+  const [isCollectionsExpanded, setIsCollectionsExpanded] = useState(() => {
+    const saved = localStorage.getItem('12tr_sidebar_collections_expanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [isArchiveExpanded, setIsArchiveExpanded] = useState(() => {
+    const saved = localStorage.getItem('12tr_sidebar_archive_expanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(EXPANDED_NODES_KEY);
@@ -29,6 +35,14 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
   useEffect(() => {
     localStorage.setItem(EXPANDED_NODES_KEY, JSON.stringify(Array.from(expandedFolders)));
   }, [expandedFolders]);
+
+  useEffect(() => {
+    localStorage.setItem('12tr_sidebar_collections_expanded', JSON.stringify(isCollectionsExpanded));
+  }, [isCollectionsExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem('12tr_sidebar_archive_expanded', JSON.stringify(isArchiveExpanded));
+  }, [isArchiveExpanded]);
 
   const folders = useMemo(() =>
     projects.filter(p => p &&

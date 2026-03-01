@@ -94,18 +94,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       >
         <button
           onClick={() => setActiveTab(item.id)}
-          className={`flex-1 flex items-center gap-3 h-10 rounded-xl transition-all duration-200 relative ${isActive
+          className={`flex-1 flex items-center gap-3 h-10 rounded-xl relative ${isActive
             ? 'bg-[var(--primary)] text-white shadow-md'
-            : isDragTarget ? 'bg-[var(--primary)]/20 shadow-inner' : 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-main)]'
+            : isDragTarget ? 'bg-[var(--primary)]/20 shadow-inner' : 'text-white/40 hover:bg-white/5 hover:text-white'
             } ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
           title={isSidebarCollapsed ? item.label : ''}
         >
-          <div className={`w-5 flex justify-center text-[13px] shrink-0 ${isActive || isDragTarget ? 'text-white' : item.color}`}>
+          <div className={`w-5 flex justify-center text-[16px] shrink-0 ${isActive || isDragTarget ? 'text-white' : item.color}`}>
             <i className={`fa-solid ${item.icon}`}></i>
           </div>
-          {!isSidebarCollapsed && <span className="flex-1 text-left text-[11px] font-black tracking-tight truncate uppercase pt-0.5">{item.label}</span>}
+          {!isSidebarCollapsed && <span className="flex-1 text-left text-[11px] font-bold tracking-normal truncate uppercase pt-0.5">{item.label}</span>}
           {!isSidebarCollapsed && counts[item.id] > 0 && (
-            <span className={`h-4 min-w-[16px] flex items-center justify-center rounded-full text-[8px] font-black px-1 ${isActive ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--text-muted)]'}`}>
+            <span className={`h-4 min-w-[16px] flex items-center justify-center rounded-full text-[8px] font-bold px-1 ${isActive ? 'bg-white/20 text-white' : 'bg-black/10 text-white/40'}`}>
               {counts[item.id]}
             </span>
           )}
@@ -116,16 +116,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   return (
     <>
-      <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-60'} hidden md:flex flex-col h-screen sticky top-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] transition-all duration-300 shrink-0 z-40`}>
-        <div className="p-4 flex items-center h-16 shrink-0">
+      <aside className={`${isSidebarCollapsed ? 'w-12' : 'w-60'} hidden md:flex flex-col h-screen sticky top-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] shrink-0 z-40 transition-all duration-300`}>
+        <div className="p-2 flex items-center h-16 shrink-0">
           {!isSidebarCollapsed && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-              <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-bolt-lightning text-xs"></i></div>
-              <Typography variant="h2" className="text-sm text-[var(--text-main)] uppercase font-black pt-0.5">12TR Engine</Typography>
+            <div className="flex items-center gap-2 pl-2">
+              <div className="w-7 h-7 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-bolt-lightning text-xs"></i></div>
+              <Typography variant="h2" className="text-sm text-[var(--text-sidebar)] uppercase font-bold pt-0.5">12TR Engine</Typography>
             </div>
           )}
-          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className={`w-8 h-8 rounded-lg hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] transition-colors ${isSidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}>
-            <i className={`fa-solid ${isSidebarCollapsed ? 'fa-indent' : 'fa-outdent'}`}></i>
+          <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className={`w-8 h-8 rounded-lg hover:bg-black/10 flex items-center justify-center transition-all ${isSidebarCollapsed ? 'mx-auto' : 'ml-auto mr-1'}`} style={{ color: 'var(--text-sidebar)' }}>
+            <i className={`fa-solid ${isSidebarCollapsed ? 'fa-indent' : 'fa-outdent'} text-lg`}></i>
           </button>
         </div>
 
@@ -135,35 +135,35 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
               onClick={login}
               className={`w-full flex items-center gap-3 p-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg overflow-hidden ${isSidebarCollapsed ? 'justify-center' : 'px-4'}`}
             >
-              <i className="fa-brands fa-google text-xs"></i>
-              {!isSidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-widest">Увійти</span>}
+              <i className="fa-brands fa-google text-sm"></i>
+              {!isSidebarCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Увійти</span>}
             </button>
           ) : (
-            <div onClick={() => setActiveTab('character')} className={`flex items-center gap-3 p-1.5 rounded-2xl cursor-pointer transition-all ${activeTab === 'character' ? 'ring-2 ring-[var(--primary)] bg-[var(--primary)]/5' : 'hover:bg-black/5'} ${isSidebarCollapsed ? 'justify-center px-0' : 'px-2'}`}>
-              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm bg-card shrink-0 border border-[var(--border-color)]">
+            <div onClick={() => setActiveTab('character')} className={`flex items-center gap-2 p-1 rounded-2xl cursor-pointer ${activeTab === 'character' ? 'ring-1 ring-[var(--primary)] bg-[var(--primary)]/10' : 'hover:bg-white/5'} ${isSidebarCollapsed ? 'justify-center' : 'px-1.5'}`}>
+              <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md bg-card shrink-0 border border-white/10">
                 <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="Hero" />
               </div>
-              {!isSidebarCollapsed && <div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase truncate leading-none mb-0.5">{character.name}</div><div className="text-[7px] font-bold text-[var(--primary)] uppercase tracking-widest">LVL {character.level}</div></div>}
+              {!isSidebarCollapsed && <div className="min-w-0 flex-1"><div className="text-[10px] font-bold uppercase truncate leading-none mb-0.5" style={{ color: 'var(--text-sidebar)' }}>{character.name}</div><div className="text-[7px] font-bold text-[var(--primary)] uppercase tracking-wider">LVL {character.level}</div></div>}
             </div>
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto no-scrollbar space-y-6 pt-2">
+        <nav className="flex-1 overflow-y-auto no-scrollbar space-y-5 pt-2">
           {sections.map((section, idx) => (
             <div key={idx} className="space-y-1">
-              {!isSidebarCollapsed && <div className="px-5 mb-1"><span className="text-[7px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-40">{section.title}</span></div>}
+              {!isSidebarCollapsed && <div className="px-5 mb-1"><span className="text-[7px] font-bold uppercase tracking-[0.3em] opacity-40" style={{ color: 'var(--text-sidebar)' }}>{section.title}</span></div>}
               <div className="space-y-0.5">{section.items.map(renderItem)}</div>
             </div>
           ))}
         </nav>
 
-        <div className="p-2 border-t border-[var(--border-color)] bg-black/[0.02]">
+        <div className="p-2 border-t border-white/5 bg-black/[0.05]">
           <button
             onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center gap-3 h-10 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-slate-900 text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-black/5'} ${isSidebarCollapsed ? 'justify-center' : 'px-3'}`}
+            className={`w-full flex items-center gap-3 h-10 rounded-xl ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-md' : 'text-white/40 hover:bg-white/5 hover:text-white'} ${isSidebarCollapsed ? 'justify-center' : 'px-3'}`}
           >
-            <i className="fa-solid fa-gear text-[13px]"></i>
-            {!isSidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-tight">Опції</span>}
+            <i className="fa-solid fa-gear text-[16px]"></i>
+            {!isSidebarCollapsed && <span className="text-[10px] font-bold uppercase tracking-tight">Опції</span>}
           </button>
         </div>
       </aside>
@@ -179,34 +179,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           <button
             key={item.id}
             onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
           >
             <i className={`fa-solid ${item.icon} text-lg`}></i>
-            <span className="text-[6px] font-black uppercase tracking-tighter mt-0.5">{item.label}</span>
+            <span className="text-[6px] font-bold uppercase tracking-tighter mt-0.5">{item.label}</span>
           </button>
         ))}
         {/* Бургер меню праворуч */}
         <button
           onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all ${showMobileMenu ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl ${showMobileMenu ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
         >
           <i className={`fa-solid ${showMobileMenu ? 'fa-xmark' : 'fa-bars'} text-lg`}></i>
-          <span className="text-[6px] font-black uppercase tracking-tighter mt-0.5">Меню</span>
+          <span className="text-[6px] font-bold uppercase tracking-tighter mt-0.5">Меню</span>
         </button>
       </div>
 
       {showMobileMenu && (
-        <div className="fixed inset-0 z-[1000] bg-[var(--bg-main)] animate-in fade-in slide-in-from-bottom duration-300 flex flex-col no-print">
+        <div className="fixed inset-0 z-[1000] bg-[var(--bg-main)] flex flex-col no-print">
           <header className="p-6 border-b border-[var(--border-color)] flex justify-between items-center shrink-0 bg-[var(--bg-card)]">
             <div className="flex items-center gap-3">
               {isGuest ? (
-                <button onClick={login} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">Увійти з Google</button>
+                <button onClick={login} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase">Увійти з Google</button>
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-[4px] overflow-hidden border border-[var(--border-color)] shadow-sm">
                     <img src={user?.photoURL || character.avatarUrl} className="w-full h-full object-cover" alt="User" />
                   </div>
-                  <Typography variant="h2" className="text-xl font-black uppercase tracking-tighter text-main">Система</Typography>
+                  <Typography variant="h2" className="text-xl font-bold uppercase tracking-tighter text-main">Система</Typography>
                 </div>
               )}
             </div>
@@ -229,10 +229,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id!); setShowMobileMenu(false); }}
-                className={`flex flex-col items-center justify-center h-20 rounded-[4px] border transition-all ${activeTab === item.id ? 'bg-[var(--primary)] text-white shadow-xl border-[var(--primary)]' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:bg-black/5'}`}
+                className={`flex flex-col items-center justify-center h-20 rounded-[4px] border ${activeTab === item.id ? 'bg-[var(--primary)] text-white shadow-xl border-[var(--primary)]' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:bg-black/5'}`}
               >
                 <i className={`fa-solid ${item.icon} text-xl mb-1.5 ${activeTab === item.id ? 'text-white' : item.color}`}></i>
-                <span className="text-[7px] font-black uppercase text-center leading-tight tracking-widest px-1">{item.label}</span>
+                <span className="text-[7px] font-bold uppercase text-center leading-tight tracking-widest px-1">{item.label}</span>
               </button>
             ))}
           </div>

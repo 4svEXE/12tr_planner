@@ -55,16 +55,16 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
     [tasks]
   );
 
-  const uncompletedHabits = useMemo(() =>
-    dailyHabits.filter(h => {
-      const status = h.habitHistory?.[todayDateStr]?.status;
-      return status !== 'completed' && status !== 'skipped';
-    }),
+  const dailyHabitsForToday = useMemo(() =>
+    dailyHabits.map(h => ({
+      ...h,
+      todayStatus: h.habitHistory?.[todayDateStr]?.status || 'none'
+    })),
     [dailyHabits, todayDateStr]
   );
 
   const completedToday = useMemo(() =>
-    tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === todayDateStr),
+    tasks.filter(t => !t.isDeleted && t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === todayDateStr),
     [tasks, todayDateStr]
   );
 
@@ -435,47 +435,59 @@ const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ onClose }) => {
         const habitRefs = ans?.habitReflections || {};
         return (
           <div className="space-y-3 animate-in slide-in-from-right-4 duration-300">
-            {uncompletedHabits.length > 0 ? uncompletedHabits.map(h => (
-              <div key={h.id} className="p-5 bg-[var(--bg-card)] rounded-[4px] border-2 border-[var(--border-color)] shadow-sm space-y-4 transition-all">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-[4px] bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0"><i className="fa-solid fa-repeat text-sm"></i></div>
-                    <span className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{h.title}</span>
+            {dailyHabitsForToday.length > 0 ? dailyHabitsForToday.map(h => {
+              const status = h.todayStatus;
+              return (
+                <div key={h.id} className={`p-5 rounded-[4px] border-2 transition-all ${status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-sm'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-[4px] flex items-center justify-center shrink-0 ${status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-rose-500/10 text-rose-500'}`}>
+                        <i className={`fa-solid ${status === 'completed' ? 'fa-check' : 'fa-repeat'} text-sm`}></i>
+                      </div>
+                      <div className="min-w-0">
+                        <span className={`text-[12px] font-black uppercase block truncate ${status === 'completed' ? 'text-emerald-600' : 'text-[var(--text-main)]'}`}>{h.title}</span>
+                        {status === 'completed' && <span className="text-[7px] font-black uppercase text-emerald-400">Вже виконано</span>}
+                      </div>
+                    </div>
+                    {status !== 'completed' && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHabitStatus(h.id, todayDateStr, 'skipped', habitRefs[h.id]);
+                            if (navigator.vibrate) navigator.vibrate(10);
+                          }}
+                          className={`h-9 px-4 rounded-[4px] font-black text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 ${status === 'skipped' ? 'bg-rose-500 text-white' : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
+                        >
+                          НІ
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHabitStatus(h.id, todayDateStr, 'completed');
+                            if (navigator.vibrate) navigator.vibrate(10);
+                          }}
+                          className="h-9 px-4 rounded-[4px] bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                        >
+                          <i className="fa-solid fa-check"></i> ТАК
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleHabitStatus(h.id, todayDateStr, 'skipped', habitRefs[h.id]);
-                        if (navigator.vibrate) navigator.vibrate(10);
-                      }}
-                      className="h-9 px-4 rounded-[4px] bg-rose-500/10 text-rose-500 font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white active:scale-95 transition-all flex items-center gap-2"
-                    >
-                      НІ
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleHabitStatus(h.id, todayDateStr, 'completed');
-                        if (navigator.vibrate) navigator.vibrate(10);
-                      }}
-                      className="h-9 px-4 rounded-[4px] bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                    >
-                      <i className="fa-solid fa-check"></i> ТАК
-                    </button>
-                  </div>
+                  {status !== 'completed' && (
+                    <div className="space-y-1 mt-4">
+                      <label className="text-[7px] font-black uppercase text-slate-400 ml-1">Чому не вдалося?</label>
+                      <input
+                        value={habitRefs[h.id] || ''}
+                        onChange={e => updateAnswer(currentQuestion.id, { habitReflections: { ...habitRefs, [h.id]: e.target.value } })}
+                        placeholder="Причина чи інсайт..."
+                        className="w-full bg-[var(--bg-input)] border-none rounded-[4px] px-4 py-3 text-[11px] font-bold outline-none italic text-[var(--text-main)]"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[7px] font-black uppercase text-slate-400 ml-1">Чому не вдалося?</label>
-                  <input
-                    value={habitRefs[h.id] || ''}
-                    onChange={e => updateAnswer(currentQuestion.id, { habitReflections: { ...habitRefs, [h.id]: e.target.value } })}
-                    placeholder="Причина чи інсайт..."
-                    className="w-full bg-[var(--bg-input)] border-none rounded-[4px] px-4 py-3 text-[11px] font-bold outline-none italic text-[var(--text-main)]"
-                  />
-                </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <div className="py-20 text-center opacity-10 grayscale flex flex-col items-center select-none">
                 <i className="fa-solid fa-circle-check text-6xl mb-4 text-[var(--text-main)]"></i>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)]">Всі ритуали виконано!</p>

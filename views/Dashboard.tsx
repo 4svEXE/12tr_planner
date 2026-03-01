@@ -24,7 +24,14 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(false);
+  const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('12tr_habits_collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('12tr_habits_collapsed', JSON.stringify(isHabitsCollapsed));
+  }, [isHabitsCollapsed]);
 
   // Керування тимчасовою видимістю виконаних айтемів (5 сек)
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
@@ -143,7 +150,15 @@ const Dashboard: React.FC = () => {
       }
     }
     return streak;
-  }, [tasks]);
+  }, [tasks, dateStr]);
+
+  const currentBlock = useMemo(() => {
+    return timeBlocks?.find(b =>
+      b.dayOfWeek === currentTime.getDay() &&
+      currentTime.getHours() >= b.startHour &&
+      currentTime.getHours() < b.endHour
+    );
+  }, [timeBlocks, currentTime]);
 
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
@@ -259,21 +274,38 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)] transition-none">
-      <div className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 ${isMobile && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
+    <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
+      <div className={`flex-1 flex flex-col min-w-0 h-full ${isMobile && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
         <header className="p-4 md:p-6 bg-[var(--bg-card)] border-b border-[var(--border-color)] shrink-0">
           <div className="max-w-6xl mx-auto flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-2xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg"><i className="fa-solid fa-star"></i></div>
                 <div>
-                  <Typography variant="h1" className="text-xl font-black uppercase tracking-tight">Сьогодні</Typography>
-                  <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-50">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+                  <Typography variant="h1" className="text-xl font-bold uppercase tracking-normal">Сьогодні</Typography>
+                  <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider opacity-50">{currentTime.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
                 </div>
               </div>
+
+              {/* СЕКЦІЯ ЗАРАЗ (Moved to Header) */}
+              {currentBlock && (
+                <div className="hidden lg:flex items-center gap-3 bg-[var(--bg-main)]/50 border border-[var(--border-color)] rounded-2xl py-1.5 px-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-[var(--primary)] opacity-60">ЗАРАЗ:</span>
+                    <span className="text-[11px] font-bold text-[var(--text-main)] uppercase tracking-tight">
+                      {currentBlock.title}
+                    </span>
+                  </div>
+                  <div className="w-px h-4 bg-[var(--border-color)]"></div>
+                  <div className="text-[9px] font-bold text-[var(--text-muted)] opacity-60 tabular-nums">
+                    {currentBlock.startHour}:00 - {currentBlock.endHour}:00
+                  </div>
+                </div>
+              )}
+
               <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
-                <button onClick={() => setMainTab('tasks')} className={`px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
-                <button onClick={() => setMainTab('progress')} className={`px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
+                <button onClick={() => setMainTab('tasks')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
+                <button onClick={() => setMainTab('progress')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
               </div>
             </div>
             <div className="flex items-center gap-3 bg-black/5 px-3 py-1.5 rounded-xl border border-[var(--border-color)] overflow-hidden">
@@ -285,43 +317,34 @@ const Dashboard: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-10 transition-none">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-10">
           <div className="max-w-6xl mx-auto space-y-10 pb-32">
             {mainTab === 'tasks' ? (
               <>
                 <BriefingCard aiEnabled={aiEnabled} briefing={briefing} loading={isBriefingLoading} />
 
                 {isEveningReviewTime && (
-                  <Card className="bg-[var(--primary)] text-white p-6 rounded-[2.5rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 overflow-hidden relative">
+                  <Card className="bg-[var(--primary)] text-white p-6 rounded-[2.5rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
                     <div className="flex items-center gap-5 relative z-10">
                       <div className="w-14 h-14 rounded-3xl bg-white flex items-center justify-center text-2xl text-[var(--primary)] shadow-lg"><i className="fa-solid fa-moon"></i></div>
                       <div>
-                        <Typography variant="h2" className="text-white text-xl font-black uppercase tracking-tight drop-shadow-sm">Час підсумків</Typography>
-                        <p className="text-white font-black uppercase tracking-widest mt-1 opacity-90 text-[9px]">Отримайте XP за перемоги дня</p>
+                        <Typography variant="h2" className="text-white text-xl font-bold uppercase tracking-normal drop-shadow-sm">Час підсумків</Typography>
+                        <p className="text-white font-bold uppercase tracking-wider mt-1 opacity-90 text-[9px]">Отримайте XP за перемоги дня</p>
                       </div>
                     </div>
-                    <button onClick={() => setIsReportWizardOpen(true)} className="relative z-10 px-8 h-12 bg-white text-[var(--primary)] rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">Заповнити звіт</button>
+                    <button onClick={() => setIsReportWizardOpen(true)} className="relative z-10 px-8 h-12 bg-white text-[var(--primary)] rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl">Заповнити звіт</button>
                   </Card>
                 )}
 
-                <Card padding="none" onClick={() => { setCalendarViewMode('day'); setActiveTab('calendar'); }} className="bg-[var(--bg-card)] border-l-4 border-l-[var(--primary)] border-[var(--border-color)] py-3 px-5 rounded-[1.5rem] shadow-sm flex items-center justify-between cursor-pointer hover:bg-[var(--bg-main)]/50 transition-all">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">ЗАРАЗ:</span>
-                    <span className="text-[12px] font-black text-[var(--text-main)] uppercase">
-                      {timeBlocks?.find(b => b.dayOfWeek === currentTime.getDay() && currentTime.getHours() >= b.startHour && currentTime.getHours() < b.endHour)?.title || 'Вільний час'}
-                    </span>
-                  </div>
-                  <i className="fa-solid fa-clock-rotate-left text-[10px] text-[var(--text-muted)]"></i>
-                </Card>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   <div className="lg:col-span-8 space-y-10">
                     <section className="space-y-4">
                       <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">Квести</Typography>
+                        <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Квести</Typography>
                         <div className="flex bg-black/5 p-0.5 rounded-lg border border-[var(--border-color)]">
                           {(['all', 'projects', 'calendar'] as const).map(f => (
-                            <button key={f} onClick={() => setTaskFilter(f)} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${taskFilter === f ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>
+                            <button key={f} onClick={() => setTaskFilter(f)} className={`px-3 py-1 rounded-md text-[8px] font-bold uppercase tracking-widest ${taskFilter === f ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>
                               {f === 'all' ? 'Усі' : f === 'projects' ? 'Проєкти' : 'Час'}
                             </button>
                           ))}
@@ -336,7 +359,7 @@ const Dashboard: React.FC = () => {
                               onClick={() => setSelectedTaskId(task.id)}
                               className={`flex items-center gap-3 px-3.5 py-2.5 transition-all cursor-pointer shadow-sm rounded-xl border ${selectedTaskId === task.id ? 'bg-primary/5 border-primary/20' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}
                             >
-                              <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
+                              <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-black/5 text-transparent'}`}>
                                 <i className="fa-solid fa-check text-[8px]"></i>
                               </button>
                               <span className={`text-[12px] font-bold truncate flex-1 strike-anim ${isDone ? 'is-striking text-[var(--text-muted)] opacity-60' : 'text-[var(--text-main)]'}`}>{task.title}</span>
@@ -346,7 +369,7 @@ const Dashboard: React.FC = () => {
                         }) : (
                           <div className="py-16 bg-black/[0.02] border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] flex flex-col items-center justify-center opacity-30 grayscale select-none">
                             <i className="fa-solid fa-mountain-sun text-5xl mb-4 text-[var(--text-muted)]"></i>
-                            <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-[var(--text-muted)]">Горизонт чистий</Typography>
+                            <Typography variant="h3" className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">Горизонт чистий</Typography>
                             <p className="text-[9px] font-bold mt-2 uppercase tracking-tight">Додайте нові квести або відпочиньте</p>
                           </div>
                         )}
@@ -356,21 +379,21 @@ const Dashboard: React.FC = () => {
                     <section className="space-y-4">
                       <div className="flex justify-between items-center px-2">
                         <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => setIsHabitsCollapsed(!isHabitsCollapsed)}>
-                          <div className={`w-6 h-6 rounded-lg bg-[var(--primary)]/5 flex items-center justify-center transition-all group-hover:bg-[var(--primary)]/10 text-[var(--primary)]`}>
+                          <div className={`w-6 h-6 rounded-lg bg-[var(--primary)]/5 flex items-center justify-center group-hover:bg-[var(--primary)]/10 text-[var(--primary)]`}>
                             <i className={`fa-solid ${isHabitsCollapsed ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`}></i>
                           </div>
-                          <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40 group-hover:opacity-100 transition-opacity">Дисципліна ({habitCompletionRate}%)</Typography>
+                          <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40 group-hover:opacity-100">Дисципліна ({habitCompletionRate}%)</Typography>
                         </div>
-                        <button onClick={() => setActiveTab('habits')} className="text-[8px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline">До налаштувань</button>
+                        <button onClick={() => setActiveTab('habits')} className="text-[8px] font-bold text-[var(--primary)] uppercase tracking-widest hover:underline">До налаштувань</button>
                       </div>
                       {!isHabitsCollapsed && (
-                        <div className="flex overflow-x-auto no-scrollbar gap-1 pb-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                        <div className="flex overflow-x-auto no-scrollbar gap-1 pb-2">
                           {habitCompletionRate === 100 && tasks.some(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))) ? (
-                            <div className="w-full py-8 bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 rounded-[2.5rem] flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
+                            <div className="w-full py-8 bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 rounded-[2.5rem] flex flex-col items-center justify-center">
                               <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg mb-4">
                                 <i className="fa-solid fa-trophy"></i>
                               </div>
-                              <Typography variant="h3" className="text-sm font-black uppercase tracking-widest text-emerald-600">Всі звички виконано!</Typography>
+                              <Typography variant="h3" className="text-sm font-bold uppercase tracking-widest text-emerald-600">Всі звички виконано!</Typography>
                               <p className="text-[10px] font-bold mt-2 uppercase tracking-tight text-emerald-700/50 text-center px-6">
                                 Ви виконали всі свої звички {habitStreak} {habitStreak === 1 ? 'день' : (habitStreak > 1 && habitStreak < 5) ? 'дні' : 'днів'} підряд. Так тримати!
                               </p>
@@ -380,21 +403,21 @@ const Dashboard: React.FC = () => {
                               const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                               return (
                                 <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
-                                  className={`shrink-0 w-32 p-2 rounded-[2rem] transition-all flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50_ border-emerald-200 text-emerald-600_' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
+                                  className={`shrink-0 w-32 p-2 rounded-[2rem] flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50_ border-emerald-200 text-emerald-600_' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500_ text-white_ shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
                                     <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
                                   </div>
-                                  <span className="text-[9px] font-black uppercase text-center leading-tight truncate w-full">{habit.title}</span>
+                                  <span className="text-[9px] font-bold uppercase text-center leading-tight truncate w-full">{habit.title}</span>
                                 </button>
                               );
                             })
                           ) : (
                             <button
                               onClick={() => setActiveTab('habits')}
-                              className="w-full py-8 border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] bg-black/[0.02] flex flex-col items-center justify-center opacity-40 hover:opacity-100 transition-all group"
+                              className="w-full py-8 border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] bg-black/[0.02] flex flex-col items-center justify-center opacity-40 hover:opacity-100 group"
                             >
-                              <i className="fa-solid fa-plus text-xl mb-2 text-[var(--primary)] group-hover:scale-125 transition-transform"></i>
-                              <span className="text-[9px] font-black uppercase tracking-widest text-[var(--primary)]">Створити перший ритуал</span>
+                              <i className="fa-solid fa-plus text-xl mb-2 text-[var(--primary)]"></i>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--primary)]">Створити перший ритуал</span>
                             </button>
                           )}
                         </div>
@@ -405,20 +428,20 @@ const Dashboard: React.FC = () => {
                   <div className="lg:col-span-4 space-y-10">
                     <section className="space-y-4">
                       <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">Гарячі дедлайни</Typography>
+                        <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Гарячі дедлайни</Typography>
                         <i className="fa-solid fa-bolt text-rose-500 text-[10px] animate-pulse"></i>
                       </div>
                       <div className="space-y-2">
                         {urgentDeadlines.length > 0 ? urgentDeadlines.map(ev => (
-                          <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50 transition-all">
+                          <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50">
                             <div className="min-w-0 flex-1">
-                              <div className="text-[11px] font-black truncate uppercase text-[var(--text-main)]">{ev.title}</div>
+                              <div className="text-[11px] font-bold truncate uppercase text-[var(--text-main)]">{ev.title}</div>
                               <div className="text-[8px] font-bold text-rose-600 uppercase mt-0.5">Термін: {new Date(ev.dueDate!).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                           </Card>
                         )) : (
                           <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Жодних термінових справ</p>
+                            <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Жодних термінових справ</p>
                           </div>
                         )}
                       </div>
@@ -426,8 +449,8 @@ const Dashboard: React.FC = () => {
 
                     <section className="space-y-4">
                       <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">Радар подій</Typography>
-                        <button onClick={() => { setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--primary)] hover:scale-110 transition-transform"><i className="fa-solid fa-calendar-days text-[10px]"></i></button>
+                        <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Радар подій</Typography>
+                        <button onClick={() => { setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--primary)]"><i className="fa-solid fa-calendar-days text-[10px]"></i></button>
                       </div>
                       <div className="space-y-2">
                         {upcomingRadarEvents.length > 0 ? upcomingRadarEvents.map(ev => (
@@ -436,13 +459,13 @@ const Dashboard: React.FC = () => {
                               <i className={`fa-solid ${ev.status === TaskStatus.DONE ? 'fa-check' : 'fa-calendar-day'} text-xs`}></i>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className={`text-[10px] font-black truncate uppercase ${ev.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{ev.title}</div>
+                              <div className={`text-[10px] font-bold truncate uppercase ${ev.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{ev.title}</div>
                               <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.scheduledDate!).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}</div>
                             </div>
                           </Card>
                         )) : (
                           <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Тиждень без великих подій</p>
+                            <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Тиждень без великих подій</p>
                           </div>
                         )}
                       </div>
@@ -451,7 +474,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="space-y-10">
                 <Card className="bg-[var(--bg-card)] border-[var(--border-color)] p-8 rounded-[2.5rem] shadow-xl">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
@@ -465,8 +488,8 @@ const Dashboard: React.FC = () => {
                       return (
                         <div key={sphere.key} className="space-y-3">
                           <div className="flex justify-between items-end">
-                            <span className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest">{sphere.label}</span>
-                            <span className="text-sm font-black text-[var(--text-main)]">{percent}%</span>
+                            <span className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest">{sphere.label}</span>
+                            <span className="text-sm font-bold text-[var(--text-main)]">{percent}%</span>
                           </div>
                           <div className="h-2 bg-black/5 rounded-full overflow-hidden">
                             <div className={`h-full ${sphere.color === 'rose' ? 'bg-rose-500' : sphere.color === 'indigo' ? 'bg-[var(--primary)]' : sphere.color === 'emerald' ? 'bg-emerald-500' : 'bg-cyan-500'}`} style={{ width: `${percent}%` }}></div>
@@ -477,13 +500,13 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-5">
-                      <div className="w-16 h-16 rounded-[2rem] bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] text-2xl font-black shadow-inner">{stats.kpi}%</div>
+                      <div className="w-16 h-16 rounded-[2rem] bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] text-2xl font-bold shadow-inner">{stats.kpi}%</div>
                       <div>
-                        <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest">Ефективність</Typography>
-                        <div className="text-base font-black text-[var(--text-main)] uppercase tracking-tight">Виконано {stats.doneCount} квестів</div>
+                        <Typography variant="tiny" className="text-[var(--text-muted)] font-bold uppercase tracking-widest">Ефективність</Typography>
+                        <div className="text-base font-bold text-[var(--text-main)] uppercase tracking-tight">Виконано {stats.doneCount} квестів</div>
                       </div>
                     </div>
-                    <button onClick={handleAiAnalysis} disabled={isAiAnalyzing} className="w-full md:w-auto flex items-center justify-center gap-3 bg-[var(--text-main)] text-[var(--bg-main)] px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+                    <button onClick={handleAiAnalysis} disabled={isAiAnalyzing} className="w-full md:w-auto flex items-center justify-center gap-3 bg-[var(--text-main)] text-[var(--bg-main)] px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl disabled:opacity-50">
                       {isAiAnalyzing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles text-[var(--primary)]"></i>} ШІ Аналіз Циклу
                     </button>
                   </div>
@@ -495,17 +518,17 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div
-        className={`bg-[var(--bg-card)] shrink-0 relative transition-none border-l border-[var(--border-color)] flex flex-col ${selectedTaskId ? '' : 'hidden lg:flex'}`}
+        className={`bg-[var(--bg-card)] shrink-0 relative border-l border-[var(--border-color)] flex flex-col ${selectedTaskId ? '' : 'hidden lg:flex'}`}
         style={!isMobile ? { width: detailsWidth } : { width: '100vw', position: 'fixed', inset: 0, zIndex: 1100 }}
       >
-        {!isMobile && <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] transition-colors -ml-0.5 ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent hover:bg-primary/20'}`} />}
+        {!isMobile && <div onMouseDown={startResizing} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] -ml-0.5 ${isResizing ? 'bg-[var(--primary)]' : 'bg-transparent hover:bg-primary/20'}`} />}
         <div className="w-full h-full flex flex-col">
           {selectedTaskId ? (
             <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
           ) : (
             <div className="h-full w-full flex flex-col items-center justify-center p-12 text-center opacity-5 grayscale pointer-events-none select-none">
               <i className="fa-solid fa-ghost text-9xl mb-8"></i>
-              <Typography variant="h2" className="text-2xl font-black uppercase tracking-widest">Двигун у спокої</Typography>
+              <Typography variant="h2" className="text-2xl font-bold uppercase tracking-widest">Двигун у спокої</Typography>
             </div>
           )}
         </div>

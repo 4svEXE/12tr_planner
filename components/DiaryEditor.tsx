@@ -140,14 +140,14 @@ const EditableBlock: React.FC<{
 
   const getBlockStyle = () => {
     switch (block.type) {
-      case 'h1': return "text-[26px] font-black tracking-tight leading-tight text-[var(--text-main)]";
-      case 'h2': return "text-[22px] font-black tracking-tight leading-snug text-[var(--text-main)]";
-      case 'h3': return "text-[18px] font-bold leading-normal text-[var(--text-main)]";
-      case 'quote': return "italic text-[var(--text-muted)] font-medium leading-relaxed";
-      case 'task': return `text-[14px] font-medium ${block.checked ? 'line-through opacity-50' : 'text-[var(--text-main)]'}`;
-      case 'bullet': return "text-[14px] font-medium text-[var(--text-main)]";
+      case 'h1': return "text-[26px] font-bold tracking-tight leading-tight text-[var(--text-main)]";
+      case 'h2': return "text-[22px] font-bold tracking-tight leading-snug text-[var(--text-main)]";
+      case 'h3': return "text-[18px] font-semibold leading-normal text-[var(--text-main)]";
+      case 'quote': return "italic text-[var(--text-muted)] font-normal leading-relaxed";
+      case 'task': return `text-[14px] font-normal ${block.checked ? 'line-through opacity-50' : 'text-[var(--text-main)]'}`;
+      case 'bullet': return "text-[14px] font-normal text-[var(--text-main)]";
       case 'divider': return "w-full opacity-40";
-      default: return "text-[14px] leading-[1.4] opacity-90 font-medium text-[var(--text-main)] tracking-normal";
+      default: return "text-[14px] leading-[1.4] opacity-90 font-normal text-[var(--text-main)] tracking-normal";
     }
   };
 
@@ -306,7 +306,14 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ id, date, onClose, standalone
   }, [currentId, initialContent, standaloneMode, diary]);
 
   const handleManualSave = () => {
-    if (blocks.length === 0) return;
+    // Перевірка на "порожність": якщо є хоча б один блок з текстом або спеціальним типом
+    const isActuallyEmpty = blocks.every(b => {
+      const cleanContent = b.content.replace(/<[^>]*>?/gm, '').trim();
+      return cleanContent === '' && b.type !== 'divider' && b.type !== 'task' && b.type !== 'bullet';
+    });
+
+    if (isActuallyEmpty) return;
+
     const contentStr = JSON.stringify(blocks);
     if (standaloneMode) { onContentChange?.(contentStr); }
     else {

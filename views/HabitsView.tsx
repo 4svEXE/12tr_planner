@@ -24,6 +24,8 @@ const HabitsView: React.FC = () => {
     localStorage.setItem(HABITS_TAB_KEY, tab);
   };
 
+  const [isEditMode, setIsEditMode] = useState(false);
+
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -56,7 +58,7 @@ const HabitsView: React.FC = () => {
       return {
         label: d.toLocaleString('uk-UA', { weekday: 'short' }).toUpperCase(),
         date: d.getDate(),
-        dateStr: d.toISOString().split('T')[0],
+        dateStr: d.toLocaleDateString('en-CA'),
         timestamp: d.getTime(),
         dayOfWeek: (d.getDay() + 6) % 7
       };
@@ -73,7 +75,7 @@ const HabitsView: React.FC = () => {
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = d.toLocaleDateString('en-CA');
       const dow = (d.getDay() + 6) % 7;
       const status = history[ds]?.status || 'none';
 
@@ -176,17 +178,17 @@ const HabitsView: React.FC = () => {
     <div className="h-screen flex flex-col bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden relative">
       <header className="z-20 bg-[var(--bg-card)] border-b border-[var(--border-color)] px-5 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <Typography variant="h2" className="text-lg font-black">Звички</Typography>
+          <Typography variant="h2" className="text-lg font-bold">Звички</Typography>
           <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)] ml-2">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
+              className={`px-3 py-1 rounded-md text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
               Активні
             </button>
             <button
               onClick={() => setActiveTab('archived')}
-              className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
+              className={`px-3 py-1 rounded-md text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
               Архів
             </button>
@@ -195,10 +197,17 @@ const HabitsView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-70 hover:opacity-100 transition-all group"
+            className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--primary)] opacity-70 hover:opacity-100 transition-all group"
           >
             <i className="fa-solid fa-plus-circle text-xs transition-transform group-hover:rotate-90"></i>
             <span>Додати</span>
+          </button>
+          <button
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={`flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${isEditMode ? 'text-emerald-500' : 'text-[var(--text-muted)] opacity-70 hover:opacity-100'}`}
+          >
+            <i className={`fa-solid ${isEditMode ? 'fa-check' : 'fa-arrow-up-down-paragraph-horizontal'} text-xs`}></i>
+            <span>{isEditMode ? 'ГОТОВО' : 'ПОРЯДОК'}</span>
           </button>
         </div>
       </header>
@@ -210,15 +219,15 @@ const HabitsView: React.FC = () => {
               <tr className="bg-[var(--bg-main)]">
                 <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem] border-b border-[var(--border-color)]">
                   <div className="h-full w-full flex items-center px-3 py-2">
-                    <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-[0.2em] ml-8">Звичка</span>
+                    <span className="text-[7px] font-bold uppercase text-[var(--text-muted)] tracking-[0.2em] ml-8">Звичка</span>
                   </div>
                 </th>
                 {days.map(d => {
-                  const isToday = d.dateStr === new Date().toISOString().split('T')[0];
+                  const isToday = d.dateStr === new Date().toLocaleDateString('en-CA');
                   return (
                     <th key={d.dateStr} className={`p-1 w-16 min-w-[4rem] text-center border-b border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
-                      <div className={`text-[6px] font-black uppercase leading-none mb-0.5 ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>{isToday ? 'СЬОГ' : d.label}</div>
-                      <div className={`text-[9px] font-black leading-none ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.date}</div>
+                      <div className={`text-[6px] font-bold uppercase leading-none mb-0.5 ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>{isToday ? 'СЬОГ' : d.label}</div>
+                      <div className={`text-[9px] font-bold leading-none ${isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.date}</div>
                     </th>
                   );
                 })}
@@ -236,21 +245,21 @@ const HabitsView: React.FC = () => {
                   <tr
                     key={habit.id}
                     data-id={habit.id}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, habit.id)}
+                    draggable={isEditMode}
+                    onDragStart={(e) => isEditMode && onDragStart(e, habit.id)}
                     onDragEnd={onDragEnd}
-                    onDragOver={(e) => onDragOver(e, habit.id)}
-                    onDrop={(e) => onDrop(e, habit.id)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    className={`group transition-all duration-200 ${isItemDragged ? 'z-50 bg-[var(--bg-card)] shadow-2xl scale-[1.02] border-y border-[var(--primary)]' :
-                      isTarget ? 'border-t-2 border-t-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'hover:bg-[var(--bg-main)]/30'
+                    onDragOver={(e) => isEditMode && onDragOver(e, habit.id)}
+                    onDrop={(e) => isEditMode && onDrop(e, habit.id)}
+                    onTouchMove={isEditMode ? handleTouchMove : undefined}
+                    onTouchEnd={isEditMode ? handleTouchEnd : undefined}
+                    className={`group transition-all duration-200 ${isItemDragged ? 'z-50 bg-[var(--bg-card)] shadow-2xl scale-[1.01] opacity-40' :
+                      isTarget ? 'border-t-[3px] border-t-indigo-500 bg-indigo-50/30' : 'hover:bg-[var(--bg-main)]/30'
                       }`}
                   >
                     <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-9 p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="flex items-center gap-2 md:gap-3 px-3 h-full w-full">
                         <div className="flex items-center gap-2 shrink-0">
-                          <div className="w-4 flex justify-center cursor-grab active:cursor-grabbing text-slate-300 hover:text-[var(--primary)] transition-colors">
+                          <div className={`w-4 flex justify-center transition-all ${isEditMode ? 'cursor-grab active:cursor-grabbing text-[var(--primary)] scale-110' : 'text-slate-300 opacity-0 w-0 overflow-hidden'}`}>
                             <i className="fa-solid fa-grip-vertical text-[10px]"></i>
                           </div>
                           <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
@@ -258,7 +267,7 @@ const HabitsView: React.FC = () => {
                               <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
                               <circle cx="16" cy="16" r="14" fill="transparent" stroke={color} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - Math.min(streak, 30) / 30)} strokeLinecap="round" className="transition-all duration-700 ease-in-out" />
                             </svg>
-                            <span className="absolute text-[7px] font-black flex flex-col items-center leading-none" style={{ color }}>
+                            <span className="absolute text-[7px] font-bold flex flex-col items-center leading-none" style={{ color }}>
                               <span>{streak}</span>
                             </span>
                           </div>
@@ -275,7 +284,7 @@ const HabitsView: React.FC = () => {
                       const dayData = habit.habitHistory?.[d.dateStr] || { status: 'none' };
                       const status = dayData.status;
                       const hasNote = !!dayData.note;
-                      const isToday = d.dateStr === new Date().toISOString().split('T')[0];
+                      const isToday = d.dateStr === new Date().toLocaleDateString('en-CA');
                       const isScheduled = scheduledDays.includes(d.dayOfWeek);
 
                       return (
@@ -287,7 +296,7 @@ const HabitsView: React.FC = () => {
                               ) : status === 'skipped' ? (
                                 <i className="fa-solid fa-xmark text-rose-400 text-lg"></i>
                               ) : (
-                                <span className={`text-[11px] font-black transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
+                                <span className={`text-[11px] font-bold transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
                               )}
                               {hasNote && <div className="absolute -top-1.5 -right-1.5 w-1.5 h-1.5 bg-[var(--primary)] rounded-full border-2 border-white shadow-sm"></div>}
                             </div>
@@ -317,7 +326,7 @@ const HabitsView: React.FC = () => {
           <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
             <header className="flex justify-between items-center mb-6">
               <div className="flex flex-col">
-                <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-black text-[8px]">
+                <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-bold text-[8px]">
                   {days.find(d => d.dateStr === activeCell.dateStr)?.label}, {days.find(d => d.dateStr === activeCell.dateStr)?.date}
                 </Typography>
                 <Typography variant="h2" className="text-lg">Відмітити звичку</Typography>
@@ -339,7 +348,7 @@ const HabitsView: React.FC = () => {
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
                     <i className="fa-solid fa-check text-emerald-500"></i>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">ВИКОНАНО</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">ВИКОНАНО</span>
                 </button>
 
                 <button
@@ -352,12 +361,12 @@ const HabitsView: React.FC = () => {
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
                     <i className="fa-solid fa-xmark text-slate-500"></i>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">ПРОПУЩЕНО</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">ПРОПУЩЕНО</span>
                 </button>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest ml-1">Коментар / Інсайт</label>
+                <label className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest ml-1">Коментар / Інсайт</label>
                 <textarea
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
@@ -367,10 +376,10 @@ const HabitsView: React.FC = () => {
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
+                <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
                 <button
                   onClick={() => { toggleHabitStatus(activeCell.habitId, activeCell.dateStr, undefined, reportText); setActiveCell(null); }}
-                  className="flex-[2] py-3.5 bg-[var(--primary)] text-white rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+                  className="flex-[2] py-3.5 bg-[var(--primary)] text-white rounded-2xl font-bold uppercase tracking-widest text-[9px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
                 >
                   ЗБЕРЕГТИ ЗВІТ
                 </button>
@@ -387,7 +396,7 @@ const HabitsView: React.FC = () => {
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>
             <form onSubmit={handleCreateHabit} className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest">Назва звички</label>
+                <label className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest">Назва звички</label>
                 <input autoFocus value={newHabitTitle} onChange={(e) => setNewHabitTitle(e.target.value)} placeholder="Напр: Медитація" className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-[var(--text-main)]" />
               </div>
               <div className="flex gap-3">

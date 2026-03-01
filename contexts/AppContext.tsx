@@ -322,7 +322,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       addProjectSection: (pId, title) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(p => p.id === pId ? { ...p, sections: [...(p.sections || []), { id: Math.random().toString(36).substr(2, 5), title }], updatedAt: Date.now() } : p) })),
       renameProjectSection: (pId, sId, title) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(p => p.id === pId ? { ...p, sections: p.sections?.map(s => s.id === sId ? { ...s, title } : s), updatedAt: Date.now() } : p) })),
       deleteProjectSection: (pId, sId) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(p => p.id === pId ? { ...p, sections: p.sections?.filter(s => s.id !== sId), updatedAt: Date.now() } : p) })),
-      toggleHabitStatus: (id, d, s, note) => pushUpdate(prev => ({ ...prev, tasks: prev.tasks.map(t => t.id === id ? { ...t, habitHistory: { ...(t.habitHistory || {}), [d]: { status: s || 'completed', note } }, updatedAt: Date.now() } : t) })),
+      toggleHabitStatus: (id, d, s, note) => pushUpdate(prev => {
+        const newStatus = s || 'completed';
+        const habit = prev.tasks.find(t => t.id === id);
+        const oldStatus = habit?.habitHistory?.[d]?.status || 'none';
+
+        const isNowDone = newStatus === 'completed';
+        const wasDone = oldStatus === 'completed';
+
+        let bonusGold = 0;
+        let bonusXp = 0;
+
+        if (isNowDone && !wasDone) {
+          bonusGold = 10;
+          bonusXp = 25;
+        } else if (!isNowDone && wasDone) {
+          bonusGold = -10;
+          bonusXp = -25;
+        }
+
+        return {
+          ...prev,
+          tasks: prev.tasks.map(t => t.id === id ? { ...t, habitHistory: { ...(t.habitHistory || {}), [d]: { status: newStatus, note: note !== undefined ? note : (habit?.habitHistory?.[d]?.note) } }, updatedAt: Date.now() } : t),
+          character: {
+            ...prev.character,
+            gold: Math.max(0, prev.character.gold + bonusGold),
+            xp: Math.max(0, prev.character.xp + bonusXp),
+            updatedAt: Date.now()
+          }
+        };
+      }),
       addStore: (name) => {
         const id = Math.random().toString(36).substr(2, 9);
         pushUpdate(prev => ({ ...prev, shoppingStores: [...(prev.shoppingStores || []), { id, name, icon: 'fa-shop', color: '#6366f1', updatedAt: Date.now(), ownerEmail: user?.email || 'guest' }] }));

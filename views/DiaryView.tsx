@@ -28,6 +28,12 @@ const DiaryView: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const dailyHabits = useMemo(() =>
+    tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))),
+    [tasks]
+  );
+
+
   const sortedDiary = useMemo(() => {
     return [...diary].sort((a, b) => {
       if (b.date !== a.date) return b.date.localeCompare(a.date);
@@ -80,49 +86,50 @@ const DiaryView: React.FC = () => {
     }
   };
 
-  const renderInlineCalendar = () => {
+  const renderSidebarCalendar = () => {
     return (
-      <div className={`bg-[var(--bg-card)] border-b border-[var(--border-color)] transition-all duration-300 overflow-hidden ${isCalendarExpanded ? 'pb-4' : 'pb-2'}`}>
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-between py-2 mb-2">
-            <Typography variant="tiny" className="text-[var(--text-main)] font-black capitalize text-[10px] tracking-widest">
-              {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
-            </Typography>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="w-7 h-7 rounded-lg hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-left text-[8px]"></i></button>
-              <button onClick={() => setIsCalendarExpanded(!isCalendarExpanded)} className="px-2 h-7 rounded-lg hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center gap-2 transition-all">
-                <i className={`fa-solid ${isCalendarExpanded ? 'fa-chevron-up' : 'fa-calendar-week'} text-[10px]`}></i>
-                <span className="text-[8px] font-black uppercase">{isCalendarExpanded ? 'Згорнути' : 'Місяць'}</span>
+      <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] border border-slate-100 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <Typography variant="tiny" className="text-slate-800 font-bold capitalize text-[9px] tracking-widest">
+            {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
+          </Typography>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="w-6 h-6 rounded-lg hover:bg-black/5 text-slate-400 flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-left text-[7px]"></i></button>
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="w-6 h-6 rounded-lg hover:bg-black/5 text-slate-400 flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-right text-[7px]"></i></button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => (
+            <div key={w} className="text-[7px] font-bold text-slate-400 opacity-40 text-center uppercase mb-1">{w}</div>
+          ))}
+          {calendarDays.map((date, i) => {
+            if (!date) return <div key={`empty-${i}`} className="h-7" />;
+            const ds = date.toLocaleDateString('en-CA');
+            const isSelected = selectedDate === ds;
+            const hasEntry = diary.some(e => e.date === ds);
+            const isToday = ds === new Date().toLocaleDateString('en-CA');
+
+            return (
+              <button
+                key={ds}
+                onClick={() => {
+                  setSelectedDate(ds);
+                  if (!hasEntry) setEditingEntryId('new');
+                  else {
+                    const entry = diary.find(e => e.date === ds);
+                    if (entry) setEditingEntryId(entry.id);
+                  }
+                }}
+                className={`h-7 rounded-xl flex flex-col items-center justify-center relative transition-all group ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-black/5'}`}
+              >
+                <span className={`text-[9px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-indigo-600' : 'text-slate-600'}`}>{date.getDate()}</span>
+                {hasEntry && (
+                  <div className={`w-0.5 h-0.5 rounded-full mt-0.5 ${isSelected ? 'bg-white' : 'bg-indigo-500'}`}></div>
+                )}
               </button>
-              <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="w-7 h-7 rounded-lg hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-right text-[8px]"></i></button>
-            </div>
-          </div>
-
-          <div className={`grid grid-cols-7 gap-1 transition-all duration-500`}>
-            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => (
-              <div key={w} className="text-[7px] font-black text-[var(--text-muted)] opacity-30 text-center uppercase mb-1">{w}</div>
-            ))}
-            {calendarDays.map((date, i) => {
-              if (!date) return <div key={`empty-${i}`} className="h-10 md:h-12" />;
-              const ds = date.toLocaleDateString('en-CA');
-              const isSelected = selectedDate === ds;
-              const hasEntry = diary.some(e => e.date === ds);
-              const isToday = ds === new Date().toLocaleDateString('en-CA');
-
-              return (
-                <button
-                  key={ds}
-                  onClick={() => { setSelectedDate(ds); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1)); }}
-                  className={`h-10 md:h-12 rounded-2xl flex flex-col items-center justify-center relative transition-all group ${isSelected ? 'bg-[var(--primary)] text-white shadow-lg' : 'hover:bg-black/5'}`}
-                >
-                  <span className={`text-[10px] md:text-sm font-black ${isSelected ? 'text-white' : isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{date.getDate()}</span>
-                  {hasEntry && (
-                    <div className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-[var(--primary)]'}`}></div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -135,12 +142,12 @@ const DiaryView: React.FC = () => {
           <div className="flex justify-between items-center h-12">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shadow-sm"><i className="fa-solid fa-book-open text-xs"></i></div>
-              <Typography variant="h1" className="text-lg md:text-2xl font-black uppercase tracking-tighter">Щоденник</Typography>
+              <Typography variant="h1" className="text-lg md:text-2xl font-bold uppercase tracking-tighter">Щоденник</Typography>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsReportWizardOpen(true)}
-                className="px-4 h-9 md:h-10 bg-[var(--primary)] text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-[var(--primary)]/20 transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                className="px-4 h-9 md:h-10 bg-[var(--primary)] text-white rounded-xl text-[9px] font-bold uppercase shadow-lg shadow-[var(--primary)]/20 transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
               >
                 Звіт дня
               </button>
@@ -148,72 +155,151 @@ const DiaryView: React.FC = () => {
           </div>
         </header>
 
-        {renderInlineCalendar()}
-
         <div className="flex-1 flex overflow-hidden">
-          <aside className="w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
-            <div className="p-4 bg-indigo-50/50 rounded-3xl border border-indigo-100 mb-4">
-              <Typography variant="tiny" className="text-indigo-600 font-black mb-2 uppercase text-[8px] tracking-widest">Статистика</Typography>
-              <div className="text-2xl font-black text-slate-800">{diary.length}</div>
-              <div className="text-[7px] font-black uppercase text-slate-400">Всього записів</div>
-            </div>
-            <Button variant="primary" className="w-full rounded-2xl shadow-xl font-black uppercase text-[10px] tracking-widest" onClick={() => { setEditingEntryId('new'); }}>НОВИЙ ЗАПИС</Button>
-          </aside>
+          {/* CENTER: LIST OF ENTRIES */}
+          <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 bg-[var(--bg-main)]/30 relative">
+            {/* Timeline Line */}
+            <div className="absolute left-[3.5rem] md:left-[6.2rem] top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[var(--border-color)] to-transparent opacity-30 hidden md:block"></div>
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-8 bg-[var(--bg-main)]/30">
-            <div className="w-full space-y-6 pb-40">
+            <div className="max-w-3xl mx-auto space-y-12 pb-40">
               {Object.entries(groupedByMonth).length > 0 ? (Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, monthEntries]) => (
-                <div key={month} className="space-y-3">
-                  <div className="flex items-center gap-3 px-2">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-40">{month}</span>
-                    <div className="h-px flex-1 bg-[var(--border-color)] opacity-20"></div>
+                <div key={month} className="space-y-6">
+                  {/* Broad Sticky Month Header */}
+                  <div className="sticky top-0 z-20 pt-4 pb-2 bg-gradient-to-b from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
+                    <div className="flex items-center justify-between gap-4 py-2.5 px-6 rounded-2xl border border-[var(--border-color)] bg-white/80 backdrop-blur-md shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-800">{month}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{monthEntries.length} записів</span>
+                        <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                        <span className="text-[9px] font-bold text-indigo-400 uppercase"><i className="fa-solid fa-book-open mr-1"></i> Архів</span>
+                      </div>
+                    </div>
                   </div>
-                  {monthEntries.map(entry => {
-                    const dateParts = entry.date.split('-').map(Number);
-                    const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                    let title = 'Запис';
-                    try {
-                      const blocks = JSON.parse(entry.content);
-                      title = blocks.find((b: any) => b.content && b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
-                    } catch (e) { title = entry.content.split('\n')[0].trim(); }
 
-                    const isSelected = selectedDate === entry.date;
+                  <div className="space-y-3">
+                    {monthEntries.map(entry => {
+                      const dateParts = entry.date.split('-').map(Number);
+                      const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                      let title = 'Запис';
+                      try {
+                        const blocks = JSON.parse(entry.content);
+                        title = blocks.find((b: any) => b.content && b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
+                      } catch (e) { title = entry.content.split('\n')[0].trim(); }
 
-                    return (
-                      <Card key={entry.id} padding="none" onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
-                        className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-[2rem] cursor-pointer overflow-hidden transition-all group ${isSelected ? 'ring-1 ring-[var(--primary)] border-[var(--primary)] shadow-xl' : 'shadow-sm hover:shadow-md'}`}>
-                        <div className="flex items-center gap-5 p-4 md:p-6 relative">
-                          <div className="w-10 md:w-14 flex flex-col items-center shrink-0 border-r border-[var(--border-color)] pr-4">
-                            <span className="text-[8px] md:text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
-                            <span className={`text-base md:text-2xl font-black transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className={`text-[14px] md:text-base font-black truncate block uppercase tracking-tight ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{title}</span>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="indigo" className="text-[7px] py-0 px-1.5">{entry.date}</Badge>
-                              <span className="text-[7px] font-black text-[var(--text-muted)] uppercase opacity-30">Updated {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
+                      const isSelected = selectedDate === entry.date && editingEntryId === entry.id;
+
+                      return (
+                        <div key={entry.id} className="relative pl-0 md:pl-20 group">
+                          {/* Timeline Dot */}
+                          <div className={`absolute left-[5.55rem] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-[3px] border-[var(--bg-main)] shadow-sm hidden md:block z-10 transition-all duration-300 ${isSelected ? 'bg-indigo-600 scale-125' : 'bg-slate-300 group-hover:bg-indigo-400'}`}></div>
+
+                          <Card padding="none" onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
+                            className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-2xl cursor-pointer overflow-hidden transition-all group/card ${isSelected ? 'ring-2 ring-indigo-500 border-transparent shadow-2xl scale-[1.01]' : 'shadow-sm hover:shadow-lg hover:border-indigo-200'}`}>
+                            <div className="flex items-center gap-4 p-3 md:p-4 relative">
+                              <div className="w-10 md:w-12 flex flex-col items-center shrink-0 border-r border-slate-100 pr-4">
+                                <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase mb-0.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
+                                <span className={`text-base md:text-xl font-bold transition-colors ${isSelected ? 'text-indigo-600' : 'text-slate-800'}`}>{d.getDate()}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-[12px] md:text-[14px] font-bold truncate block transition-all ${isSelected ? 'text-indigo-600' : 'text-slate-800'}`}>{title}</span>
+                                {dailyHabits.length > 0 && (
+                                  <div className="flex items-center gap-1.5 mt-2">
+                                    <div className="flex items-center gap-1 text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                                      <i className="fa-regular fa-clock text-[8px] text-indigo-400"></i>
+                                      {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                    <div className="w-0.5 h-0.5 rounded-full bg-slate-200"></div>
+                                    <div className="flex items-center gap-1.5 text-[7px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 px-1.5 py-0.5 rounded">
+                                      <i className="fa-solid fa-repeat text-[7px]"></i>
+                                      {dailyHabits.filter(h => h.habitHistory?.[entry.date]?.status === 'completed').length} / {dailyHabits.length}
+                                    </div>
+                                    <div className="w-0.5 h-0.5 rounded-full bg-slate-200"></div>
+                                    <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                                      {entry.date.replaceAll('-', '.')}
+                                    </div>
+                                  </div>
+                                )}
+                                {dailyHabits.length === 0 && (
+                                  <div className="flex items-center gap-3 mt-2">
+                                    <div className="flex items-center gap-1.5 text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                                      <i className="fa-regular fa-clock text-[8px] text-indigo-400"></i>
+                                      {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                    <div className="w-0.5 h-0.5 rounded-full bg-slate-200"></div>
+                                    <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                                      {entry.date.replaceAll('-', '.')}
+                                    </div>
+                                  </div>
+                                )}
+
+                              </div>
+                              <div className="opacity-0 group-hover/card:opacity-100 transition-all flex gap-1">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditingEntryId(entry.id); }}
+                                  className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                >
+                                  <i className="fa-solid fa-pen-nib text-[10px]"></i>
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteEntry(e, entry.id)}
+                                  className="w-8 h-8 rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                >
+                                  <i className="fa-solid fa-trash-can text-[10px]"></i>
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                          <button
-                            onClick={(e) => handleDeleteEntry(e, entry.id)}
-                            className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center shadow-sm"
-                          >
-                            <i className="fa-solid fa-trash-can text-[10px]"></i>
-                          </button>
+                          </Card>
                         </div>
-                      </Card>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )) : (
-                <div className="py-24 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
-                  <i className="fa-solid fa-feather-pointed text-8xl mb-6"></i>
-                  <Typography variant="h2" className="text-2xl font-black uppercase tracking-[0.2em]">Історія порожня</Typography>
-                  <p className="text-xs font-bold uppercase tracking-widest mt-2">Час написати перший розділ...</p>
+                <div className="py-32 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
+                  <div className="w-32 h-32 rounded-[3.5rem] bg-indigo-50 flex items-center justify-center mb-8 rotate-12">
+                    <i className="fa-solid fa-feather-pointed text-6xl text-indigo-600"></i>
+                  </div>
+                  <Typography variant="h2" className="text-3xl font-bold uppercase tracking-[0.3em] text-slate-800">Історія порожня</Typography>
+                  <p className="text-sm font-bold uppercase tracking-widest mt-4 text-slate-400">Час написати перший розділ вашої легенди...</p>
                 </div>
               )}
             </div>
           </main>
+
+          {/* RIGHT: CALENDAR & STATS */}
+          <aside className="w-80 p-8 hidden lg:flex flex-col gap-6 border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
+            <div className="space-y-6">
+              <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl border border-indigo-100/50 shadow-sm relative overflow-hidden">
+                <div className="relative z-10">
+                  <Typography variant="tiny" className="text-indigo-600 font-black mb-1 uppercase text-[9px] tracking-[0.2em] opacity-60">Статистика</Typography>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-slate-800 tracking-tighter">{diary.length}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">глав</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                <Button variant="primary" className="w-full py-4 rounded-2xl shadow-xl shadow-indigo-200 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-[1.02] active:scale-95" onClick={() => { setEditingEntryId('new'); }}>
+                  <i className="fa-solid fa-plus mr-2"></i> НОВИЙ ЗАПИС
+                </Button>
+              </div>
+
+              {renderSidebarCalendar()}
+            </div>
+
+            <div className="mt-auto p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <Typography variant="tiny" className="text-slate-400 font-black mb-3 uppercase text-[8px] tracking-widest block text-center">Цифрова Пам'ять</Typography>
+              <div className="flex justify-center gap-1">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className={`h-8 w-1.5 rounded-full ${i <= (Math.min(5, Math.ceil(diary.length / 5))) ? 'bg-indigo-400' : 'bg-slate-200'}`} />
+                ))}
+              </div>
+            </div>
+          </aside>
         </div>
 
         {isMobile && !editingEntryId && (

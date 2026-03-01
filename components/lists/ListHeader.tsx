@@ -64,25 +64,23 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMo
           style={{ backgroundColor: project.color || 'var(--primary)' }}
         >
           <i className={`fa-solid ${project.id === 'system_inbox' ? 'fa-inbox' :
-              project.id === 'system_calendar' ? 'fa-calendar-day' :
-                project.id === 'system_notes' ? 'fa-note-sticky' : 'fa-list-check'
+            project.id === 'system_calendar' ? 'fa-calendar-day' :
+              project.id === 'system_notes' ? 'fa-note-sticky' : 'fa-list-check'
             }`}></i>
         </div>
         <div className="min-w-0">
           {isSystem ? (
-            <Typography variant="h2" className="text-base md:text-lg font-black uppercase tracking-tight text-[var(--text-main)]">
+            <Typography variant="h2" className="text-base md:text-lg font-bold uppercase tracking-tight text-[var(--text-main)]">
               {project.name}
             </Typography>
           ) : (
             <input
               value={project.name}
               onChange={e => onUpdateProject({ ...project, name: e.target.value })}
-              className="text-base md:text-lg font-black uppercase tracking-tight bg-transparent border-none p-0 focus:ring-0 w-full outline-none text-[var(--text-main)]"
+              className="text-base md:text-lg font-bold uppercase tracking-tight bg-transparent border-none p-0 focus:ring-0 w-full outline-none text-[var(--text-main)]"
             />
           )}
-          <Typography variant="tiny" className="text-[var(--text-muted)] text-[7px] uppercase tracking-widest leading-none">
-            {taskCount} елементів • {project.viewMode || 'list'}
-          </Typography>
+
         </div>
       </div>
 
@@ -119,7 +117,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMo
                     className={`flex-1 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${project.viewMode === v.id || (!project.viewMode && v.id === 'list') ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                   >
                     <i className={`fa-solid ${v.icon} text-[10px]`}></i>
-                    <span className="text-[5px] font-black uppercase tracking-tighter">{v.label}</span>
+                    <span className="text-[5px] font-bold uppercase tracking-tighter">{v.label}</span>
                   </button>
                 ))}
               </div>

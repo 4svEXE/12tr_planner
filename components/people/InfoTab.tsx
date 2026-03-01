@@ -4,19 +4,41 @@ import Typography from '../ui/Typography';
 import Badge from '../ui/Badge';
 
 const ALL_QUESTIONS = [
-  { id: 'q1', text: 'Яку каву чи чай полюбляє?', icon: 'fa-mug-hot' },
-  { id: 'q2', text: 'Куди мріє поїхати у відпустку?', icon: 'fa-plane-departure' },
-  { id: 'q3', text: 'Яка остання книга чи фільм вразили?', icon: 'fa-book-open' },
-  { id: 'q4', text: 'Чи є домашні улюбленці? Як звати?', icon: 'fa-dog' },
-  { id: 'q5', text: 'Яку свою рису вважає "суперсилою"?', icon: 'fa-bolt' },
-  { id: 'q6', text: 'Він/вона жайворонок чи сова?', icon: 'fa-moon' },
-  { id: 'q7', text: 'Яку музику слухає для фокусу?', icon: 'fa-music' },
-  { id: 'q8', text: 'Ким мріяв/ла стати в дитинстві?', icon: 'fa-rocket' },
-  { id: 'q9', text: 'Що найбільше цінує в людях?', icon: 'fa-heart' },
-  { id: 'q10', text: 'Чого найбільше боїться у професії?', icon: 'fa-ghost' },
-  { id: 'q11', text: 'Інтроверт чи екстраверт?', icon: 'fa-user-group' },
-  { id: 'q12', text: 'Улюблена кухня чи страва?', icon: 'fa-utensils' },
-  { id: 'q13', text: 'Який прихований талант має?', icon: 'fa-star' }
+  // Спільні (всім)
+  { id: 'q1', text: 'Яку каву чи чай полюбляє?', icon: 'fa-mug-hot', availableFor: ['friend', 'colleague', 'family', 'mentor', 'acquaintance'] },
+  { id: 'q11', text: 'Інтроверт чи екстраверт?', icon: 'fa-user-group', availableFor: ['friend', 'colleague', 'family', 'mentor', 'acquaintance'] },
+  { id: 'q12', text: 'Улюблена кухня чи страва?', icon: 'fa-utensils', availableFor: ['friend', 'colleague', 'family', 'mentor', 'acquaintance'] },
+
+  // Друзі
+  { id: 'q2', text: 'Куди мріє поїхати у відпустку?', icon: 'fa-plane-departure', availableFor: ['friend', 'acquaintance'] },
+  { id: 'q3', text: 'Яка остання книга чи фільм вразили?', icon: 'fa-book-open', availableFor: ['friend'] },
+  { id: 'q8', text: 'Ким мріяв/ла стати в дитинстві?', icon: 'fa-rocket', availableFor: ['friend', 'family'] },
+  { id: 'q19', text: 'Яке хобі займає весь вільний час?', icon: 'fa-puzzle-piece', availableFor: ['friend'] },
+  { id: 'q20', text: 'Який ідеальний вихідний для нього/неї?', icon: 'fa-sun', availableFor: ['friend'] },
+
+  // Колеги
+  { id: 'q10', text: 'Чого найбільше боїться у професії?', icon: 'fa-ghost', availableFor: ['colleague', 'mentor'] },
+  { id: 'q5', text: 'Яку свою рису вважає "суперсилою"?', icon: 'fa-bolt', availableFor: ['colleague', 'mentor'] },
+  { id: 'q6', text: 'Він/вона жайворонок чи сова?', icon: 'fa-moon', availableFor: ['colleague'] },
+  { id: 'q21', text: 'Найкращий спосіб для комунікації (текст/дзвінок)?', icon: 'fa-comments', availableFor: ['colleague'] },
+  { id: 'q22', text: 'Який робочий інструмент вважає незамінним?', icon: 'fa-screwdriver-wrench', availableFor: ['colleague'] },
+
+  // Сім'я
+  { id: 'q9', text: 'Що найбільше цінує в людях?', icon: 'fa-heart', availableFor: ['family', 'friend'] },
+  { id: 'q14', text: 'Яку сімейну традицію обожнює?', icon: 'fa-home', availableFor: ['family'] },
+  { id: 'q13', text: 'Який прихований талант має?', icon: 'fa-star', availableFor: ['family', 'friend'] },
+  { id: 'q23', text: 'Який спогад з дитинства є найтеплішим?', icon: 'fa-cloud-sun', availableFor: ['family'] },
+
+  // Ментор
+  { id: 'q15', text: 'Яка порада змінила його/її життя?', icon: 'fa-lightbulb', availableFor: ['mentor'] },
+  { id: 'q16', text: 'Яку помилку вважає головним уроком?', icon: 'fa-graduation-cap', availableFor: ['mentor'] },
+  { id: 'q17', text: 'Що надихає розвиватися далі?', icon: 'fa-up-long', availableFor: ['mentor'] },
+  { id: 'q24', text: 'Яку книгу радить прочитати кожному?', icon: 'fa-book', availableFor: ['mentor', 'friend'] },
+
+  // Знайомі
+  { id: 'q4', text: 'Чи є домашні улюбленці? Як звати?', icon: 'fa-dog', availableFor: ['acquaintance', 'friend'] },
+  { id: 'q25', text: 'В якій сфері зараз працює/розвивається?', icon: 'fa-briefcase', availableFor: ['acquaintance'] },
+  { id: 'q26', text: 'Де ми вперше познайомилися?', icon: 'fa-location-dot', availableFor: ['acquaintance'] }
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -44,10 +66,14 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
 
   const availableQuestions = useMemo(() => {
     return ALL_QUESTIONS.filter(q => {
+      // Фільтруємо за типом зв'язку
+      const isRelevant = !q.availableFor || q.availableFor.includes(person.status);
+      if (!isRelevant) return false;
+
       const alreadyAnswered = person.notes?.some(n => n.text.includes(q.text));
       return !alreadyAnswered;
     });
-  }, [person.notes]);
+  }, [person.notes, person.status]);
 
   const currentQuestions = useMemo(() => availableQuestions.slice(0, 3), [availableQuestions]);
 
@@ -76,17 +102,17 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
       <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="bg-[var(--bg-main)] p-4 rounded-[1.8rem] border border-[var(--border-color)] flex items-center justify-between gap-3 group/select relative transition-all hover:bg-[var(--bg-card)] hover:shadow-sm">
           <div className="min-w-0 flex-1">
-             <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase text-[7px] mb-1.5 tracking-[0.2em]">Роль у системі</Typography>
-             <div className="relative flex items-center">
-                <select 
-                  value={person.status} 
-                  onChange={e => onUpdate({ ...person, status: e.target.value })} 
-                  className="w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase focus:ring-4 focus:ring-[var(--primary)]/10 py-2.5 px-3 outline-none cursor-pointer text-[var(--text-main)] appearance-none pr-10 transition-all shadow-sm"
-                >
-                  {relationshipTypes.map(t => <option key={t} value={t} className="bg-[var(--bg-card)]">{STATUS_LABELS[t] || t}</option>)}
-                </select>
-                <i className="fa-solid fa-chevron-down absolute right-3.5 text-[8px] text-[var(--text-muted)] pointer-events-none transition-transform group-hover/select:translate-y-0.5"></i>
-             </div>
+            <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase text-[7px] mb-1.5 tracking-[0.2em]">Роль у системі</Typography>
+            <div className="relative flex items-center">
+              <select
+                value={person.status}
+                onChange={e => onUpdate({ ...person, status: e.target.value })}
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase focus:ring-4 focus:ring-[var(--primary)]/10 py-2.5 px-3 outline-none cursor-pointer text-[var(--text-main)] appearance-none pr-10 transition-all shadow-sm"
+              >
+                {relationshipTypes.map(t => <option key={t} value={t} className="bg-[var(--bg-card)]">{STATUS_LABELS[t] || t}</option>)}
+              </select>
+              <i className="fa-solid fa-chevron-down absolute right-3.5 text-[8px] text-[var(--text-muted)] pointer-events-none transition-transform group-hover/select:translate-y-0.5"></i>
+            </div>
           </div>
         </div>
 
@@ -94,9 +120,9 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
           <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase text-[7px] mb-2.5 tracking-[0.2em] text-center">Цикл зв'язку</Typography>
           <div className="flex justify-between gap-1">
             {loops.map(l => (
-              <button 
-                key={l.val} 
-                onClick={() => onUpdate({ ...person, loop: l.val })} 
+              <button
+                key={l.val}
+                onClick={() => onUpdate({ ...person, loop: l.val })}
                 className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase transition-all border ${person.loop === l.val ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-lg' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--primary)]/20'}`}
               >
                 {l.label}
@@ -117,7 +143,7 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
           <div className="grid grid-cols-1 gap-2">
             {currentQuestions.map(q => (
               <div key={q.id} className={`px-5 py-4 bg-[var(--bg-main)] border rounded-[1.5rem] transition-all ${activeInputId === q.id ? 'border-[var(--primary)] bg-[var(--bg-card)] ring-4 ring-[var(--primary)]/5' : 'border-[var(--border-color)] hover:bg-[var(--bg-card)] hover:border-[var(--primary)]/30 shadow-sm'}`}>
-                <div 
+                <div
                   onClick={() => { setActiveInputId(q.id); setInputValue(''); }}
                   className="flex items-center gap-4 cursor-pointer"
                 >
@@ -143,25 +169,25 @@ const InfoTab: React.FC<InfoTabProps> = ({ person, onUpdate, relationshipTypes }
         <div className="space-y-2">
           {(person.notes || []).map(note => (
             <div key={note.id} className="group bg-[var(--bg-card)] p-4 rounded-[1.5rem] border border-[var(--border-color)] shadow-sm transition-all hover:border-[var(--primary)]/30">
-               {editingNoteId === note.id ? (
-                 <div className="flex gap-2">
-                    <input autoFocus value={editNoteValue} onChange={e => setEditNoteValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && (onUpdate({...person, notes: person.notes.map(n => n.id === note.id ? {...n, text: editNoteValue} : n)}), setEditingNoteId(null))} className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-[var(--text-main)]" />
-                    <button onClick={() => {onUpdate({...person, notes: person.notes.map(n => n.id === note.id ? {...n, text: editNoteValue} : n)}); setEditingNoteId(null);}} className="text-emerald-50 font-black text-[9px] uppercase">OK</button>
-                 </div>
-               ) : (
-                 <div className="flex justify-between items-start gap-4">
-                    <p className="text-[12px] font-bold text-[var(--text-main)] leading-relaxed flex-1">{note.text}</p>
-                    <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button onClick={() => { setEditingNoteId(note.id); setEditNoteValue(note.text); }} className="text-[var(--text-muted)] hover:text-[var(--primary)]"><i className="fa-solid fa-pen text-[9px]"></i></button>
-                       <button onClick={() => onUpdate({...person, notes: person.notes.filter(n => n.id !== note.id)})} className="text-[var(--text-muted)] hover:text-rose-500"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
-                    </div>
-                 </div>
-               )}
+              {editingNoteId === note.id ? (
+                <div className="flex gap-2">
+                  <input autoFocus value={editNoteValue} onChange={e => setEditNoteValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && (onUpdate({ ...person, notes: person.notes.map(n => n.id === note.id ? { ...n, text: editNoteValue } : n) }), setEditingNoteId(null))} className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-[var(--text-main)]" />
+                  <button onClick={() => { onUpdate({ ...person, notes: person.notes.map(n => n.id === note.id ? { ...n, text: editNoteValue } : n) }); setEditingNoteId(null); }} className="text-emerald-50 font-black text-[9px] uppercase">OK</button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-start gap-4">
+                  <p className="text-[12px] font-bold text-[var(--text-main)] leading-relaxed flex-1">{note.text}</p>
+                  <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => { setEditingNoteId(note.id); setEditNoteValue(note.text); }} className="text-[var(--text-muted)] hover:text-[var(--primary)]"><i className="fa-solid fa-pen text-[9px]"></i></button>
+                    <button onClick={() => onUpdate({ ...person, notes: person.notes.filter(n => n.id !== note.id) })} className="text-[var(--text-muted)] hover:text-rose-500"><i className="fa-solid fa-trash-can text-[9px]"></i></button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {(!person.notes || person.notes.length === 0) && (
             <div className="text-center py-8 bg-[var(--bg-main)]/50 rounded-[2rem] border border-dashed border-[var(--border-color)]">
-               <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40">Фактів ще немає</p>
+              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40">Фактів ще немає</p>
             </div>
           )}
         </div>

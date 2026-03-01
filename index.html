@@ -8,12 +8,37 @@
   <title>12TR: Ігровий Двигун Життя</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'system-ui', 'sans-serif'],
+            heading: ['Montserrat', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          letterSpacing: {
+            tighter: '-0.04em',
+            tight: '-0.02em',
+            normal: '0',
+            wide: '0.02em',
+            wider: '0.04em',
+            widest: '0.1em',
+          }
+        },
+      },
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "kern" 1, "liga" 1;
       --primary: #f97316;
       --bg-main: #f8fafc;
       --bg-sidebar: #ffffff;
@@ -22,8 +47,18 @@
       --text-main: #1e293b;
       --text-muted: #64748b;
       --text-sidebar: #1e293b;
-      --border-color: #f1f5f9;
       --radius: 12px;
+    }
+
+    i,
+    .fa-solid,
+    .fa-brands,
+    .fa-regular {
+      -webkit-font-smoothing: antialiased !important;
+      -moz-osx-font-smoothing: grayscale !important;
+      text-rendering: optimizeLegibility !important;
+      transform: translateZ(0);
+      /* Trigger GPU rendering for crispness */
     }
 
     [data-theme="midnight"] {
@@ -158,21 +193,23 @@
       --border-color: #e2e8f0;
     }
 
+    * {
+      transition: none !important;
+      animation: none !important;
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
+    }
+
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Montserrat', sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
       margin: 0;
-      transition: background-color 0.3s ease, color 0.3s ease;
       letter-spacing: -0.01em;
+      line-height: 1.5;
     }
 
     /* Примусовий контраст сайдбару */
-    aside,
-    aside * {
-      transition: color 0.3s ease, background-color 0.3s ease;
-    }
-
     aside span,
     aside div:not([class*="bg-primary"]):not([class*="bg-indigo"]),
     aside button:not([class*="bg-primary"]) {

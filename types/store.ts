@@ -38,6 +38,7 @@ export interface StoreState {
   updatedAt?: number;
   shoppingStores?: ShoppingStore[];
   shoppingItems?: ShoppingItem[];
+  foodInventory?: number;
 }
 
 export interface TwelveWeekYear {
