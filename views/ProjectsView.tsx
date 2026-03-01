@@ -9,11 +9,9 @@ import Button from '../components/ui/Button';
 import TaskDetails from '../components/TaskDetails';
 import HabitStatsSidebar from '../components/HabitStatsSidebar';
 import { useResizer } from '../hooks/useResizer';
-import { planProjectStrategically } from '../services/geminiService';
-import StructureView from './StructureView';
-import PlannerView from './PlannerView';
 import GoalCard from '../components/projects/GoalCard';
 import ProjectDetails from '../components/ProjectDetails';
+import StrategicTimeline from '../components/projects/StrategicTimeline';
 
 const GoalModal: React.FC<{
   onClose: () => void,
@@ -151,7 +149,7 @@ const ProjectsView: React.FC = () => {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Project | null>(null);
-  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived'>('active');
+  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived' | 'timeline'>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -212,6 +210,12 @@ const ProjectsView: React.FC = () => {
               >
                 Архів
               </button>
+              <button
+                onClick={() => setActiveTabLocal('timeline')}
+                className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'timeline' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
+              >
+                Таймлайн
+              </button>
             </div>
           </div>
           <Button
@@ -223,56 +227,65 @@ const ProjectsView: React.FC = () => {
           </Button>
         </header>
 
-        <div className="bg-[var(--bg-card)] border-b border-[var(--border-color)] px-4 md:px-8 py-2 overflow-x-auto no-scrollbar shrink-0">
-          <div className="flex gap-2 max-w-4xl mx-auto">
-            <button
-              onClick={() => setSelectedSphere('all')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${selectedSphere === 'all' ? 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5 border border-transparent'}`}
-            >
-              <i className="fa-solid fa-layer-group"></i>
-              ВСІ
-            </button>
-            {spheres.map(s => {
-              const count = projects.filter(p => p.type === 'goal' && p.sphere === s.key && (activeTab === 'archived' ? p.status === 'archived' : p.status === 'active')).length;
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setSelectedSphere(s.key)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${selectedSphere === s.key ? 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5 border border-transparent'}`}
-                >
-                  <i className={`fa-solid ${s.icon}`}></i>
-                  {s.label}
-                  {count > 0 && <span className={`ml-1 text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedSphere === s.key ? 'bg-[var(--primary)] text-white' : 'bg-black/5 text-[var(--text-muted)]'}`}>{count}</span>}
-                </button>
-              );
-            })}
+        {activeTab !== 'timeline' && (
+          <div className="bg-[var(--bg-card)] border-b border-[var(--border-color)] px-4 md:px-8 py-2 overflow-x-auto no-scrollbar shrink-0">
+            <div className="flex gap-2 max-w-4xl mx-auto">
+              <button
+                onClick={() => setSelectedSphere('all')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${selectedSphere === 'all' ? 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5 border border-transparent'}`}
+              >
+                <i className="fa-solid fa-layer-group"></i>
+                ВСІ
+              </button>
+              {spheres.map(s => {
+                const count = projects.filter(p => p.type === 'goal' && p.sphere === s.key && (activeTab === 'archived' ? p.status === 'archived' : (activeTab === 'active' ? p.status === 'active' : true))).length;
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setSelectedSphere(s.key)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${selectedSphere === s.key ? 'bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5 border border-transparent'}`}
+                  >
+                    <i className={`fa-solid ${s.icon}`}></i>
+                    {s.label}
+                    {count > 0 && <span className={`ml-1 text-[8px] font-black px-1.5 py-0.5 rounded-md ${selectedSphere === s.key ? 'bg-[var(--primary)] text-white' : 'bg-black/5 text-[var(--text-muted)]'}`}>{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 gap-4 pb-32">
-            {goals.map(goal => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                isExpanded={selectedGoalId === goal.id}
-                onToggle={() => setSelectedGoalId(selectedGoalId === goal.id ? null : goal.id)}
-                onTaskClick={(id) => { setSelectedTaskId(id); setSelectedHabitId(null); setSelectedProjectId(null); }}
-                onHabitClick={(id) => { setSelectedHabitId(id); setSelectedTaskId(null); setSelectedProjectId(null); }}
-                onSubProjectClick={(id) => { setSelectedProjectId(id); setSelectedTaskId(null); setSelectedHabitId(null); }}
-                onPlannerClick={handlePlannerClick}
-                onEdit={setEditingGoal}
-                selectedTaskId={selectedTaskId}
-                selectedHabitId={selectedHabitId}
-              />
-            ))}
-            {goals.length === 0 && (
-              <div className="py-20 text-center opacity-10 flex flex-col items-center">
-                <i className="fa-solid fa-flag-checkered text-7xl mb-6"></i>
-                <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Цілей не знайдено</Typography>
-              </div>
-            )}
-          </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+          {activeTab === 'timeline' ? (
+            <StrategicTimeline
+              projects={projects}
+              onUpdateProject={updateProject}
+            />
+          ) : (
+            <div className="max-w-4xl mx-auto grid grid-cols-1 gap-4 p-4 md:p-8 pb-32">
+              {goals.map(goal => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  isExpanded={selectedGoalId === goal.id}
+                  onToggle={() => setSelectedGoalId(selectedGoalId === goal.id ? null : goal.id)}
+                  onTaskClick={(id) => { setSelectedTaskId(id); setSelectedHabitId(null); setSelectedProjectId(null); }}
+                  onHabitClick={(id) => { setSelectedHabitId(id); setSelectedTaskId(null); setSelectedProjectId(null); }}
+                  onSubProjectClick={(id) => { setSelectedProjectId(id); setSelectedTaskId(null); setSelectedHabitId(null); }}
+                  onPlannerClick={handlePlannerClick}
+                  onEdit={setEditingGoal}
+                  selectedTaskId={selectedTaskId}
+                  selectedHabitId={selectedHabitId}
+                />
+              ))}
+              {goals.length === 0 && (
+                <div className="py-20 text-center opacity-10 flex flex-col items-center">
+                  <i className="fa-solid fa-flag-checkered text-7xl mb-6"></i>
+                  <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Цілей не знайдено</Typography>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -100,6 +100,7 @@ const GoalCard: React.FC<GoalCardProps> = ({
     if (activeTab === 'actions') addTask(inlineInputValue.trim(), 'tasks', goal.id, 'actions');
     else if (activeTab === 'subprojects') addProject({ name: inlineInputValue.trim(), color: goal.color, parentFolderId: goal.id, isStrategic: false, type: 'subproject' });
     else if (activeTab === 'habits') addTask(inlineInputValue.trim(), 'tasks', goal.id, 'habits');
+    else if (activeTab === 'notes') addTask(inlineInputValue.trim(), 'note', goal.id);
     setInlineInputValue('');
   };
 
@@ -183,7 +184,7 @@ const GoalCard: React.FC<GoalCardProps> = ({
 
           <div className="space-y-4">
             <form onSubmit={handleInlineSubmit} className="flex gap-3">
-              <input autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text" value={inlineInputValue} onChange={e => setInlineInputValue(e.target.value)} placeholder={activeTab === 'actions' ? "Наступний крок..." : activeTab === 'subprojects' ? "Новий проєкт..." : "Звичка..."} className="flex-1 bg-card border border-theme rounded-2xl py-3 px-5 text-[13px] font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-inner text-main" />
+              <input autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text" value={inlineInputValue} onChange={e => setInlineInputValue(e.target.value)} placeholder={activeTab === 'actions' ? "Наступний крок..." : activeTab === 'subprojects' ? "Новий проєкт..." : activeTab === 'notes' ? "Нова нотатка..." : "Звичка..."} className="flex-1 bg-card border border-theme rounded-2xl py-3 px-5 text-[13px] font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-inner text-main" />
               <button type="submit" disabled={!inlineInputValue.trim()} className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center disabled:opacity-30 shadow-xl active:scale-95 transition-all shrink-0"><i className="fa-solid fa-plus text-xl"></i></button>
             </form>
 
@@ -195,13 +196,13 @@ const GoalCard: React.FC<GoalCardProps> = ({
 
                 return (
                   <div key={task.id} onClick={() => onTaskClick(task.id)}
-                    className={`flex items-center gap-4 p-4 rounded-[1.8rem] bg-card border border-theme group transition-all cursor-pointer ${isDone ? 'opacity-50 grayscale' : 'hover:border-primary/30 shadow-sm'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
-                    <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'bg-card border-theme group-hover:border-primary'}`}>
-                      {(isDone || isCompleting) && <i className="fa-solid fa-check text-[10px]"></i>}
+                    className={`flex items-center gap-3 px-3 py-1.5 rounded-lg bg-card border border-theme group transition-all cursor-pointer ${isDone ? 'opacity-50 grayscale' : 'hover:border-primary/30 shadow-sm'} ${isCompleting ? 'scale-[0.98]' : ''}`}>
+                    <button onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone || isCompleting ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'bg-card border-theme group-hover:border-primary'}`}>
+                      {(isDone || isCompleting) && <i className="fa-solid fa-check text-[7px]"></i>}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[13px] font-black truncate tracking-tight uppercase leading-tight ${isDone || isCompleting ? 'text-muted line-through opacity-50' : 'text-main'}`}>{task.title}</div>
-                      {tProject && tProject.type === 'subproject' && <span className="text-[8px] font-black uppercase text-primary opacity-60 mt-1 block"># {tProject.name}</span>}
+                      <div className={`text-[11px] font-bold truncate tracking-tight uppercase leading-tight ${isDone || isCompleting ? 'text-muted line-through opacity-50' : 'text-main'}`}>{task.title}</div>
+                      {tProject && tProject.type === 'subproject' && <span className="text-[7px] font-black uppercase text-primary opacity-60 mt-0.5 block"># {tProject.name}</span>}
                     </div>
                   </div>
                 )
@@ -225,26 +226,26 @@ const GoalCard: React.FC<GoalCardProps> = ({
               )}
 
               {activeTab === 'habits' && goalHabits.map(h => (
-                <div key={h.id} onClick={() => onHabitClick(h.id)} className="p-4 bg-card border border-theme rounded-[1.8rem] flex items-center justify-between shadow-sm group cursor-pointer hover:border-primary/30 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-base"><i className={`fa-solid ${h.recurrence && h.recurrence !== 'none' ? 'fa-calendar-day' : 'fa-repeat'}`}></i></div>
+                <div key={h.id} onClick={() => onHabitClick(h.id)} className="px-3 py-1.5 bg-card border border-theme rounded-lg flex items-center justify-between shadow-sm group cursor-pointer hover:border-primary/30 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xs"><i className={`fa-solid ${h.recurrence && h.recurrence !== 'none' ? 'fa-calendar-day' : 'fa-repeat'}`}></i></div>
                     <div className="flex flex-col">
-                      <span className="text-[13px] font-black text-main leading-tight uppercase tracking-tight">{h.title}</span>
+                      <span className="text-[11px] font-bold text-main leading-tight uppercase tracking-tight">{h.title}</span>
                     </div>
                   </div>
-                  <Badge variant={h.recurrence && h.recurrence !== 'none' ? 'indigo' : 'emerald'} className="text-[8px] font-black py-1 px-3 tracking-widest uppercase">{h.recurrence && h.recurrence !== 'none' ? 'PLANNER' : 'DAILY'}</Badge>
+                  <Badge variant={h.recurrence && h.recurrence !== 'none' ? 'indigo' : 'emerald'} className="text-[7px] font-black py-0.5 px-2 tracking-widest uppercase">{h.recurrence && h.recurrence !== 'none' ? 'PLANNER' : 'DAILY'}</Badge>
                 </div>
               ))}
 
               {activeTab === 'notes' && looseNotes.map(note => (
-                <div key={note.id} onClick={() => onTaskClick(note.id)} className="p-4 bg-card border border-theme rounded-[1.8rem] flex items-center gap-4 shadow-sm group cursor-pointer hover:border-primary/30 transition-all">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-base"><i className="fa-solid fa-note-sticky"></i></div>
+                <div key={note.id} onClick={() => onTaskClick(note.id)} className="px-3 py-1.5 bg-card border border-theme rounded-lg flex items-center gap-3 shadow-sm group cursor-pointer hover:border-primary/30 transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs"><i className="fa-solid fa-note-sticky"></i></div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-black text-main leading-tight uppercase tracking-tight truncate">{note.title || 'Без назви'}</div>
+                    <div className="text-[11px] font-bold text-main leading-tight uppercase tracking-tight truncate">{note.title || 'Без назви'}</div>
                     {note.tags && note.tags.length > 0 && (
-                      <div className="flex gap-1 mt-1 flex-wrap">
+                      <div className="flex gap-1 mt-0.5 flex-wrap">
                         {note.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="text-[7px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">
+                          <span key={tag} className="text-[6px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">
                             #{tag}
                           </span>
                         ))}

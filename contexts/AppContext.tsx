@@ -267,13 +267,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       updateCharacter: (u) => pushUpdate(prev => ({ ...prev, character: { ...prev.character, ...u, updatedAt: Date.now() } })),
       addTask: (title, category = 'tasks', projectId, projectSection, isEvent, scheduledDate, personId, status) => {
         const id = Math.random().toString(36).substr(2, 9);
+        const isHabit = projectSection === 'habits';
         const newTask: Task = {
           id, title,
-          status: status || TaskStatus.INBOX,
+          status: status || (isHabit ? TaskStatus.NEXT_ACTION : TaskStatus.INBOX),
           priority: Priority.NUI,
           difficulty: 1,
           xp: 50,
-          tags: [],
+          tags: isHabit ? ['habit'] : [],
           createdAt: Date.now(),
           updatedAt: Date.now(),
           category,
@@ -281,7 +282,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
           projectSection: projectSection as any,
           isEvent,
           scheduledDate,
-          personId
+          personId,
+          recurrence: isHabit ? 'daily' as any : 'none',
+          daysOfWeek: isHabit ? [0, 1, 2, 3, 4, 5, 6] : undefined,
+          habitHistory: isHabit ? {} : undefined
         };
         pushUpdate(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] }));
         return id;
