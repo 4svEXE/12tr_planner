@@ -159,6 +159,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
         <div className="p-2 border-t border-white/5 bg-black/[0.05]">
           <button
+            onClick={() => setActiveTab('Settings')}
+            className={`w-full flex items-center justify-between h-10 rounded-xl mb-2 hover:bg-white/5 transition-all ${isSidebarCollapsed ? 'px-3' : 'px-3'}`}
+          // We use 'ai-chat' inside setActiveTab as a hack, or wait, we need an actual open handler in App.tsx. I will just dispatch a custom event.
+          >
+          </button>
+
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}
+            className={`w-full flex items-center gap-3 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-pink-500 text-white shadow-md hover:brightness-110 transition-all ${isSidebarCollapsed ? 'justify-center' : 'px-3'} mb-2`}
+          >
+            <i className="fa-solid fa-sparkles text-[16px]"></i>
+            {!isSidebarCollapsed && <span className="text-[10px] font-bold uppercase tracking-tight">ШІ-Стратег</span>}
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center gap-3 h-10 rounded-xl ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-md' : 'text-white/40 hover:bg-white/5 hover:text-white'} ${isSidebarCollapsed ? 'justify-center' : 'px-3'}`}
           >

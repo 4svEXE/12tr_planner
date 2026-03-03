@@ -115,14 +115,14 @@ const GoalModal: React.FC<{
           </div>
 
           {aiEnabled && !initialData && (
-            <div className="p-2 bg-indigo-50 !rounded-[4px] border border-indigo-200 flex items-center justify-between">
+            <div className="p-2 bg-primary/10 !rounded-[4px] border border-primary/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center shadow-lg"><i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i></div>
+                <div className="w-6 h-6 rounded bg-primary text-white flex items-center justify-center shadow-lg"><i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i></div>
                 <div>
-                  <div className="text-[8px] font-black uppercase text-indigo-700 leading-none">AI Стратег</div>
+                  <div className="text-[8px] font-black uppercase text-text-main leading-none">AI Стратег</div>
                 </div>
               </div>
-              <button onClick={() => setAutoPlan(!autoPlan)} className={`w-8 h-4 rounded-full transition-all relative ${autoPlan ? 'bg-indigo-600' : 'bg-muted/20'}`}>
+              <button onClick={() => setAutoPlan(!autoPlan)} className={`w-8 h-4 rounded-full transition-all relative ${autoPlan ? 'bg-primary' : 'bg-text-muted/20'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${autoPlan ? 'right-0.5' : 'left-0.5'}`}></div>
               </button>
             </div>
@@ -149,7 +149,7 @@ const ProjectsView: React.FC = () => {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Project | null>(null);
-  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived' | 'timeline'>('active');
+  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived' | 'timeline' | 'planner'>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -215,6 +215,12 @@ const ProjectsView: React.FC = () => {
                 className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'timeline' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
               >
                 Таймлайн
+              </button>
+              <button
+                onClick={() => setActiveTab('planner')}
+                className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'planner' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
+              >
+                Планувальник
               </button>
             </div>
           </div>

@@ -85,15 +85,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ project, tasks, taskCount, isMo
       </div>
 
       <div className="flex items-center gap-1">
-        {!isSystem && (
-          <button
-            onClick={handleAddSectionAction}
-            className="w-8 h-8 rounded-lg hover:bg-black/5 text-slate-400 hover:text-indigo-600 transition-all"
-            title="Додати секцію"
-          >
-            <i className="fa-solid fa-plus text-xs"></i>
-          </button>
-        )}
+
 
         <div className="relative" ref={menuRef}>
           <button

@@ -135,11 +135,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
 
           {isEditing ? (
-            <input ref={inputRef} autoFocus value={inputValue} onChange={e => onInputChange(e.target.value)} onBlur={() => onFinishEdit(task)} onKeyDown={e => e.key === 'Enter' && onFinishEdit(task)} onClick={e => e.stopPropagation()} placeholder="Назва..." className="flex-1 bg-transparent border-none p-0 text-[12px] font-semibold focus:ring-0 outline-none text-[var(--text-main)] h-full" />
+            <input ref={inputRef} autoFocus value={inputValue} onChange={e => onInputChange(e.target.value)} onBlur={() => onFinishEdit(task)} onKeyDown={e => e.key === 'Enter' && onFinishEdit(task)} onClick={e => e.stopPropagation()} placeholder="Назва..." className="flex-1 bg-transparent border-none p-0 text-[13px] font-semibold focus:ring-0 outline-none text-[var(--text-main)] h-full" />
           ) : (
             <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
               <i className={`fa-solid fa-flag text-[7px] shrink-0 ${getPriorityColor(task.priority)}`}></i>
-              <span className={`text-[12px] font-semibold truncate transition-all ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} ${isNote ? 'italic text-indigo-900/70' : ''}`}>
+              <span className={`text-[13px] font-semibold truncate transition-all ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} ${isNote ? 'italic text-indigo-900/70' : ''}`}>
                 {task.title || "Без назви"}
               </span>
               {task.isPinned && <i className="fa-solid fa-thumbtack text-[8px] text-[var(--primary)] rotate-45 opacity-60"></i>}

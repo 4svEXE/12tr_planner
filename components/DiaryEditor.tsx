@@ -20,6 +20,7 @@ interface DiaryEditorProps {
 }
 
 const BLOCK_TYPES = [
+  { id: 'text', label: 'Текст', icon: 'fa-font', desc: 'Звичайний текст' },
   { id: 'h1', label: 'Заголовок 1', icon: 'fa-heading', desc: 'Великий розділ' },
   { id: 'h2', label: 'Заголовок 2', icon: 'fa-heading', desc: 'Середній розділ' },
   { id: 'h3', label: 'Заголовок 3', icon: 'fa-heading', desc: 'Малий розділ' },
@@ -44,6 +45,7 @@ const EditableBlock: React.FC<{
   onMoveFocus: (id: string, direction: 'up' | 'down') => void;
 }> = ({ block, index, isFocused, onUpdate, onKeyDown, onFocus, onAddBlock, onContextMenu, isSelected, onMouseDown, onMouseEnter, onMoveFocus }) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  const floatingMenuRef = useRef<HTMLDivElement>(null);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [floatingMenu, setFloatingMenu] = useState<{ x: number, y: number } | null>(null);
@@ -65,6 +67,16 @@ const EditableBlock: React.FC<{
       sel?.addRange(range);
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (floatingMenu && floatingMenuRef.current && !floatingMenuRef.current.contains(e.target as Node)) {
+        setFloatingMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [floatingMenu]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const html = e.currentTarget.innerHTML;
@@ -237,6 +249,7 @@ const EditableBlock: React.FC<{
 
       {floatingMenu && (
         <div
+          ref={floatingMenuRef}
           className="fixed z-[200] bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-2xl flex items-center p-1.5 gap-1 animate-in fade-in zoom-in-95 duration-150 tiktok-blur"
           style={{ top: floatingMenu.y - 50, left: floatingMenu.x - 110 }}
           onMouseDown={(e) => e.preventDefault()}

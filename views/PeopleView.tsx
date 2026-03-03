@@ -113,6 +113,14 @@ const PeopleView: React.FC = () => {
     acquaintance: 'Знайомі'
   };
 
+  const singularLabels: Record<string, string> = {
+    friend: 'Друг',
+    colleague: 'Колега',
+    family: 'Сім\'я',
+    mentor: 'Ментор',
+    acquaintance: 'Знайомий'
+  };
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -176,8 +184,8 @@ const PeopleView: React.FC = () => {
                 key={type}
                 onClick={() => setActiveFilter(type)}
                 className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap border ${activeFilter === type
-                    ? 'bg-primary text-white border-primary shadow-md'
-                    : 'bg-main text-muted border-theme hover:bg-card'
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-main text-muted border-theme hover:bg-card'
                   }`}
               >
                 {statusLabels[type] || type}
@@ -212,7 +220,7 @@ const PeopleView: React.FC = () => {
                           <span className={`text-[7px] font-bold uppercase tracking-widest ${trust.color}`}>{trust.label}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="slate" className="text-[6px] px-1.5 py-0">{statusLabels[person.status] || person.status}</Badge>
+                          <Badge variant="slate" className="text-[6px] px-1.5 py-0">{singularLabels[person.status] || person.status}</Badge>
                           <span className="text-[8px] font-bold text-primary uppercase">Karma {person.rating || 0}</span>
                         </div>
                       </div>

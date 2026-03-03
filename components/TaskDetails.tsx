@@ -186,6 +186,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
                 <MenuSection title="Організація">
                   <MenuItem icon="fa-copy" label="Дублювати" onClick={handleDuplicate} />
                   <MenuItem icon="fa-link" label="Копіювати посилання" onClick={handleCopyLink} />
+                  <MenuItem icon="fa-clipboard" label="Копіювати все" onClick={() => {
+                    const text = `${task.title}\n\n${task.content || ''}`.trim();
+                    navigator.clipboard.writeText(text);
+                    setShowActionsMenu(false);
+                    alert("Скопійовано");
+                  }} />
                 </MenuSection>
                 <MenuSection title="Небезпечна зона">
                   <MenuItem icon="fa-trash-can" label="Видалити" danger onClick={() => { if (confirm('Видалити?')) { deleteTask(task.id); onClose(); } }} />
@@ -238,12 +244,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
 
       <footer className="shrink-0 p-4 border-t border-[var(--border-color)] bg-[var(--bg-card)]/50 backdrop-blur-md space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 border border-[var(--border-color)]">
-            <i className="fa-solid fa-layer-group text-[10px] text-[var(--text-muted)]"></i>
+          <div className="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 md:py-1.5 border border-[var(--border-color)] max-w-[40vw] md:max-w-none">
+            <i className="fa-solid fa-layer-group text-[8px] md:text-[10px] text-[var(--text-muted)] shrink-0"></i>
             <select
               value={task.projectId || ''}
               onChange={(e) => updateTask({ ...task, projectId: e.target.value || undefined, projectSection: undefined })}
-              className="bg-transparent text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer max-w-[120px]"
+              className="bg-transparent text-[9px] md:text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer w-full truncate"
             >
               <option value="">Без списку</option>
               {projects.filter(p => (p.type === 'folder' || p.type === 'list' || !p.type) && p.description !== 'SYSTEM_PLANNER_CONFIG').map(p => (
@@ -253,12 +259,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           </div>
 
           {task.projectId && projects.find(p => p.id === task.projectId)?.sections && projects.find(p => p.id === task.projectId)!.sections!.length > 0 && (
-            <div className="flex items-center gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1.5 border border-[var(--border-color)]">
-              <i className="fa-solid fa-layer-group text-[10px] text-[var(--text-muted)]"></i>
+            <div className="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 md:py-1.5 border border-[var(--border-color)] max-w-[30vw] md:max-w-none">
+              <i className="fa-solid fa-layer-group text-[8px] md:text-[10px] text-[var(--text-muted)] shrink-0"></i>
               <select
                 value={task.projectSection || ''}
                 onChange={(e) => updateTask({ ...task, projectSection: e.target.value as any })}
-                className="bg-transparent text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer"
+                className="bg-transparent text-[9px] md:text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer w-full truncate"
               >
                 <option value="">Головна</option>
                 {projects.find(p => p.id === task.projectId)?.sections?.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}

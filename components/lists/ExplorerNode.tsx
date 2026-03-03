@@ -28,7 +28,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
   const isSelected = selectedProjectId === project.id;
   const [isLocalDragOver, setIsLocalDragOver] = useState(false);
 
-  const children = allProjects.filter(p => p.parentFolderId === project.id);
+  const children = allProjects.filter(p => p.parentFolderId === project.id).sort((a, b) => (a.type === 'folder' ? 0 : 1) - (b.type === 'folder' ? 0 : 1));
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -100,7 +100,7 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
           {iconContent}
         </span>
 
-        <span className={`text-[12px] font-bold truncate flex-1 tracking-tight h-full flex items-center ${isSelected ? 'border-b-2 border-[var(--primary)]' : ''}`}>{project.name}</span>
+        <span className={`text-[12px] font-normal truncate flex-1 tracking-tight h-full flex items-center ${isSelected ? 'border-b-2 border-[var(--primary)]' : ''}`}>{project.name}</span>
 
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 shrink-0">
           {isFolder && (

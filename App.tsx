@@ -134,9 +134,13 @@ const MainLayout: React.FC = () => {
       }
     };
 
-    window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    const handleOpenAiChat = () => setIsAiOpen(true);
+    window.addEventListener('open-ai-chat', handleOpenAiChat);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('open-ai-chat', handleOpenAiChat);
+    };
   }, [theme, activeTab, setActiveTab]);
 
   const checkDeadlines = useCallback(() => {
@@ -273,7 +277,6 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[var(--bg-main)]">
-      <WindowTitleBar />
       <div className="flex flex-1 text-[var(--text-main)] overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
         <main className="flex-1 overflow-y-auto relative">
@@ -290,11 +293,7 @@ const MainLayout: React.FC = () => {
             ))}
           </div>
           {showFocusMode && <DeepFocus onExit={() => setShowFocusMode(false)} />}
-          {aiEnabled && !isAiOpen && (
-            <button onClick={() => setIsAiOpen(true)} className="fixed bottom-[80px] md:bottom-8 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[490] border-4 border-white">
-              <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
-            </button>
-          )}
+
           {isReportWizardOpen && <DailyReportWizard onClose={() => setIsReportWizardOpen(false)} />}
         </main>
         <AiChat isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />

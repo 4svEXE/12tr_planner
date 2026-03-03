@@ -9,6 +9,8 @@ import CycleMonthlyOverview from '../components/planner/CycleMonthlyOverview';
 import DiaryEditor from '../components/DiaryEditor';
 import HabitStatsSidebar from '../components/HabitStatsSidebar';
 import Badge from '../components/ui/Badge';
+import ListsSidebar from '../components/lists/ListsSidebar';
+import { useSidebarResizer } from '../hooks/useSidebarResizer';
 
 interface PlannerViewProps {
   projectId?: string;
@@ -60,6 +62,9 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [scratchpadInput, setScratchpadInput] = useState('');
   const [showBuffer, setShowBuffer] = useState(false);
+  const [selectedListProjectId, setSelectedListProjectId] = useState<string | null>(null);
+
+  const { sidebarWidth, startResizing: startSidebarResizing, isResizing: isSidebarResizing } = useSidebarResizer(256, 400, '12tr_planner_sidebar_width');
 
   useEffect(() => {
     setSelectedWeek(actualCurrentWeek);
@@ -185,6 +190,19 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
 
   return (
     <div className="flex h-screen bg-main overflow-hidden w-full">
+      <div
+        style={{ width: sidebarWidth }}
+        className="hidden lg:flex flex-col h-full shrink-0 border-r border-[var(--border-color)] relative bg-[var(--bg-sidebar)] z-[100]"
+      >
+        <div onMouseDown={startSidebarResizing} className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[110] -mr-0.5 transition-colors ${isSidebarResizing ? 'bg-[var(--primary)]' : 'bg-transparent hover:bg-[var(--primary)]/20'}`} />
+        <ListsSidebar
+          selectedProjectId={selectedListProjectId}
+          onSelectProject={setSelectedListProjectId}
+          onOpenListModal={() => { }}
+          isMobile={false}
+        />
+      </div>
+
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <header className="flex items-center bg-card border-b border-theme pr-4 shrink-0 h-10 z-30">
           {projectId && (
@@ -270,29 +288,29 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
               </div>
             ) : (
               <div className="space-y-1">
-                <div className="bg-white border-b border-theme shadow-sm px-4 py-1.5 sticky top-0 z-20">
+                <div className="bg-card border-b border-theme shadow-sm px-4 py-1.5 sticky top-0 z-20">
                   <div className="flex flex-col md:flex-row items-center gap-4">
                     <div className="hidden xl:flex items-center gap-3 border-r border-theme pr-4 max-w-xs overflow-hidden">
                       <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm shadow-lg shrink-0"><i className="fa-solid fa-mountain"></i></div>
                       <div className="min-w-0">
-                        <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">БАЧЕННЯ 12TR</div>
-                        <div className="text-[12px] font-bold text-slate-700 truncate italic">"{plainVision}"</div>
+                        <div className="text-[10px] font-black uppercase text-text-muted leading-none mb-1">БАЧЕННЯ 12TR</div>
+                        <div className="text-[12px] font-bold text-text-main truncate italic">"{plainVision}"</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 md:border-r border-theme pr-4">
                       <i className="fa-solid fa-crown text-[10px]" style={{ color: projectColor }}></i>
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">ГОЛОВНА ТРІЙКА</span>
+                      <span className="text-[10px] font-black uppercase text-text-muted tracking-widest">ГОЛОВНА ТРІЙКА</span>
                     </div>
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-1.5 w-full">
                       {[0, 1, 2].map(idx => {
                         const goal = weeklyGoals[idx];
                         return (
                           <div key={idx} className="flex items-center gap-2 px-3 py-0 bg-main border border-theme/40 rounded-lg group h-8 transition-all hover:border-primary/20">
-                            <button onClick={() => goal && updateTask({ ...goal, status: goal.status === TaskStatus.DONE ? TaskStatus.NEXT_ACTION : TaskStatus.DONE })} className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-all ${goal?.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white'}`} style={goal?.status === TaskStatus.DONE ? { backgroundColor: projectColor, borderColor: projectColor } : {}}>
+                            <button onClick={() => goal && updateTask({ ...goal, status: goal.status === TaskStatus.DONE ? TaskStatus.NEXT_ACTION : TaskStatus.DONE })} className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-all ${goal?.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-card'}`} style={goal?.status === TaskStatus.DONE ? { backgroundColor: projectColor, borderColor: projectColor } : {}}>
                               {goal?.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[8px]"></i>}
                             </button>
-                            <input value={goal?.title || ''} onChange={e => handleUpdateWeeklyGoal(selectedWeek, idx, e.target.value)} className={`text-[11px] font-bold uppercase bg-transparent border-none p-0 focus:ring-0 w-full outline-none ${goal?.status === TaskStatus.DONE ? 'line-through text-slate-300' : 'text-slate-700'}`} placeholder={`Ціль #${idx + 1}...`} />
+                            <input value={goal?.title || ''} onChange={e => handleUpdateWeeklyGoal(selectedWeek, idx, e.target.value)} className={`text-[11px] font-bold uppercase bg-transparent border-none p-0 focus:ring-0 w-full outline-none ${goal?.status === TaskStatus.DONE ? 'line-through text-text-muted' : 'text-text-main'}`} placeholder={`Ціль #${idx + 1}...`} />
                           </div>
                         );
                       })}
@@ -300,7 +318,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                   </div>
                 </div>
 
-                <div className="bg-white border-b border-theme px-4 py-1 flex flex-col md:flex-row items-center gap-4 z-10">
+                <div className="bg-card border-b border-theme px-4 py-1 flex flex-col md:flex-row items-center gap-4 z-10">
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="flex items-center gap-3 bg-slate-900 px-3 py-1.5 rounded-lg text-white border border-white/5">
                       <div className="text-[14px] font-black leading-none" style={{ color: projectColor }}>{weekExecutionStats.score}</div>
@@ -320,9 +338,9 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                     </div>
                   </div>
 
-                  <div className="flex-1 flex items-center bg-main p-0.5 rounded-lg border border-theme overflow-x-auto no-scrollbar">
+                  <div className="flex-1 flex items-center bg-input p-0.5 rounded-lg border border-theme overflow-x-auto no-scrollbar">
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(w => (
-                      <button key={w} onClick={() => setSelectedWeek(w)} className={`flex-1 h-7 min-w-[40px] rounded-md text-[10px] font-black transition-all ${selectedWeek === w ? 'bg-white text-primary shadow-sm border border-theme' : w === actualCurrentWeek ? 'text-orange-600' : 'text-slate-400 hover:bg-black/5'}`} style={selectedWeek === w ? { color: projectColor, borderColor: `${projectColor}30` } : {}}>
+                      <button key={w} onClick={() => setSelectedWeek(w)} className={`flex-1 h-7 min-w-[40px] rounded-md text-[10px] font-black transition-all ${selectedWeek === w ? 'bg-card text-primary shadow-sm border border-theme' : w === actualCurrentWeek ? 'text-orange-600' : 'text-text-muted hover:bg-black/5'}`} style={selectedWeek === w ? { color: projectColor, borderColor: `${projectColor}30` } : {}}>
                         W{w}
                       </button>
                     ))}
@@ -347,9 +365,9 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                     <div className="lg:col-span-8 border border-theme rounded-xl bg-card flex flex-col md:flex-row items-center gap-4 px-4 py-3 shadow-sm">
                       <div className="flex items-center gap-2 shrink-0 opacity-50">
                         <i className="fa-solid fa-feather-pointed text-[10px] text-primary" style={{ color: projectColor }}></i>
-                        <span className="font-black uppercase text-[10px] tracking-widest text-slate-400">Підсумок W{selectedWeek}</span>
+                        <span className="font-black uppercase text-[10px] tracking-widest text-text-muted">Підсумок W{selectedWeek}</span>
                       </div>
-                      <input value={weekReview.comment} onChange={e => handleUpdateWeekReview(e.target.value)} placeholder="Результати тижня..." className="flex-1 w-full bg-main border border-theme rounded-lg px-4 py-2.5 text-[12px] font-bold outline-none focus:ring-1 focus:ring-primary/20 text-slate-700 shadow-inner" />
+                      <input value={weekReview.comment} onChange={e => handleUpdateWeekReview(e.target.value)} placeholder="Результати тижня..." className="flex-1 w-full bg-input border border-theme rounded-lg px-4 py-2.5 text-[12px] font-bold outline-none focus:ring-1 focus:ring-primary/20 text-text-main shadow-inner" />
                       <button onClick={() => {
                         const content = `### 📅 ТИЖНЕВИЙ ЗВІТ (W${selectedWeek})\n\n**Результат:** ${weekExecutionStats.percent}%\n\n#### 🎯 Weekly Big 3:\n` + weeklyGoals.map(g => `- [${g.status === TaskStatus.DONE ? 'x' : ' '}] ${g.title}`).join('\n') + `\n\n#### 📝 Підсумок:\n${weekReview.comment || 'Коментар не додано.'}`;
                         saveDiaryEntry(new Date().toISOString().split('T')[0], content);
@@ -357,11 +375,11 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                       }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shrink-0 shadow-lg transition-all hover:brightness-110 active:scale-95">Зберегти звіт</button>
                     </div>
 
-                    <div className={`lg:col-span-4 border rounded-xl px-4 py-3 flex items-center gap-4 shadow-sm transition-all ${aiEnabled ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-200 opacity-50'}`}>
+                    <div className={`lg:col-span-4 border rounded-xl px-4 py-3 flex items-center gap-4 shadow-sm transition-all ${aiEnabled ? 'bg-indigo-50 border-indigo-100' : 'bg-input border-theme opacity-50'}`}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md ${aiEnabled ? 'bg-indigo-600 text-white' : 'bg-slate-300 text-slate-500'}`}><i className={`fa-solid ${aiEnabled ? 'fa-lightbulb' : 'fa-lock'} text-base`}></i></div>
                       <div className="min-w-0">
-                        <div className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1.5 ${aiEnabled ? 'text-indigo-400' : 'text-slate-400'}`}>AI-КОУЧ 12TR</div>
-                        <p className={`text-[11px] font-bold leading-tight line-clamp-2 ${aiEnabled ? 'text-indigo-700' : 'text-slate-500'}`}>
+                        <div className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1.5 ${aiEnabled ? 'text-indigo-400' : 'text-text-muted'}`}>AI-КОУЧ 12TR</div>
+                        <p className={`text-[11px] font-bold leading-tight line-clamp-2 ${aiEnabled ? 'text-indigo-700' : 'text-text-main'}`}>
                           {aiEnabled
                             ? (weekExecutionStats.percent < 50 ? 'Сфокусуйся на Lead-метриках для камбеку!' : 'Відмінний темп! Не збавляй обертів.')
                             : 'ШІ вимкнено в налаштуваннях'}
@@ -378,21 +396,21 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
 
       {/* Side Panels - Push Content Mode */}
       <div
-        className={`h-full bg-white border-l border-theme z-[100] shadow-xl transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${showNotes ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`h-full bg-card border-l border-theme z-[100] shadow-xl transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${showNotes ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{ width: showNotes ? '450px' : '0px', marginLeft: showNotes ? '0px' : '-1px' }}
       >
-        <header className="p-4 border-b border-theme flex justify-between items-center shrink-0 bg-slate-50">
+        <header className="p-4 border-b border-theme flex justify-between items-center shrink-0 bg-input">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-sm shadow-md">
               <i className="fa-solid fa-box-archive"></i>
             </div>
-            <Typography variant="h2" className="text-xs font-black uppercase tracking-tight">Беклог проєкту</Typography>
+            <Typography variant="h2" className="text-xs font-black uppercase tracking-tight text-text-main">Беклог проєкту</Typography>
           </div>
-          <button onClick={() => setShowNotes(false)} className="w-8 h-8 rounded-lg bg-white border border-theme text-slate-400 hover:text-slate-900 transition-all flex items-center justify-center shadow-sm">
+          <button onClick={() => setShowNotes(false)} className="w-8 h-8 rounded-lg bg-card border border-theme text-text-muted hover:text-text-main transition-all flex items-center justify-center shadow-sm">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </header>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden bg-card">
           {strategicProject && (
             <DiaryEditor
               id={strategicProject.id}
@@ -407,29 +425,29 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
       </div>
 
       <div
-        className={`h-full bg-white border-l border-theme z-[105] shadow-xl transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${showBuffer ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`h-full bg-card border-l border-theme z-[105] shadow-xl transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${showBuffer ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{ width: showBuffer ? '380px' : '0px', marginLeft: showBuffer ? '0px' : '-1px' }}
       >
-        <header className="p-4 border-b border-theme flex justify-between items-center shrink-0 bg-slate-50">
+        <header className="p-4 border-b border-theme flex justify-between items-center shrink-0 bg-input">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center text-sm shadow-md">
               <i className="fa-solid fa-clipboard-list"></i>
             </div>
-            <Typography variant="h2" className="text-xs font-black uppercase tracking-tight">Тактичний буфер</Typography>
+            <Typography variant="h2" className="text-xs font-black uppercase tracking-tight text-text-main">Тактичний буфер</Typography>
             <Badge variant="orange" className="text-[10px] ml-1">{scratchpadTasks.length}</Badge>
           </div>
-          <button onClick={() => setShowBuffer(false)} className="w-8 h-8 rounded-lg bg-white border border-theme text-slate-400 hover:text-slate-900 transition-all flex items-center justify-center shadow-sm">
+          <button onClick={() => setShowBuffer(false)} className="w-8 h-8 rounded-lg bg-card border border-theme text-text-muted hover:text-text-main transition-all flex items-center justify-center shadow-sm">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-100">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-main">
           <form onSubmit={handleAddScratchpadTask} className="mb-4 sticky top-0 z-10">
             <input
               autoComplete="off" autoCorrect="off" spellCheck="false" inputMode="text"
               value={scratchpadInput}
               onChange={e => setScratchpadInput(e.target.value)}
               placeholder="+ Додати в буфер тижня..."
-              className="w-full h-11 bg-white border border-theme rounded-xl px-4 text-[13px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10 shadow-sm transition-all"
+              className="w-full h-11 bg-card border border-theme rounded-xl px-4 text-[13px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10 shadow-sm transition-all text-text-main"
             />
           </form>
           <div className="flex flex-col gap-2">
@@ -438,16 +456,16 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
                 key={task.id}
                 draggable
                 onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
-                className="p-3.5 bg-white border border-theme rounded-xl hover:border-orange-500/30 transition-all cursor-grab group active:cursor-grabbing shadow-sm hover:shadow-md"
+                className="p-3.5 bg-card border border-theme rounded-xl hover:border-orange-500/30 transition-all cursor-grab group active:cursor-grabbing shadow-sm hover:shadow-md"
               >
                 <div className="flex items-start gap-3">
-                  <button onClick={() => updateTask({ ...task, status: task.status === TaskStatus.DONE ? TaskStatus.NEXT_ACTION : TaskStatus.DONE })} className={`w-4 h-4 rounded border shrink-0 mt-0.5 flex items-center justify-center transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200'}`}>
+                  <button onClick={() => updateTask({ ...task, status: task.status === TaskStatus.DONE ? TaskStatus.NEXT_ACTION : TaskStatus.DONE })} className={`w-4 h-4 rounded border shrink-0 mt-0.5 flex items-center justify-center transition-all ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-card border-theme'}`}>
                     {task.status === TaskStatus.DONE && <i className="fa-solid fa-check text-[8px]"></i>}
                   </button>
-                  <span className={`text-[12px] font-bold leading-snug ${task.status === TaskStatus.DONE ? 'line-through text-muted/50' : 'text-main'}`}>{task.title}</span>
+                  <span className={`text-[12px] font-bold leading-snug ${task.status === TaskStatus.DONE ? 'line-through text-text-muted/50' : 'text-text-main'}`}>{task.title}</span>
                 </div>
-                <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity mt-2 border-t border-slate-50 pt-2">
-                  <button onClick={() => deleteTask(task.id, true)} className="text-[10px] text-slate-300 hover:text-rose-500 flex items-center gap-1 transition-colors">
+                <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity mt-2 border-t border-theme pt-2">
+                  <button onClick={() => deleteTask(task.id, true)} className="text-[10px] text-text-muted hover:text-rose-500 flex items-center gap-1 transition-colors">
                     <i className="fa-solid fa-trash-can text-[9px]"></i> Видалити
                   </button>
                 </div>
@@ -458,7 +476,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ projectId, onExitProjectMode 
       </div>
 
       {/* Habit Stats Sidebar can remain fixed as it behaves like a detailed overlay */}
-      <div className={`fixed top-0 right-0 h-full bg-white border-l border-theme z-[300] shadow-2xl transition-transform duration-500 flex flex-col ${selectedHabitId ? 'translate-x-0' : 'translate-x-full'}`} style={{ width: '400px', maxWidth: '100vw' }}>
+      <div className={`fixed top-0 right-0 h-full bg-card border-l border-theme z-[300] shadow-2xl transition-transform duration-500 flex flex-col ${selectedHabitId ? 'translate-x-0' : 'translate-x-full'}`} style={{ width: '400px', maxWidth: '100vw' }}>
         {selectedHabit && <HabitStatsSidebar habit={selectedHabit} onClose={() => setSelectedHabitId(null)} onUpdate={(u) => updateTask({ ...selectedHabit, ...u })} onToggleStatus={toggleHabitStatus} />}
       </div>
     </div>

@@ -155,7 +155,7 @@ const DiaryView: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* CENTER: LIST OF ENTRIES */}
           <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 bg-[var(--bg-main)]/30 relative">
             {/* Timeline Line */}
@@ -166,14 +166,14 @@ const DiaryView: React.FC = () => {
                 <div key={month} className="space-y-6">
                   {/* Broad Sticky Month Header */}
                   <div className="sticky top-0 z-20 pt-4 pb-2 bg-gradient-to-b from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
-                    <div className="flex items-center justify-between gap-4 py-2.5 px-6 rounded-2xl border border-[var(--border-color)] bg-white/80 backdrop-blur-md shadow-sm">
+                    <div className="flex items-center justify-between gap-4 py-2.5 px-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md shadow-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-800">{month}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-main)]">{month}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{monthEntries.length} записів</span>
-                        <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                        <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{monthEntries.length} записів</span>
+                        <div className="w-1 h-1 rounded-full bg-[var(--border-color)]"></div>
                         <span className="text-[9px] font-bold text-indigo-400 uppercase"><i className="fa-solid fa-book-open mr-1"></i> Архів</span>
                       </div>
                     </div>
@@ -200,11 +200,11 @@ const DiaryView: React.FC = () => {
                             className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-2xl cursor-pointer overflow-hidden transition-all group/card ${isSelected ? 'ring-2 ring-indigo-500 border-transparent shadow-2xl scale-[1.01]' : 'shadow-sm hover:shadow-lg hover:border-indigo-200'}`}>
                             <div className="flex items-center gap-4 p-3 md:p-4 relative">
                               <div className="w-10 md:w-12 flex flex-col items-center shrink-0 border-r border-slate-100 pr-4">
-                                <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase mb-0.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
-                                <span className={`text-base md:text-xl font-bold transition-colors ${isSelected ? 'text-indigo-600' : 'text-slate-800'}`}>{d.getDate()}</span>
+                                <span className="text-[7px] md:text-[8px] font-bold text-[var(--text-muted)] uppercase mb-0.5">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
+                                <span className={`text-base md:text-xl font-bold transition-colors ${isSelected ? 'text-indigo-600' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <span className={`text-[12px] md:text-[14px] font-bold truncate block transition-all ${isSelected ? 'text-indigo-600' : 'text-slate-800'}`}>{title}</span>
+                                <span className={`text-[12px] md:text-[14px] font-bold truncate block transition-all ${isSelected ? 'text-indigo-600' : 'text-[var(--text-main)]'}`}>{title}</span>
                                 {dailyHabits.length > 0 && (
                                   <div className="flex items-center gap-1.5 mt-2">
                                     <div className="flex items-center gap-1 text-[7px] font-bold text-slate-400 uppercase tracking-widest">
@@ -269,15 +269,15 @@ const DiaryView: React.FC = () => {
             </div>
           </main>
 
-          {/* RIGHT: CALENDAR & STATS */}
-          <aside className="w-80 p-8 hidden lg:flex flex-col gap-6 border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
+          {/* RIGHT/BOTTOM: CALENDAR & STATS */}
+          <aside className="w-full lg:w-80 p-6 lg:p-8 flex flex-col gap-6 border-t lg:border-t-0 lg:border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
             <div className="space-y-6">
-              <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl border border-indigo-100/50 shadow-sm relative overflow-hidden">
+              <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl border border-indigo-100/20 shadow-sm relative overflow-hidden">
                 <div className="relative z-10">
                   <Typography variant="tiny" className="text-indigo-600 font-black mb-1 uppercase text-[9px] tracking-[0.2em] opacity-60">Статистика</Typography>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-slate-800 tracking-tighter">{diary.length}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">глав</span>
+                    <span className="text-4xl font-black text-[var(--text-main)] tracking-tighter">{diary.length}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">глав</span>
                   </div>
                 </div>
               </div>

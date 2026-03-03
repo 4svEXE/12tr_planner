@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { TaskStatus } from '../types';
 import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
+import { useSidebarResizer } from '../hooks/useSidebarResizer';
 import Typography from '../components/ui/Typography';
 import ListsSidebar from '../components/lists/ListsSidebar';
 import ListContent from '../components/lists/ListContent';
@@ -34,6 +36,8 @@ const ListsView: React.FC = () => {
   const [listModal, setListModal] = useState<{ isOpen: boolean; initialData?: any; parentId?: string } | null>(null);
 
   const { detailsWidth, startResizing, isResizing } = useResizer(350, 700);
+  const { sidebarWidth: sidebarWidthRaw, startResizing: startSidebarResizing, isResizing: isSidebarResizing } = useSidebarResizer(256, 400, '12tr_lists_sidebar_width');
+  const sidebarWidth = isMobile ? 280 : sidebarWidthRaw;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -51,6 +55,9 @@ const ListsView: React.FC = () => {
     if (selectedProjectId === 'system_notes') {
       return { id: 'system_notes', name: 'Нотатки', color: '#818cf8', type: 'list', sections: [{ id: 'actions', title: 'Всі нотатки' }] } as any;
     }
+    if (selectedProjectId === 'completed') {
+      return { id: 'completed', name: 'Готово', color: '#10b981', type: 'list', sections: [{ id: 'actions', title: 'Виконані завдання' }] } as any;
+    }
     return projects.find(p => p.id === selectedProjectId);
   }, [projects, selectedProjectId]);
 
@@ -63,6 +70,9 @@ const ListsView: React.FC = () => {
     }
     if (selectedProjectId === 'system_notes') {
       return tasks.filter(t => !t.projectId && t.category === 'note' && !t.isDeleted && !t.scheduledDate);
+    }
+    if (selectedProjectId === 'completed') {
+      return tasks.filter(t => t.status === TaskStatus.DONE && !t.isDeleted);
     }
     return tasks.filter(t => t.projectId === selectedProjectId && !t.isDeleted);
   }, [tasks, selectedProjectId]);
@@ -86,11 +96,14 @@ const ListsView: React.FC = () => {
         />
       )}
 
-      <div className={`
-        ${isMobile ? 'fixed inset-y-0 left-0 z-[1111] w-[280px] transform transition-transform duration-300 ease-out' : 'relative w-64'}
+      <div
+        style={!isMobile ? { width: sidebarWidth } : undefined}
+        className={`
+        ${isMobile ? 'fixed inset-y-0 left-0 z-[1111] max-w-[85vw] transform transition-transform duration-300 ease-out' : 'relative shrink-0'}
         ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
         h-full
       `}>
+        {!isMobile && <div onMouseDown={startSidebarResizing} className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] -mr-0.5 transition-colors ${isSidebarResizing ? 'bg-[var(--primary)]' : 'bg-transparent hover:bg-[var(--primary)]/20'}`} />}
         <ListsSidebar
           selectedProjectId={selectedProjectId}
           onSelectProject={(id) => {

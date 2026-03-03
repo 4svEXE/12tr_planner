@@ -289,10 +289,7 @@ const ShoppingView: React.FC = () => {
   }, [shoppingItems, activeStoreId]);
 
   const sortedItems = useMemo(() => {
-    return [...filteredItems].sort((a, b) => {
-      if (a.isBought === b.isBought) return 0;
-      return a.isBought ? 1 : -1;
-    });
+    return filteredItems;
   }, [filteredItems]);
 
   const getBestPriceFor = (name: string) => {
@@ -333,8 +330,8 @@ const ShoppingView: React.FC = () => {
       <aside className={`w-full md:w-64 border-r border-theme bg-sidebar flex flex-col shrink-0 transition-all duration-300 ${isMobileView && isContentViewVisible ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
         <header className="p-6 border-b border-theme flex justify-between items-center bg-card sticky top-0 z-10 shrink-0">
           <div>
-            <Typography variant="h2" className="text-lg md:text-xl">Магазини</Typography>
-            <Typography variant="tiny" className="text-muted tracking-tighter opacity-60">Price Strategy</Typography>
+            <Typography variant="h2" className="text-lg md:text-xl text-[var(--text-main)]">Магазини</Typography>
+            <Typography variant="tiny" className="text-[var(--text-muted)] tracking-tighter opacity-60">Price Strategy</Typography>
           </div>
           <button onClick={() => setIsAddingStore(true)} className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm">
             <i className="fa-solid fa-plus text-xs"></i>
@@ -374,7 +371,7 @@ const ShoppingView: React.FC = () => {
               >
                 <i className={`fa-solid ${store.icon} text-xs w-4 text-center`} style={activeStoreId === store.id ? { color: 'white' } : { color: store.color }}></i>
                 <div className="flex flex-col items-start min-w-0 flex-1">
-                  <span className="text-[11px] uppercase tracking-widest truncate pr-6 font-black">{store.name}</span>
+                  <span className={`text-[11px] uppercase tracking-widest truncate pr-6 font-black ${activeStoreId === store.id ? 'text-white' : 'text-[var(--text-main)]'}`}>{store.name}</span>
                   {store.isShared && <span className="text-[6px] font-black text-indigo-200 uppercase tracking-tighter flex items-center gap-1"><i className="fa-solid fa-users"></i> Shared</span>}
                 </div>
                 <span className={`ml-auto text-[8px] font-black ${activeStoreId === store.id ? 'text-white/60' : 'opacity-40'}`}>{shoppingItems.filter(i => i.storeId === store.id).length}</span>
@@ -440,7 +437,7 @@ const ShoppingView: React.FC = () => {
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[12px] font-bold truncate max-w-[150px] md:max-w-none ${item.isBought ? 'line-through text-muted' : 'text-main'}`}>{item.name}</span>
+                        <span className={`text-[12px] font-bold truncate max-w-[150px] md:max-w-none ${item.isBought ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>{item.name}</span>
                         {lastPriceEntry && (
                           <Badge variant="orange" className="text-[7px] py-0 px-1 font-black">{lastPriceEntry.price} ₴</Badge>
                         )}

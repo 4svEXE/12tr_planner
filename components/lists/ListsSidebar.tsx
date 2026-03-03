@@ -118,8 +118,9 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
               <span className="text-[8px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-sidebar)' }}>Колекції</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => onOpenListModal({ type: 'folder' })} className="hover:scale-110 transition-transform p-1" title="Нова папка" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
-              <button onClick={() => onOpenListModal({ type: 'list' })} className="hover:scale-110 transition-transform p-1" title="Новий список" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-plus text-[10px]"></i></button>
+              <button onClick={(e) => { e.stopPropagation(); setExpandedFolders(new Set()); }} className="hover:scale-110 transition-transform p-1" title="Згорнути все" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-compress text-[10px]"></i></button>
+              <button onClick={(e) => { e.stopPropagation(); onOpenListModal({ type: 'folder' }); }} className="hover:scale-110 transition-transform p-1" title="Нова папка" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-folder-plus text-[10px]"></i></button>
+              <button onClick={(e) => { e.stopPropagation(); onOpenListModal({ type: 'list' }); }} className="hover:scale-110 transition-transform p-1" title="Новий список" style={{ color: 'var(--text-sidebar)' }}><i className="fa-solid fa-plus text-[10px]"></i></button>
             </div>
           </div>
 
@@ -128,7 +129,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
               const sourceProjectId = e.dataTransfer.getData('projectId');
               if (sourceProjectId) updateProject({ ...projects.find(p => p.id === sourceProjectId)!, parentFolderId: undefined });
             }}>
-              {folders.filter(p => !p.parentFolderId).map(rootProject => (
+              {folders.filter(p => !p.parentFolderId).sort((a, b) => (a.type === 'folder' ? 0 : 1) - (b.type === 'folder' ? 0 : 1)).map(rootProject => (
                 <ExplorerNode
                   key={rootProject.id}
                   project={rootProject}

@@ -9,19 +9,19 @@ export interface Project {
   name: string;
   description?: string;
   color: string;
-  parentFolderId?: string; 
+  parentFolderId?: string;
   status: 'active' | 'archived';
   progress: number;
-  type?: 'goal' | 'subproject' | 'folder' | 'list';
+  type?: 'goal' | 'subproject' | 'folder' | 'list' | 'habits' | 'backlog' | 'project';
   isStrategic: boolean;
   sphere?: 'health' | 'career' | 'finance' | 'education' | 'relationships' | 'rest';
   sections?: ProjectSectionData[];
   monthlyGoal?: string;
   monthlyKpi?: number;
   monthlyKpiCurrent?: number;
-  startDate?: number; 
-  leadMeasure?: string; 
-  lagMeasure?: string;  
+  startDate?: number;
+  leadMeasure?: string;
+  lagMeasure?: string;
   updatedAt: number;
   // Налаштування відображення
   viewMode?: 'list' | 'kanban' | 'timeline';

@@ -9,11 +9,11 @@ import { processInboxWithAi } from '../services/geminiService';
 import InboxAiWizard from '../components/InboxAiWizard';
 
 const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = ({ showCompleted = false, showNextActions = false }) => {
-  const { 
-    tasks, toggleTaskStatus, addTask, 
-    character, aiEnabled, people, theme 
+  const {
+    tasks, toggleTaskStatus, addTask,
+    character, aiEnabled, people, theme
   } = useApp();
-  
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -49,7 +49,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
 
   const handleToggleTaskWithDelay = (task: Task) => {
     const isNowDone = task.status !== TaskStatus.DONE;
-    
+
     if (!showCompleted && isNowDone) {
       // Додаємо в список тих, що мають бути видимими 5 секунд
       setCompletingIds(prev => {
@@ -57,7 +57,7 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
         next.add(task.id);
         return next;
       });
-      
+
       toggleTaskStatus(task);
 
       // Прибираємо через 5 секунд
@@ -115,23 +115,23 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
               </div>
             </div>
             <div className="flex gap-1">
-               <button className="w-9 h-9 rounded-xl text-muted hover:text-main hover:bg-black/5 flex items-center justify-center transition-all"><i className="fa-solid fa-arrow-up-wide-short text-sm"></i></button>
-               <button className="w-9 h-9 rounded-xl text-muted hover:text-main hover:bg-black/5 flex items-center justify-center transition-all"><i className="fa-solid fa-ellipsis"></i></button>
+              <button className="w-9 h-9 rounded-xl text-muted hover:text-main hover:bg-black/5 flex items-center justify-center transition-all"><i className="fa-solid fa-arrow-up-wide-short text-sm"></i></button>
+              <button className="w-9 h-9 rounded-xl text-muted hover:text-main hover:bg-black/5 flex items-center justify-center transition-all"><i className="fa-solid fa-ellipsis"></i></button>
             </div>
           </div>
-          
+
           {!showCompleted && (
             <form onSubmit={handleQuickAdd} className="relative group flex items-center">
               <div className="absolute left-3 z-10 text-muted opacity-50 group-focus-within:text-primary group-focus-within:opacity-100 transition-all">
                 <i className="fa-solid fa-plus text-[10px]"></i>
               </div>
-              <HashtagAutocomplete 
-                value={quickTaskTitle} 
-                onChange={setQuickTaskTitle} 
-                onSelectTag={() => {}} 
-                onEnter={handleQuickAdd} 
-                placeholder="Додати нове завдання..." 
-                className="w-full bg-card border border-theme rounded py-0 pl-10 pr-4 focus:ring-4 focus:ring-primary/10 transition-all outline-none placeholder:text-muted placeholder:opacity-40 shadow-sm text-main" 
+              <HashtagAutocomplete
+                value={quickTaskTitle}
+                onChange={setQuickTaskTitle}
+                onSelectTag={() => { }}
+                onEnter={handleQuickAdd}
+                placeholder="Додати нове завдання..."
+                className="w-full bg-card border border-theme rounded py-0 pl-10 pr-4 focus:ring-4 focus:ring-primary/10 transition-all outline-none placeholder:text-muted placeholder:opacity-40 shadow-sm text-main"
               />
             </form>
           )}
@@ -143,30 +143,30 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
               if (t.isDeleted) return false;
               if (t.category === 'note') return false;
               if (!showNextActions && !showCompleted && t.projectId) return false;
-              
+
               const isDone = t.status === TaskStatus.DONE;
               const isVisuallyActive = showCompleted ? isDone : (t.status === targetStatus || completingIds.has(t.id));
-              
+
               // Якщо це звичайний Inbox (не архів), то ховаємо Done через 5 сек (якщо нема в completingIds)
               if (!showCompleted && isDone && !completingIds.has(t.id)) return false;
 
               return isVisuallyActive && section.filter(t);
             });
-            
+
             if (sectionTasks.length === 0 && section.id === 'pinned') return null;
             const isCollapsed = collapsed[section.id];
 
             return (
               <div key={section.id} className="mb-6">
-                <div 
+                <div
                   onClick={() => setCollapsed(prev => ({ ...prev, [section.id]: !prev[section.id] }))}
                   className="flex items-center gap-2 py-2 cursor-pointer group select-none"
                 >
                   <i className={`fa-solid fa-chevron-right text-[8px] text-muted transition-transform ${!isCollapsed ? 'rotate-90 text-main' : 'opacity-40'}`}></i>
-                  <span className="text-[11px] font-black uppercase text-muted tracking-widest flex-1 opacity-70">{section.title}</span>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full transition-all ${showCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-black/5 text-muted group-hover:bg-black/10'}`}>{sectionTasks.length}</span>
+                  <span className={`text-[11px] font-black uppercase text-text-muted tracking-widest flex-1 opacity-70`}>{section.title}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full transition-all ${showCompleted ? 'bg-primary/20 text-text-main' : 'bg-black/5 text-text-muted group-hover:bg-black/10'}`}>{sectionTasks.length}</span>
                 </div>
-                
+
                 {!isCollapsed && (
                   <div className="space-y-1 mt-1 border-t border-theme/50 pt-2">
                     {sectionTasks.map(task => {
@@ -174,35 +174,35 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                       const isDone = task.status === TaskStatus.DONE;
                       const isGracefullyVisible = completingIds.has(task.id);
                       const hasContent = task.content && task.content !== "[]" && task.content !== "";
-                      
+
                       return (
-                        <div 
+                        <div
                           key={task.id}
                           onClick={() => setSelectedTaskId(task.id)}
                           className={`flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer group relative border rounded-lg transition-all shadow-sm
-                            ${isSelected ? (showCompleted ? 'bg-emerald-50 border-emerald-200' : 'bg-primary/5 border-primary/20') : 'bg-card border-theme hover:border-primary/30'} ${isGracefullyVisible ? 'scale-[0.98]' : ''}`}
+                            ${isSelected ? (showCompleted ? 'bg-primary/10 border-primary/30' : 'bg-primary/5 border-primary/20') : 'bg-card border-theme hover:border-primary/30'} ${isGracefullyVisible ? 'scale-[0.98]' : ''}`}
                         >
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }} 
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleToggleTaskWithDelay(task); }}
                             className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-inner' : 'border-theme bg-black/5 hover:border-primary'}`}
                           >
                             {isDone && <i className="fa-solid fa-check text-[7px]"></i>}
                           </button>
-                          
-                          <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                             <span className={`text-[11px] font-bold truncate leading-tight tracking-tight transition-colors strike-anim ${isDone ? 'is-striking text-muted' : 'text-main'}`}>
-                                {task.title}
-                             </span>
 
-                             {hasContent && (
-                                <i className="fa-regular fa-file-lines text-muted opacity-30 text-[9px]"></i>
-                             )}
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
+                            <span className={`text-[11px] font-bold truncate leading-tight tracking-tight transition-colors strike-anim ${isDone ? 'is-striking text-muted' : 'text-main'}`}>
+                              {task.title}
+                            </span>
+
+                            {hasContent && (
+                              <i className="fa-regular fa-file-lines text-muted opacity-30 text-[9px]"></i>
+                            )}
                           </div>
-                          
+
                           {task.completedAt && (
-                             <span className="text-[7px] font-black text-muted opacity-40 uppercase tabular-nums">
-                               {new Date(task.completedAt).toLocaleDateString('uk-UA', {day:'numeric', month:'short'})}
-                             </span>
+                            <span className="text-[7px] font-black text-muted opacity-40 uppercase tabular-nums">
+                              {new Date(task.completedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
+                            </span>
                           )}
                         </div>
                       );
@@ -216,15 +216,15 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
 
         {aiEnabled && !showCompleted && (
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 md:bottom-8">
-             <button onClick={handleAiProcess} disabled={isAiProcessing} className="bg-main border border-theme text-main px-8 py-3.5 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all font-black text-[10px] uppercase tracking-[0.2em]">
-                {isAiProcessing ? <i className="fa-solid fa-circle-notch animate-spin text-primary"></i> : <i className="fa-solid fa-wand-magic-sparkles text-primary"></i>}
-                AI Анализ Вхідних
-             </button>
+            <button onClick={handleAiProcess} disabled={isAiProcessing} className="bg-main border border-theme text-main px-8 py-3.5 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all font-black text-[10px] uppercase tracking-[0.2em]">
+              {isAiProcessing ? <i className="fa-solid fa-circle-notch animate-spin text-primary"></i> : <i className="fa-solid fa-wand-magic-sparkles text-primary"></i>}
+              AI Анализ Вхідних
+            </button>
           </div>
         )}
 
         {!showCompleted && (
-          <button 
+          <button
             onClick={handleFabAdd}
             className="fixed bottom-24 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all border-4 border-card"
           >
@@ -233,18 +233,18 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
         )}
       </div>
 
-      <div 
+      <div
         className={`bg-card shrink-0 relative transition-none border-l border-theme flex flex-col ${selectedTaskId ? '' : 'hidden lg:flex'}`}
         style={!isMobile ? { width: detailsWidth } : { width: '100vw', position: 'fixed', inset: 0, zIndex: 100 }}
       >
         {!isMobile && (
-          <div 
-            onMouseDown={startResizing} 
+          <div
+            onMouseDown={startResizing}
             className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] transition-colors -ml-0.5 ${isResizing ? 'bg-primary' : 'bg-transparent hover:bg-primary/20'}`}
             title="Тягніть для зміни розміру"
           />
         )}
-        
+
         <div className="w-full h-full flex flex-col">
           {selectedTaskId ? (
             <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />

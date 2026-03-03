@@ -319,7 +319,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode; userId: string }
       updateProject: (p) => pushUpdate(prev => ({ ...prev, projects: prev.projects.map(old => old.id === p.id ? { ...p, updatedAt: Date.now() } : old) })),
       addProject: (p) => {
         const id = Math.random().toString(36).substr(2, 9);
-        pushUpdate(prev => ({ ...prev, projects: [...prev.projects, { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() }] }));
+        const newProj = { ...p, id, progress: 0, status: 'active', updatedAt: Date.now() };
+        const additions: typeof state['projects'] = [newProj];
+
+        if (p.type === 'project') {
+          const folderId = Math.random().toString(36).substr(2, 9);
+          additions.push({ id: folderId, name: p.name, type: 'folder', status: 'active', updatedAt: Date.now() } as any);
+          const lists = ['В дії', 'Проекти', 'Звички', 'Нотатки', 'Беклог'];
+          lists.forEach(listName => {
+            additions.push({
+              id: Math.random().toString(36).substr(2, 9),
+              name: listName,
+              type: 'list',
+              parentFolderId: folderId,
+              status: 'active',
+              updatedAt: Date.now()
+            } as any);
+          });
+        }
+
+        pushUpdate(prev => ({ ...prev, projects: [...prev.projects, ...additions] }));
         return id;
       },
       deleteProject: (id) => pushUpdate(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) })),

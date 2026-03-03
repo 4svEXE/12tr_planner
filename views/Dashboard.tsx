@@ -13,7 +13,8 @@ import BriefingCard from '../components/dashboard/BriefingCard';
 const Dashboard: React.FC = () => {
   const {
     tasks, projects, timeBlocks, toggleTaskStatus, toggleHabitStatus,
-    character, cycle, setActiveTab, setCalendarViewMode, aiEnabled, people, diary, setIsReportWizardOpen
+    character, cycle, setActiveTab, setCalendarViewMode, aiEnabled, people, diary, setIsReportWizardOpen,
+    addTask
   } = useApp();
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -24,10 +25,15 @@ const Dashboard: React.FC = () => {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [showInsight, setShowInsight] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [showDeadlines, setShowDeadlines] = useState(true);
+  const [showEvents, setShowEvents] = useState(true);
+
   const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(() => {
     const saved = localStorage.getItem('12tr_habits_collapsed');
     return saved ? JSON.parse(saved) : false;
   });
+
+  const [quickAddInput, setQuickAddInput] = useState('');
 
   useEffect(() => {
     localStorage.setItem('12tr_habits_collapsed', JSON.stringify(isHabitsCollapsed));
@@ -46,11 +52,22 @@ const Dashboard: React.FC = () => {
       const fetchBriefing = async () => {
         const key = localStorage.getItem('GEMINI_API_KEY');
         if (!key) return;
+
+        const dateKey = `12tr_briefing_${new Date().toISOString().split('T')[0]}`;
+        const cached = localStorage.getItem(dateKey);
+        if (cached) {
+          try {
+            setBriefing(JSON.parse(cached));
+            return;
+          } catch (e) { }
+        }
+
         setIsBriefingLoading(true);
         try {
           const { getCharacterDailyBriefing } = await import('../services/geminiService');
           const data = await getCharacterDailyBriefing(character, tasks, projects);
           setBriefing(data);
+          localStorage.setItem(dateKey, JSON.stringify(data));
         } catch (e) {
           console.error("Briefing error", e);
         } finally {
@@ -102,7 +119,10 @@ const Dashboard: React.FC = () => {
         if (t.status === TaskStatus.DONE) spheres[proj.sphere as keyof typeof spheres].done++;
       }
     });
-    return { kpi, doneCount: doneTasks.length, totalCount: periodTasks.length, spheres };
+    const todayAdded = tasks.filter(t => new Date(t.createdAt).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0)).length;
+    const todayDone = tasks.filter(t => t.status === TaskStatus.DONE && t.completedAt && new Date(t.completedAt).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0)).length;
+
+    return { kpi, doneCount: doneTasks.length, totalCount: periodTasks.length, spheres, todayAdded, todayDone };
   }, [tasks, projects, progressPeriod]);
 
   const habitTasks = useMemo(() => {
@@ -273,6 +293,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleQuickAdd = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!quickAddInput.trim()) return;
+    addTask(quickAddInput.trim(), 'tasks', undefined, undefined, false, todayTimestamp);
+    setQuickAddInput('');
+  };
+
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
       <div className={`flex-1 flex flex-col min-w-0 h-full ${isMobile && selectedTaskId ? '-translate-x-full absolute' : 'translate-x-0 relative'}`}>
@@ -403,8 +430,8 @@ const Dashboard: React.FC = () => {
                               const isDone = habit.habitHistory?.[dateStr]?.status === 'completed';
                               return (
                                 <button key={habit.id} onClick={() => handleToggleHabitWithDelay(habit.id, isDone)}
-                                  className={`shrink-0 w-32 p-2 rounded-[2rem] flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-50_ border-emerald-200 text-emerald-600_' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] shadow-sm hover:border-[var(--primary)]/30'}`}>
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500_ text-white_ shadow-lg' : 'bg-black/5 border border-[var(--border-color)]'}`}>
+                                  className={`shrink-0 w-32 p-2 rounded-[2rem] flex flex-col items-center gap-3 ${isDone ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-card border-theme text-text-muted shadow-sm hover:border-primary/30'}`}>
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${isDone ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/5 border border-theme'}`}>
                                     <i className={`fa-solid ${isDone ? 'fa-check' : 'fa-repeat'}`}></i>
                                   </div>
                                   <span className="text-[9px] font-bold uppercase text-center leading-tight truncate w-full">{habit.title}</span>
@@ -427,48 +454,61 @@ const Dashboard: React.FC = () => {
 
                   <div className="lg:col-span-4 space-y-10">
                     <section className="space-y-4">
-                      <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Гарячі дедлайни</Typography>
+                      <div className="flex justify-center mb-6">
+                        <MiniCalendar />
+                      </div>
+                      <div className="flex justify-between items-center px-2 cursor-pointer group" onClick={() => setShowDeadlines(!showDeadlines)}>
+                        <div className="flex items-center gap-2">
+                          <i className={`fa-solid ${showDeadlines ? 'fa-eye-slash' : 'fa-eye'} text-[10px] opacity-0 group-hover:opacity-100 transition-all text-[var(--primary)]`}></i>
+                          <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Гарячі дедлайни</Typography>
+                        </div>
                         <i className="fa-solid fa-bolt text-rose-500 text-[10px] animate-pulse"></i>
                       </div>
-                      <div className="space-y-2">
-                        {urgentDeadlines.length > 0 ? urgentDeadlines.map(ev => (
-                          <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[11px] font-bold truncate uppercase text-[var(--text-main)]">{ev.title}</div>
-                              <div className="text-[8px] font-bold text-rose-600 uppercase mt-0.5">Термін: {new Date(ev.dueDate!).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</div>
+                      {showDeadlines && (
+                        <div className="space-y-2">
+                          {urgentDeadlines.length > 0 ? urgentDeadlines.map(ev => (
+                            <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[11px] font-bold truncate uppercase text-[var(--text-main)]">{ev.title}</div>
+                                <div className="text-[8px] font-bold text-rose-600 uppercase mt-0.5">Термін: {new Date(ev.dueDate!).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</div>
+                              </div>
+                            </Card>
+                          )) : (
+                            <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
+                              <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Жодних термінових справ</p>
                             </div>
-                          </Card>
-                        )) : (
-                          <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
-                            <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Жодних термінових справ</p>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </section>
 
                     <section className="space-y-4">
-                      <div className="flex justify-between items-center px-2">
-                        <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Радар подій</Typography>
-                        <button onClick={() => { setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--primary)]"><i className="fa-solid fa-calendar-days text-[10px]"></i></button>
+                      <div className="flex justify-between items-center px-2 cursor-pointer group" onClick={() => setShowEvents(!showEvents)}>
+                        <div className="flex items-center gap-2">
+                          <i className={`fa-solid ${showEvents ? 'fa-eye-slash' : 'fa-eye'} text-[10px] opacity-0 group-hover:opacity-100 transition-all text-[var(--primary)]`}></i>
+                          <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Радар подій</Typography>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); setCalendarViewMode('month'); setActiveTab('calendar'); }} className="text-[var(--primary)]"><i className="fa-solid fa-calendar-days text-[10px]"></i></button>
                       </div>
-                      <div className="space-y-2">
-                        {upcomingRadarEvents.length > 0 ? upcomingRadarEvents.map(ev => (
-                          <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:border-[var(--primary)]/30 group">
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ev.status === TaskStatus.DONE ? 'bg-emerald-500 text-white' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
-                              <i className={`fa-solid ${ev.status === TaskStatus.DONE ? 'fa-check' : 'fa-calendar-day'} text-xs`}></i>
+                      {showEvents && (
+                        <div className="space-y-2">
+                          {upcomingRadarEvents.length > 0 ? upcomingRadarEvents.map(ev => (
+                            <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:border-[var(--primary)]/30 group">
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ev.status === TaskStatus.DONE ? 'bg-emerald-500 text-white' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+                                <i className={`fa-solid ${ev.status === TaskStatus.DONE ? 'fa-check' : 'fa-calendar-day'} text-xs`}></i>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className={`text-[10px] font-bold truncate uppercase ${ev.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{ev.title}</div>
+                                <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.scheduledDate!).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}</div>
+                              </div>
+                            </Card>
+                          )) : (
+                            <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
+                              <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Тиждень без великих подій</p>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <div className={`text-[10px] font-bold truncate uppercase ${ev.status === TaskStatus.DONE ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)]'}`}>{ev.title}</div>
-                              <div className="text-[7px] font-bold text-[var(--text-muted)] opacity-50 uppercase">{new Date(ev.scheduledDate!).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}</div>
-                            </div>
-                          </Card>
-                        )) : (
-                          <div className="py-6 px-4 bg-black/[0.02] border border-dashed border-[var(--border-color)] rounded-2xl text-center">
-                            <p className="text-[8px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-widest">Тиждень без великих подій</p>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </section>
                   </div>
                 </div>
@@ -476,6 +516,24 @@ const Dashboard: React.FC = () => {
             ) : (
               <div className="space-y-10">
                 <Card className="bg-[var(--bg-card)] border-[var(--border-color)] p-8 rounded-[2.5rem] shadow-xl">
+
+                  <div className="flex flex-col md:flex-row items-center gap-6 mb-12 pb-8 border-b border-[var(--border-color)]">
+                    <div className="flex-1 flex items-center justify-center gap-4 bg-[var(--primary)]/5 p-6 rounded-3xl border border-[var(--primary)]/10">
+                      <div className="w-14 h-14 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center text-xl shadow-lg"><i className="fa-solid fa-plus"></i></div>
+                      <div>
+                        <Typography variant="tiny" className="text-[var(--text-muted)] font-bold uppercase tracking-widest text-[8px]">Додано сьогодні</Typography>
+                        <div className="text-2xl font-black text-[var(--text-main)]">{stats.todayAdded}</div>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center gap-4 bg-emerald-500/5 p-6 rounded-3xl border border-emerald-500/10">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg"><i className="fa-solid fa-check"></i></div>
+                      <div>
+                        <Typography variant="tiny" className="text-[var(--text-muted)] font-bold uppercase tracking-widest text-[8px]">Виконано сьогодні</Typography>
+                        <div className="text-2xl font-black text-[var(--text-main)]">{stats.todayDone}</div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
                       { key: 'health', label: 'Здоров\'я', color: 'rose' },
@@ -533,6 +591,45 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile Quick Add Bar */}
+      {isMobile && !selectedTaskId && (
+        <form onSubmit={handleQuickAdd} className="fixed bottom-3 left-3 right-3 z-[100] bg-[var(--bg-card)] rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex flex-col p-1 border border-[var(--border-color)]">
+          <input
+            type="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            placeholder="Що потрібно зробити?"
+            value={quickAddInput}
+            onChange={e => setQuickAddInput(e.target.value)}
+            className="w-full bg-transparent border-none text-[14px] font-semibold focus:ring-0 outline-none px-4 py-3 placeholder:text-[var(--text-muted)] placeholder:font-normal"
+          />
+          <div className="flex items-center justify-between px-2 pb-2">
+            <div className="flex items-center gap-3">
+              <button type="button" className="w-[44px] h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                <i className="fa-regular fa-calendar text-[20px]"></i>
+              </button>
+              <button type="button" className="w-[44px] h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                <i className="fa-solid fa-flag text-[20px]"></i>
+              </button>
+              <button type="button" className="w-[44px] h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                <i className="fa-solid fa-hashtag text-[20px]"></i>
+              </button>
+              <button type="button" className="w-[44px] h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                <i className="fa-regular fa-folder text-[20px]"></i>
+              </button>
+              <button type="button" className="w-[44px] h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                <i className="fa-solid fa-ellipsis text-[20px]"></i>
+              </button>
+            </div>
+            <button type="submit" className="w-[44px] h-[44px] flex items-center justify-center bg-[var(--primary)] text-white rounded-[18px] shadow-sm ml-2 shrink-0">
+              <i className="fa-solid fa-microphone text-[20px]"></i>
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };

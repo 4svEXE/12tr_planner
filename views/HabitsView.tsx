@@ -206,8 +206,8 @@ const HabitsView: React.FC = () => {
             onClick={() => setIsEditMode(!isEditMode)}
             className={`flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${isEditMode ? 'text-emerald-500' : 'text-[var(--text-muted)] opacity-70 hover:opacity-100'}`}
           >
-            <i className={`fa-solid ${isEditMode ? 'fa-check' : 'fa-arrow-up-down-paragraph-horizontal'} text-xs`}></i>
-            <span>{isEditMode ? 'ГОТОВО' : 'ПОРЯДОК'}</span>
+            <i className={`fa-solid ${isEditMode ? 'fa-check' : 'fa-arrow-up-down-paragraph-horizontal'} text-lg md:text-xs`}></i>
+            <span className="hidden md:inline">{isEditMode ? 'ГОТОВО' : 'ПОРЯДОК'}</span>
           </button>
         </div>
       </header>
@@ -217,7 +217,7 @@ const HabitsView: React.FC = () => {
           <table className="border-separate border-spacing-0 table-fixed">
             <thead>
               <tr className="bg-[var(--bg-main)]">
-                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem] border-b border-[var(--border-color)]">
+                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[45vw] min-w-[45vw] md:w-64 md:min-w-[16rem] border-b border-[var(--border-color)]">
                   <div className="h-full w-full flex items-center px-3 py-2">
                     <span className="text-[7px] font-bold uppercase text-[var(--text-muted)] tracking-[0.2em] ml-8">Звичка</span>
                   </div>
@@ -256,7 +256,7 @@ const HabitsView: React.FC = () => {
                       isTarget ? 'border-t-[3px] border-t-indigo-500 bg-indigo-50/30' : 'hover:bg-[var(--bg-main)]/30'
                       }`}
                   >
-                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-9 p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[50vw] min-w-[50vw] md:w-64 md:min-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-9 p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[45vw] min-w-[45vw] md:w-64 md:min-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
                       <div className="flex items-center gap-2 md:gap-3 px-3 h-full w-full">
                         <div className="flex items-center gap-2 shrink-0">
                           <div className={`w-4 flex justify-center transition-all ${isEditMode ? 'cursor-grab active:cursor-grabbing text-[var(--primary)] scale-110' : 'text-slate-300 opacity-0 w-0 overflow-hidden'}`}>
@@ -273,7 +273,7 @@ const HabitsView: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12px] md:text-[13px] font-bold text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
+                          <div className="text-[12px] md:text-[13px] font-light text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
                             {habit.title}
                             {streak >= 3 && <span className="text-[var(--primary)] text-[7px] animate-pulse">🔥</span>}
                           </div>
@@ -323,45 +323,61 @@ const HabitsView: React.FC = () => {
       {activeCell && activeHabitForModal && (
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveCell(null)}></div>
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl p-6 md:p-8 rounded-[2.5rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
-            <header className="flex justify-between items-center mb-6">
-              <div className="flex flex-col">
-                <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-bold text-[8px]">
+          <Card className="w-full max-w-sm relative z-10 shadow-2xl p-4 md:p-6 rounded-[2rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
+            <header className="flex justify-between items-start mb-4 md:mb-6">
+              <div className="flex flex-col flex-1 min-w-0 pr-2">
+                <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-bold text-[8px] mb-1">
                   {days.find(d => d.dateStr === activeCell.dateStr)?.label}, {days.find(d => d.dateStr === activeCell.dateStr)?.date}
                 </Typography>
-                <Typography variant="h2" className="text-lg">Відмітити звичку</Typography>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: activeHabitForModal.color || 'var(--primary)' }}></div>
+                  <Typography variant="h2" className="text-sm md:text-lg truncate leading-tight">{activeHabitForModal.title}</Typography>
+                </div>
               </div>
-              <button onClick={() => setActiveCell(null)} className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all">
+              <button onClick={() => setActiveCell(null)} className="w-8 h-8 flex-shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all">
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </header>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4 md:space-y-6">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleSetStatus('completed')}
-                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed'
-                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl scale-105'
+                  className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed'
+                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm scale-[1.02]'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-emerald-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
                     <i className="fa-solid fa-check text-emerald-500"></i>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">ВИКОНАНО</span>
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit">ВИКОНАНО</span>
+                </button>
+
+                <button
+                  onClick={() => handleSetStatus('none')}
+                  className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${!activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status || activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none'
+                    ? 'bg-rose-500 border-rose-500 text-white shadow-sm scale-[1.02]'
+                    : 'bg-[var(--bg-main)] border-transparent hover:border-rose-500/30 text-[var(--text-muted)]'
+                    }`}
+                >
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${(!activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status || activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none') ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
+                    <i className="fa-solid fa-xmark text-rose-500"></i>
+                  </div>
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit leading-none text-center">НЕВИКОНАНО</span>
                 </button>
 
                 <button
                   onClick={() => handleSetStatus('skipped')}
-                  className={`flex flex-col items-center justify-center gap-2 py-6 rounded-3xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped'
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-xl scale-105'
+                  className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped'
+                    ? 'bg-slate-700 border-slate-700 text-white shadow-sm scale-[1.02]'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-slate-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-white/20' : 'bg-white shadow-sm group-hover:scale-110'}`}>
-                    <i className="fa-solid fa-xmark text-slate-500"></i>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
+                    <i className="fa-solid fa-minus text-slate-500 opacity-60"></i>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">ПРОПУЩЕНО</span>
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit opacity-80">ПРОПУСК</span>
                 </button>
               </div>
 
@@ -378,7 +394,11 @@ const HabitsView: React.FC = () => {
               <div className="flex gap-3">
                 <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
                 <button
-                  onClick={() => { toggleHabitStatus(activeCell.habitId, activeCell.dateStr, undefined, reportText); setActiveCell(null); }}
+                  onClick={() => {
+                    const currentStatus = activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status;
+                    toggleHabitStatus(activeCell.habitId, activeCell.dateStr, currentStatus, reportText);
+                    setActiveCell(null);
+                  }}
                   className="flex-[2] py-3.5 bg-[var(--primary)] text-white rounded-2xl font-bold uppercase tracking-widest text-[9px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
                 >
                   ЗБЕРЕГТИ ЗВІТ

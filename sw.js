@@ -1,5 +1,5 @@
 
-const CACHE_NAME = '12tr-v6';
+const CACHE_NAME = '12tr-v7';
 const ASSETS = [
   '/',
   './index.html',
@@ -49,7 +49,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const urlObj = new URL(event.request.url);
   const url = event.request.url;
+
+  // Bypass dev server requests to fix Vite ERR_FAILED
+  if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
+    return;
+  }
+
+  // Bypass non-http protocols (like wss://, chrome-extension://)
+  if (!urlObj.protocol.startsWith('http')) {
+    return;
+  }
 
   // Не кешуємо медіа (аудіо) через проблеми з Range запитами в деяких браузерах
   if (url.includes('.mp3') || url.includes('mixkit.co')) {

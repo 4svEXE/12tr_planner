@@ -13,10 +13,10 @@ interface BriefingCardProps {
 const BriefingCard: React.FC<BriefingCardProps> = ({ aiEnabled, briefing, loading }) => {
   if (loading) {
     return (
-      <Card blur className="border-orange-100 min-h-[160px] flex items-center justify-center">
+      <Card blur className="border-[var(--primary)]/20 min-h-[160px] flex items-center justify-center bg-[var(--bg-card)]">
         <div className="text-center">
-          <i className="fa-solid fa-sparkles text-orange-400 mb-2"></i>
-          <Typography variant="tiny" className="text-slate-400">Формування квесту...</Typography>
+          <i className="fa-solid fa-sparkles text-[var(--primary)] mb-2"></i>
+          <Typography variant="tiny" className="text-[var(--text-muted)]">Формування квесту...</Typography>
         </div>
       </Card>
     );
@@ -27,27 +27,27 @@ const BriefingCard: React.FC<BriefingCardProps> = ({ aiEnabled, briefing, loadin
   }
 
   return (
-    <Card blur className="bg-gradient-to-br from-white to-orange-50/30 border-orange-100 shadow-xl shadow-orange-100/20 relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl -mr-16 -mt-16"></div>
+    <Card blur className="bg-[var(--bg-card)] border-[var(--primary)]/10 shadow-xl relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--primary)]/5 blur-3xl -mr-16 -mt-16"></div>
       <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
         <div className="flex-1 space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="orange" icon="fa-bolt">Квест Дня</Badge>
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Стратегічна пріоритетність</span>
+            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Стратегічна пріоритетність</span>
           </div>
-          <Typography variant="h2" className="text-2xl text-slate-900 leading-tight">
+          <Typography variant="h2" className="text-2xl text-[var(--text-main)] leading-tight">
             {briefing?.questOfDay || "Завершити найважливішу справу з беклогу."}
           </Typography>
-          <div className="flex items-center gap-3 text-emerald-600">
+          <div className="flex items-center gap-3 text-emerald-500">
             <i className="fa-solid fa-circle-check text-xs"></i>
             <Typography variant="body" className="font-bold text-[13px]">Нагорода: +500 XP & 50 Золота</Typography>
           </div>
         </div>
 
         <div className="w-full md:w-64 space-y-4">
-          <div className="p-4 bg-white/60 rounded-2xl border border-white shadow-sm">
-            <Typography variant="tiny" className="text-slate-400 mb-2">Порада Майстра</Typography>
-            <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">
+          <div className="p-4 bg-[var(--bg-main)]/50 rounded-2xl border border-[var(--border-color)] shadow-sm">
+            <Typography variant="tiny" className="text-[var(--text-muted)] mb-2">Порада Майстра</Typography>
+            <p className="text-[11px] font-medium text-[var(--text-main)] leading-relaxed italic">
               "{briefing?.motivation || "Найскладніший крок — перший. Зроби його зараз."}"
             </p>
           </div>
