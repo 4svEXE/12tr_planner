@@ -40,13 +40,13 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ currentDate, viewMode, 
         >
           Сьогодні
         </button>
-        {(['day', 'week', 'month', 'year'] as CalendarViewMode[]).map(mode => (
+        {(['day', 'week', 'month', 'year', 'routine'] as CalendarViewMode[]).map(mode => (
           <button
             key={mode}
             onClick={() => onSetViewMode(mode)}
             className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${viewMode === mode ? 'bg-[var(--bg-card)] shadow-sm text-[var(--primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
           >
-            {mode === 'day' ? 'День' : mode === 'week' ? 'Тиж' : mode === 'month' ? 'Міс' : 'Рік'}
+            {mode === 'day' ? 'День' : mode === 'week' ? 'Тиж' : mode === 'month' ? 'Міс' : mode === 'year' ? 'Рік' : 'Рутина'}
           </button>
         ))}
       </div>

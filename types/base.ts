@@ -16,11 +16,11 @@ export enum Priority {
 
 export type ProjectSection = 'actions' | 'bosses' | 'goals' | 'habits' | 'planner';
 
-export type CalendarViewMode = 'day' | 'week' | 'month' | 'year';
+export type CalendarViewMode = 'day' | 'week' | 'month' | 'year' | 'routine';
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'custom';
 
-export type ThemeType = 
+export type ThemeType =
   | 'classic' | 'midnight' | 'obsidian' | 'cyberpunk' | 'dracula' | 'nordic'
   | 'espresso' | 'royal' | 'steel' | 'abyssal'
   | 'sakura' | 'ocean' | 'forest' | 'sepia' | 'paper';

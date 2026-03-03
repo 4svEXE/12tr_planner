@@ -8,7 +8,6 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { useResizer } from '../hooks/useResizer';
 import ReportDesigner from '../components/settings/ReportDesigner';
-import { WeeklyRoutineManager } from '../components/settings/WeeklyRoutineManager';
 
 const CleanupModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { clearSelectedData } = useApp();
@@ -279,7 +278,6 @@ const SettingsView: React.FC = () => {
   const sections = [
     { id: 'account', icon: 'fa-user-circle', label: 'Мій Акаунт', color: 'text-blue-500', desc: 'Google Sync & Профіль' },
     { id: 'appearance', icon: 'fa-palette', label: 'Теми & Стиль', color: 'text-indigo-500', desc: 'Візуальний двигун' },
-    { id: 'routine', icon: 'fa-calendar-week', label: 'Розпорядок', color: 'text-amber-500', desc: 'Тижневий розклад' },
     { id: 'profile', icon: 'fa-user-astronaut', label: 'Герой RPG', color: 'text-orange-500', desc: 'Ідентичність у грі' },
     { id: 'report', icon: 'fa-chart-line', label: 'Звіт Дня', color: 'text-rose-500', desc: 'Конструктор ретроспекції' },
     { id: 'ai', icon: 'fa-wand-magic-sparkles', label: 'Gemini AI', color: 'text-emerald-500', desc: 'Інтелект системи' },
@@ -387,8 +385,6 @@ const SettingsView: React.FC = () => {
         );
       case 'report':
         return <ReportDesigner />;
-      case 'routine':
-        return <WeeklyRoutineManager />;
       case 'profile':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">

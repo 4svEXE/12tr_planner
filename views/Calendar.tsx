@@ -13,6 +13,7 @@ import WeekView from '../components/calendar/WeekView';
 import DayView from '../components/calendar/DayView';
 import YearView from '../components/calendar/YearView';
 import { DaySchedule } from '../components/calendar/DayView';
+import { CalendarRoutineView } from '../components/calendar/CalendarRoutineView';
 
 const Calendar: React.FC = () => {
   const {
@@ -81,6 +82,7 @@ const Calendar: React.FC = () => {
       case 'week': return <WeekView currentDate={currentDate} dragOverDay={dragOverDay} onDragOver={(e, ts) => { e.preventDefault(); setDragOverDay(ts); }} onDragLeave={() => setDragOverDay(null)} onDrop={onDrop} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} />;
       case 'month': return <MonthView currentDate={currentDate} dragOverDay={dragOverDay} onDragOver={(e, ts) => { e.preventDefault(); setDragOverDay(ts); }} onDragLeave={() => setDragOverDay(null)} onDrop={onDrop} onSelectTask={handleSelectTask} onAddQuickEvent={handleCreateRequest} />;
       case 'year': return <YearView currentDate={currentDate} />;
+      case 'routine': return <CalendarRoutineView />;
       default: return null;
     }
   };
