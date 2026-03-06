@@ -294,6 +294,8 @@ const HabitsView: React.FC = () => {
                               {status === 'completed' ? (
                                 <i className="fa-solid fa-check text-lg" style={{ color }}></i>
                               ) : status === 'skipped' ? (
+                                <i className="fa-solid fa-minus text-[var(--text-muted)] opacity-50 text-lg"></i>
+                              ) : habit.habitHistory?.[d.dateStr] ? (
                                 <i className="fa-solid fa-xmark text-rose-400 text-lg"></i>
                               ) : (
                                 <span className={`text-[11px] font-bold transition-opacity ${isScheduled ? 'opacity-20 text-[var(--text-muted)]' : 'opacity-5 text-[var(--text-muted)]'}`}>●</span>
@@ -344,11 +346,11 @@ const HabitsView: React.FC = () => {
                 <button
                   onClick={() => handleSetStatus('completed')}
                   className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed'
-                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm scale-[1.02]'
+                    ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500 shadow-sm scale-[1.02]'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-emerald-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-emerald-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
                     <i className="fa-solid fa-check text-emerald-500"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit">ВИКОНАНО</span>
@@ -356,12 +358,12 @@ const HabitsView: React.FC = () => {
 
                 <button
                   onClick={() => handleSetStatus('none')}
-                  className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${!activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status || activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none'
-                    ? 'bg-rose-500 border-rose-500 text-white shadow-sm scale-[1.02]'
+                  className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none'
+                    ? 'border-rose-500 bg-rose-500/5 text-rose-500 shadow-sm scale-[1.02]'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-rose-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${(!activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status || activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none') ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none' ? 'bg-rose-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
                     <i className="fa-solid fa-xmark text-rose-500"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit leading-none text-center">НЕВИКОНАНО</span>
@@ -370,11 +372,11 @@ const HabitsView: React.FC = () => {
                 <button
                   onClick={() => handleSetStatus('skipped')}
                   className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped'
-                    ? 'bg-slate-700 border-slate-700 text-white shadow-sm scale-[1.02]'
+                    ? 'border-slate-500 bg-slate-500/5 text-slate-500 shadow-sm scale-[1.02]'
                     : 'bg-[var(--bg-main)] border-transparent hover:border-slate-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-white/20' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-slate-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
                     <i className="fa-solid fa-minus text-slate-500 opacity-60"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit opacity-80">ПРОПУСК</span>
@@ -387,6 +389,9 @@ const HabitsView: React.FC = () => {
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
                   placeholder="Як це було сьогодні?.."
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                   className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl p-4 text-xs font-medium outline-none h-24 resize-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all text-[var(--text-main)] shadow-inner"
                 />
               </div>
@@ -417,7 +422,7 @@ const HabitsView: React.FC = () => {
             <form onSubmit={handleCreateHabit} className="space-y-6">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest">Назва звички</label>
-                <input autoFocus value={newHabitTitle} onChange={(e) => setNewHabitTitle(e.target.value)} placeholder="Напр: Медитація" className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-[var(--text-main)]" />
+                <input autoFocus value={newHabitTitle} onChange={(e) => setNewHabitTitle(e.target.value)} placeholder="Напр: Медитація" autoComplete="off" autoCorrect="off" spellCheck="false" className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all text-[var(--text-main)]" />
               </div>
               <div className="flex gap-3">
                 <Button variant="white" type="button" className="flex-1 rounded-xl text-[10px]" onClick={() => setIsAdding(false)}>ВІДМІНА</Button>

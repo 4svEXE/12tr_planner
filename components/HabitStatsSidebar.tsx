@@ -123,13 +123,14 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                 }`}
               style={{
                 backgroundColor: cell.status === 'completed' ? selectedColor :
-                  cell.status === 'skipped' ? 'var(--text-main)' :
+                  cell.status === 'skipped' ? 'var(--bg-main)' :
                     'var(--bg-main)',
-                borderColor: cell.status === 'completed' ? selectedColor : 'var(--border-color)'
+                borderColor: cell.status === 'completed' ? selectedColor :
+                  cell.status === 'skipped' ? 'var(--text-muted)' : 'var(--border-color)'
               }}
             >
               {cell.status === 'completed' && <i className="fa-solid fa-check text-[7px] text-white"></i>}
-              {cell.status === 'skipped' && <i className="fa-solid fa-xmark text-[7px] text-[var(--bg-card)]"></i>}
+              {cell.status === 'skipped' && <i className="fa-solid fa-minus text-[7px] text-[var(--text-muted)]"></i>}
             </div>
             <span className={`text-[5.5px] font-black uppercase tracking-tighter ${cell.ds === today.toISOString().split('T')[0] ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
               {cell.weekday}

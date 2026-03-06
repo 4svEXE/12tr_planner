@@ -220,6 +220,9 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             onChange={(e) => setLocalTitle(e.target.value)}
             onBlur={() => updateTask({ ...task, title: localTitle })}
             rows={1}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
             className={`w-full bg-transparent text-[22px] font-black border-none focus:ring-0 p-0 placeholder:text-[var(--text-muted)] placeholder:opacity-20 resize-none leading-tight outline-none shadow-none ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} overflow-hidden h-auto transition-all`}
             placeholder={isNote ? "Текст нотатки..." : "Текст завдання..."}
             onInput={(e) => {

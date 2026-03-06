@@ -236,13 +236,19 @@ const EditableBlock: React.FC<{
             ref={contentRef}
             contentEditable
             suppressContentEditableWarning
-            data-placeholder={block.type === 'text' ? (index === 0 ? "Пишіть тут... ('+' для меню)" : "Пишіть тут...") : ""}
+            spellCheck={false}
+            {...({
+              autoComplete: "off",
+              autoCorrect: "off",
+              inputMode: "text"
+            } as any)}
+            data-placeholder={block.type === 'text' ? (index === 0 ? "Пишіть спогад тут... ('+' для меню)" : "Пишіть тут...") : ""}
             onInput={handleInput}
             onKeyDown={internalKeyDown}
             onFocus={onFocus}
             onMouseUp={handleMouseUpSelection}
             onPaste={handlePaste}
-            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)] empty:before:italic block-input ${getBlockStyle()} ${index === 0 ? 'empty:before:opacity-30' : 'empty:before:opacity-0 group-hover/block:empty:before:opacity-20 transition-all'} [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:ml-1`}
+            className={`focus:ring-0 outline-none w-full bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--text-muted)] empty:before:italic block-input ${getBlockStyle()} ${index === 0 ? 'empty:before:opacity-100' : 'empty:before:opacity-0 group-hover/block:empty:before:opacity-20 transition-all'} [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:ml-1`}
           />
         </div>
       </div>
