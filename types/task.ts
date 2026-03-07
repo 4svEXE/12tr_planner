@@ -51,6 +51,8 @@ export interface MindmapNode {
   width: number;
   height: number;
   color?: string;
+  shape?: 'rectangle' | 'ellipse' | 'diamond';
+  isCollapsed?: boolean;
 }
 
 export interface MindmapEdge {
@@ -64,6 +66,7 @@ export interface MindmapData {
   nodes: MindmapNode[];
   edges: MindmapEdge[];
   viewport?: { x: number; y: number; zoom: number };
+  theme?: 'default' | 'dark' | 'ocean' | 'sunset' | 'forest';
 }
 
 export interface Task {

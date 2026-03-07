@@ -21,6 +21,7 @@ import AiChat from './components/AiChat';
 import AuthView from './views/AuthView';
 import NotificationToast from './components/ui/NotificationToast';
 import DailyReportWizard from './components/DailyReportWizard';
+import { useNotificationManager } from './hooks/useNotificationManager';
 import { TaskStatus, Task } from './types';
 const isExe = /12TR-Engine/i.test(navigator.userAgent) || (window as any).process?.versions?.electron;
 
@@ -101,21 +102,14 @@ const WindowTitleBar: React.FC = () => {
 
 const MainLayout: React.FC = () => {
   const {
-    activeTab, setActiveTab, tasks, projects, aiEnabled, theme,
-    plannerProjectId, setPlannerProjectId, diaryNotificationEnabled,
-    diaryNotificationTime, isReportWizardOpen, setIsReportWizardOpen,
-    updateTask, scheduleTask
+    activeTab, setActiveTab, tasks, projects, theme,
+    plannerProjectId, setPlannerProjectId, isReportWizardOpen, setIsReportWizardOpen,
   } = useApp();
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
-  const [activeAlerts, setActiveAlerts] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const [triggeredReminders, setTriggeredReminders] = useState<Set<string>>(new Set());
-  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
-  const [lastDiaryNotifiedDate, setLastDiaryNotifiedDate] = useState<string>('');
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { activeAlerts, handleDismissAlert, handleSnooze } = useNotificationManager();
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
   useEffect(() => {
@@ -123,8 +117,6 @@ const MainLayout: React.FC = () => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-    audioRef.current.volume = 0.4;
 
     // Handle back button for Mobile/PWA
     const handlePopState = (e: PopStateEvent) => {
@@ -142,99 +134,6 @@ const MainLayout: React.FC = () => {
       window.removeEventListener('open-ai-chat', handleOpenAiChat);
     };
   }, [theme, activeTab, setActiveTab]);
-
-  const checkDeadlines = useCallback(() => {
-    const now = Date.now();
-    const nowDate = new Date();
-    const nextTriggered = new Set(triggeredReminders);
-    let hasNewTrigger = false;
-
-    if (diaryNotificationEnabled && diaryNotificationTime) {
-      const currentTimeStr = nowDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      const todayStr = nowDate.toDateString();
-      if (currentTimeStr === diaryNotificationTime && lastDiaryNotifiedDate !== todayStr) {
-        setLastDiaryNotifiedDate(todayStr);
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("Час підбити підсумки дня", {
-            body: "Заповніть свій щоденник та отримайте XP!",
-            icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316"
-          });
-        }
-        audioRef.current?.play().catch(() => { });
-      }
-    }
-
-    const activeTasks = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate || t.dueDate));
-    activeTasks.forEach(task => {
-      const targetTime = task.scheduledDate || task.dueDate || 0;
-      if (targetTime < now - 3600000) return;
-      if (task.reminders && task.reminders.length > 0) {
-        task.reminders.forEach(minutes => {
-          const reminderKey = `${task.id}:${minutes}`;
-          if (nextTriggered.has(reminderKey)) return;
-          const triggerTime = targetTime - (minutes * 60000);
-          if (now >= triggerTime && now < targetTime) {
-            triggerNotification(task, minutes === 0 ? "Починається зараз!" : `Через ${minutes} хв`);
-            nextTriggered.add(reminderKey);
-            hasNewTrigger = true;
-          }
-        });
-      }
-    });
-
-    if (hasNewTrigger) setTriggeredReminders(nextTriggered);
-    const imminent = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && t.scheduledDate && t.scheduledDate > now && t.scheduledDate <= now + 3600000 && !dismissedAlertIds.has(t.id));
-    setActiveAlerts(imminent);
-  }, [tasks, triggeredReminders, dismissedAlertIds, diaryNotificationEnabled, diaryNotificationTime, lastDiaryNotifiedDate]);
-
-  const triggerNotification = (task: Task, label: string) => {
-    audioRef.current?.play().catch(() => { });
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(`Квест: ${task.title}`, { body: label, icon: "https://api.dicebear.com/7.x/shapes/svg?seed=12TR&backgroundColor=f97316" });
-    }
-    setActiveAlerts(prev => prev.find(t => t.id === task.id) ? prev : [...prev, task]);
-  };
-
-  useEffect(() => {
-    checkDeadlines();
-    const interval = setInterval(checkDeadlines, 60000);
-    return () => clearInterval(interval);
-  }, [checkDeadlines]);
-
-  const handleDismissAlert = (taskId: string) => {
-    setDismissedAlertIds(prev => new Set(prev).add(taskId));
-    setActiveAlerts(prev => prev.filter(t => t.id !== taskId));
-  };
-
-  const handleSnooze = (taskId: string, minutes: number) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    let newTime: number;
-    const now = Date.now();
-
-    if (minutes === -1) {
-      // Вечір (21:00 сьогодні або завтра)
-      const today = new Date();
-      today.setHours(21, 0, 0, 0);
-      newTime = today.getTime();
-      if (newTime < now) {
-        newTime += 24 * 60 * 60 * 1000;
-      }
-    } else if (minutes === -2) {
-      // Завтра о 9:00
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
-      newTime = tomorrow.getTime();
-    } else {
-      // Звичайне відкладання
-      newTime = now + (minutes * 60 * 1000);
-    }
-
-    updateTask({ ...task, scheduledDate: newTime });
-    handleDismissAlert(taskId);
-  };
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp)).length,

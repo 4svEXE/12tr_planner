@@ -7,7 +7,7 @@ const TreeNode: React.FC<{
   id: string;
   label: string;
   icon: string;
-  type: 'folder' | 'list' | 'task' | 'note' | 'system';
+  type: 'folder' | 'list' | 'task' | 'note' | 'system' | 'table' | 'mindmap';
   level: number;
   isOpen?: boolean;
   count?: number;

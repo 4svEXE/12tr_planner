@@ -39,6 +39,8 @@ export interface StoreState {
   shoppingStores?: ShoppingStore[];
   shoppingItems?: ShoppingItem[];
   foodInventory?: number;
+  customRewards?: { id: string, title: string, cost: number, icon: string }[];
+  purchasedRewards?: { id: string, title: string, cost: number, icon: string, purchasedAt: number }[];
 }
 
 export interface TwelveWeekYear {

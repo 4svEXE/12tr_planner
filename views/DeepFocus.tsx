@@ -1,18 +1,19 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Typography from '../components/ui/Typography';
-import { useApp } from '../contexts/AppContext';
+import { useAppStore } from '../store/useAppStore';
+import { TaskStatus } from '../types';
 
 interface DeepFocusProps {
   onExit: () => void;
 }
 
 const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
-  const { theme } = useApp();
+  const { theme, tasks, updateTask, updateCharacter, character } = useAppStore();
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isSetup, setIsSetup] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -51,7 +52,21 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
     if (audioRef.current) {
       audioRef.current.play().catch(e => console.log("Audio play blocked"));
     }
-    if (confirm("Час вийшов! Ви неймовірні. Повернутися до системи?")) {
+
+    // Reward user for completing a focus session
+    updateCharacter({
+      xp: character.xp + (50 * Math.max(1, minutes / 25)),
+      gold: character.gold + (15 * Math.max(1, minutes / 25))
+    });
+
+    if (selectedTaskId) {
+      const task = tasks.find(t => t.id === selectedTaskId);
+      if (task) {
+        updateTask({ ...task, status: 'done', completedAt: Date.now() } as any);
+      }
+    }
+
+    if (confirm(`Час вийшов! Ви отримали винагороду. ${selectedTaskId ? 'Завдання виконано.' : ''} Повернутися до системи?`)) {
       onExit();
     }
   };
@@ -78,6 +93,20 @@ const DeepFocus: React.FC<DeepFocusProps> = ({ onExit }) => {
           <div className="space-y-4">
             <div className="text-[var(--primary)] font-black tracking-widest text-xs uppercase">Налаштування сесії</div>
             <Typography variant="h1" className="text-4xl md:text-5xl">Оберіть час фокусу</Typography>
+          </div>
+
+          <div className="text-left w-full space-y-2">
+            <label className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest pl-2">Над чим працюватимемо?</label>
+            <select
+              value={selectedTaskId}
+              onChange={(e) => setSelectedTaskId(e.target.value)}
+              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] outline-none"
+            >
+              <option value="">Без прив'язки до завдання</option>
+              {tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE).map(t => (
+                <option key={t.id} value={t.id}>{t.title}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

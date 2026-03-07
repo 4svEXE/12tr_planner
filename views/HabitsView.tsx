@@ -72,35 +72,37 @@ const HabitsView: React.FC = () => {
     });
   }, []);
 
-  const calculateSmartStreak = (habit: Task) => {
-    const history = habit.habitHistory || {};
-    const scheduledDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
-    let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const habitsWithStreaks = useMemo(() => {
+    return habits.map(habit => {
+      const history = habit.habitHistory || {};
+      const scheduledDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const ds = d.toLocaleDateString('en-CA');
-      const dow = (d.getDay() + 6) % 7;
-      const status = history[ds]?.status || 'none';
+      for (let i = 0; i < 365; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const ds = d.toLocaleDateString('en-CA');
+        const dow = (d.getDay() + 6) % 7;
+        const status = history[ds]?.status || 'none';
 
-      if (status === 'completed') {
-        streak++;
-      } else if (status === 'skipped') {
-        continue;
-      } else {
-        if (scheduledDays.includes(dow)) {
-          if (i === 0) continue;
-          break;
-        } else {
+        if (status === 'completed') {
+          streak++;
+        } else if (status === 'skipped') {
           continue;
+        } else {
+          if (scheduledDays.includes(dow)) {
+            if (i === 0) continue;
+            break;
+          } else {
+            continue;
+          }
         }
       }
-    }
-    return streak;
-  };
+      return { ...habit, computedStreak: streak };
+    });
+  }, [habits]);
 
   const getHabitColor = (habit: Task) => habit.color || 'var(--primary)';
 
@@ -302,8 +304,8 @@ const HabitsView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
-              {habits.map(habit => {
-                const streak = calculateSmartStreak(habit);
+              {habitsWithStreaks.map(habit => {
+                const streak = habit.computedStreak;
                 const color = getHabitColor(habit);
                 const scheduledDays = habit.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
                 const isItemDragged = draggedId === habit.id;

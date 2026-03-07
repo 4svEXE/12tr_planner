@@ -9,6 +9,7 @@ import TaskDetails from '../components/TaskDetails';
 import { useResizer } from '../hooks/useResizer';
 import MiniCalendar from '../components/sidebar/MiniCalendar';
 import BriefingCard from '../components/dashboard/BriefingCard';
+import RewardsStore from '../components/dashboard/RewardsStore';
 
 const Dashboard: React.FC = () => {
   const {
@@ -19,7 +20,7 @@ const Dashboard: React.FC = () => {
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [mainTab, setMainTab] = useState<'tasks' | 'progress'>('tasks');
+  const [mainTab, setMainTab] = useState<'tasks' | 'progress' | 'rewards'>('tasks');
   const [taskFilter, setTaskFilter] = useState<'all' | 'projects' | 'calendar'>('projects');
   const [progressPeriod, setProgressPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
@@ -333,6 +334,7 @@ const Dashboard: React.FC = () => {
               <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
                 <button onClick={() => setMainTab('tasks')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
                 <button onClick={() => setMainTab('progress')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
+                <button onClick={() => setMainTab('rewards')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'rewards' ? 'bg-[var(--bg-card)] text-amber-500 shadow-sm' : 'text-[var(--text-muted)]'}`}>Нагороди</button>
               </div>
             </div>
             <div className="flex items-center gap-3 bg-black/5 px-3 py-1.5 rounded-xl border border-[var(--border-color)] overflow-hidden">
@@ -513,7 +515,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </>
-            ) : (
+            ) : mainTab === 'progress' ? (
               <div className="space-y-10">
                 <Card className="bg-[var(--bg-card)] border-[var(--border-color)] p-8 rounded-[2.5rem] shadow-xl">
 
@@ -570,6 +572,8 @@ const Dashboard: React.FC = () => {
                   </div>
                 </Card>
               </div>
+            ) : (
+              <RewardsStore />
             )}
           </div>
         </div>
