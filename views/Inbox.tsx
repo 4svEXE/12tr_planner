@@ -178,6 +178,11 @@ const Inbox: React.FC<{ showCompleted?: boolean; showNextActions?: boolean }> = 
                       return (
                         <div
                           key={task.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('taskId', task.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
                           onClick={() => setSelectedTaskId(task.id)}
                           className={`flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer group relative border rounded-lg transition-all shadow-sm
                             ${isSelected ? (showCompleted ? 'bg-primary/10 border-primary/30' : 'bg-primary/5 border-primary/20') : 'bg-card border-theme hover:border-primary/30'} ${isGracefullyVisible ? 'scale-[0.98]' : ''}`}

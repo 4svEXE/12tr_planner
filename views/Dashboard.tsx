@@ -385,6 +385,11 @@ const Dashboard: React.FC = () => {
                           return (
                             <div
                               key={task.id}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('taskId', task.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
                               onClick={() => setSelectedTaskId(task.id)}
                               className={`flex items-center gap-3 px-3.5 py-2.5 transition-all cursor-pointer shadow-sm rounded-xl border ${selectedTaskId === task.id ? 'bg-primary/5 border-primary/20' : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30'}`}
                             >
@@ -469,7 +474,13 @@ const Dashboard: React.FC = () => {
                       {showDeadlines && (
                         <div className="space-y-2">
                           {urgentDeadlines.length > 0 ? urgentDeadlines.map(ev => (
-                            <Card key={ev.id} padding="none" onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50">
+                            <Card key={ev.id} padding="none"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('taskId', ev.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
+                              onClick={() => setSelectedTaskId(ev.id)} className="p-4 bg-[var(--bg-card)] border-l-4 border-l-rose-500 border-[var(--border-color)] rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer hover:bg-rose-50">
                               <div className="min-w-0 flex-1">
                                 <div className="text-[11px] font-bold truncate uppercase text-[var(--text-main)]">{ev.title}</div>
                                 <div className="text-[8px] font-bold text-rose-600 uppercase mt-0.5">Термін: {new Date(ev.dueDate!).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</div>

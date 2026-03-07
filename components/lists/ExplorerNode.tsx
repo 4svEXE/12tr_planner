@@ -14,13 +14,14 @@ interface ExplorerNodeProps {
   onDeleteSection: (pId: string, sId: string) => void;
   onMoveNode: (sourceId: string, targetId: string | undefined) => void;
   onUpdateTask: (task: any) => void;
+  onAddProject: (p: any) => string;
   allTasks: Task[];
   allProjects: Project[];
 }
 
 const ExplorerNode: React.FC<ExplorerNodeProps> = ({
   project, level, expandedFolders, selectedProjectId,
-  onToggle, onSelect, onAddChild, onEdit, onDelete, onMoveNode, onUpdateTask,
+  onToggle, onSelect, onAddChild, onEdit, onDelete, onDeleteSection, onMoveNode, onUpdateTask, onAddProject,
   allTasks, allProjects
 }) => {
   const isFolder = project.type === 'folder';
@@ -44,9 +45,22 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
     const taskId = e.dataTransfer.getData('taskId');
     const sourceProjectId = e.dataTransfer.getData('projectId');
 
-    if (taskId && !isFolder) {
+    if (taskId) {
       const t = allTasks.find(x => x.id === taskId);
-      if (t) onUpdateTask({ ...t, projectId: project.id, projectSection: 'actions', isDeleted: false });
+      if (t) {
+        if (!isFolder) {
+          onUpdateTask({ ...t, projectId: project.id, projectSection: 'actions', isDeleted: false });
+        } else {
+          // Folder drop: create list and move task
+          const newListId = onAddProject({
+            name: 'Новий список',
+            type: 'list',
+            parentFolderId: project.id,
+            color: project.color || '#6366f1'
+          });
+          onUpdateTask({ ...t, projectId: newListId, projectSection: 'actions', isDeleted: false });
+        }
+      }
     } else if (sourceProjectId && isFolder && sourceProjectId !== project.id) {
       onMoveNode(sourceProjectId, project.id);
     }
@@ -128,9 +142,10 @@ const ExplorerNode: React.FC<ExplorerNodeProps> = ({
               onAddChild={onAddChild}
               onEdit={onEdit}
               onDelete={onDelete}
-              onDeleteSection={() => { }}
+              onDeleteSection={onDeleteSection}
               onMoveNode={onMoveNode}
               onUpdateTask={onUpdateTask}
+              onAddProject={onAddProject}
               allTasks={allTasks}
               allProjects={allProjects}
             />

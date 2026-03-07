@@ -29,18 +29,29 @@ export interface RecurrenceConfig {
 export interface TableColumn {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'badge';
+  type: 'text' | 'number' | 'badge' | 'date' | 'checkbox';
   width?: number;
+}
+
+export interface CellStyle {
+  bold?: boolean;
+  italic?: boolean;
+  color?: string;
+  bg?: string;
+  align?: 'left' | 'center' | 'right';
+  fontSize?: number;
 }
 
 export interface TableRow {
   id: string;
   cells: Record<string, any>; // key is column.id
+  cellStyles?: Record<string, CellStyle>; // key is column.id
 }
 
 export interface TableData {
   columns: TableColumn[];
   rows: TableRow[];
+  theme?: 'default' | 'dark' | 'professional' | 'pastel' | 'ocean';
 }
 
 export interface MindmapNode {

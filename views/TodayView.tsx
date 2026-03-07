@@ -235,7 +235,17 @@ const TodayView: React.FC = () => {
                   {activeQuests.map(task => {
                     const project = projects.find(p => p.id === task.projectId);
                     return (
-                      <Card key={task.id} padding="none" onClick={() => setSelectedTaskId(task.id)} className="flex items-center gap-4 p-5 group cursor-pointer hover:border-orange-300 shadow-sm bg-white">
+                      <Card
+                        key={task.id}
+                        padding="none"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('taskId', task.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onClick={() => setSelectedTaskId(task.id)}
+                        className="flex items-center gap-4 p-5 group cursor-pointer hover:border-orange-300 shadow-sm bg-white"
+                      >
                         <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 bg-slate-50 hover:border-orange-500 text-transparent'}`}>
                           <i className="fa-solid fa-check text-[10px]"></i>
                         </button>

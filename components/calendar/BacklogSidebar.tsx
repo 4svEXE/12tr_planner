@@ -71,7 +71,7 @@ const TreeNode: React.FC<{
 };
 
 const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSelectTask }) => {
-  const { tasks, projects, setActiveTab, updateTask, deleteTask, diary, saveDiaryEntry } = useApp();
+  const { tasks, projects, setActiveTab, updateTask, deleteTask, diary, saveDiaryEntry, addProject } = useApp();
 
   const getInitialExpandedState = () => {
     const saved = localStorage.getItem('backlog_expanded_nodes');
@@ -155,6 +155,16 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
     } else if (targetType.startsWith('project_')) {
       const pId = targetType.replace('project_', '');
       updateTask({ ...task, projectId: pId, scheduledDate: undefined });
+    } else if (targetType.startsWith('folder_')) {
+      const fId = targetType.replace('folder_', '');
+      // Create a list instead of just dropping into folder
+      const newListId = addProject({
+        name: 'Новий список',
+        type: 'list',
+        parentFolderId: fId,
+        color: projects.find(p => p.id === fId)?.color || '#6366f1'
+      });
+      updateTask({ ...task, projectId: newListId, scheduledDate: undefined });
     }
   };
 
@@ -214,7 +224,7 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
             level={level}
             isOpen={isOpen}
             onToggle={() => toggleNode(nodeId)}
-            onDrop={(e) => !isFolder && handleDrop(e, `project_${p.id}`)}
+            onDrop={(e) => handleDrop(e, isFolder ? `folder_${p.id}` : `project_${p.id}`)}
             color={p.color}
             count={tasksInThisProject.length}
           >

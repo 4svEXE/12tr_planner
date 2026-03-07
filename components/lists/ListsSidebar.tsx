@@ -16,7 +16,7 @@ interface ListsSidebarProps {
 const EXPANDED_NODES_KEY = '12tr_sidebar_expanded_nodes';
 
 const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelectProject, onOpenListModal, isMobile, onClose }) => {
-  const { projects, tasks, updateProject, deleteProject, deleteProjectSection, updateTask, setActiveTab } = useApp();
+  const { projects, tasks, updateProject, deleteProject, deleteProjectSection, updateTask, setActiveTab, addProject } = useApp();
 
   const [isCollectionsExpanded, setIsCollectionsExpanded] = useState(() => {
     const saved = localStorage.getItem('12tr_sidebar_collections_expanded');
@@ -144,6 +144,7 @@ const ListsSidebar: React.FC<ListsSidebarProps> = ({ selectedProjectId, onSelect
                   onDeleteSection={deleteProjectSection}
                   onMoveNode={(src, target) => updateProject({ ...projects.find(p => p.id === src)!, parentFolderId: target })}
                   onUpdateTask={updateTask}
+                  onAddProject={addProject}
                   allTasks={tasks}
                   allProjects={projects}
                 />
