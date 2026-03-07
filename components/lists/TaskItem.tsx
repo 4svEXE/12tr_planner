@@ -120,19 +120,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
           }`}
       >
         <div className="flex items-center gap-3 w-full h-[26px]">
-          {isNote ? (
-            <div className="w-4 h-4 flex items-center justify-center shrink-0 text-indigo-400 opacity-60">
+          <div className="w-4 h-4 flex items-center justify-center shrink-0 text-indigo-400 opacity-60">
+            {isNote && (
               <i className="fa-solid fa-note-sticky text-[10px]"></i>
-            </div>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleStatus(task); }}
-              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)] group-hover:border-[var(--primary)]'
-                }`}
-            >
-              {isDone && <i className="fa-solid fa-check text-[8px]"></i>}
-            </button>
-          )}
+            )}
+            {task.category === 'table' && (
+              <i className="fa-solid fa-table text-[10px]"></i>
+            )}
+            {task.category === 'mindmap' && (
+              <i className="fa-solid fa-diagram-project text-[10px]"></i>
+            )}
+            {!isNote && task.category !== 'table' && task.category !== 'mindmap' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleStatus(task); }}
+                className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)] group-hover:border-[var(--primary)]'
+                  }`}
+              >
+                {isDone && <i className="fa-solid fa-check text-[8px]"></i>}
+              </button>
+            )}
+          </div>
 
           {isEditing ? (
             <input ref={inputRef} autoFocus value={inputValue} onChange={e => onInputChange(e.target.value)} onBlur={() => onFinishEdit(task)} onKeyDown={e => e.key === 'Enter' && onFinishEdit(task)} onClick={e => e.stopPropagation()} placeholder="Назва..." className="flex-1 bg-transparent border-none p-0 text-[13px] font-semibold focus:ring-0 outline-none text-[var(--text-main)] h-full" />

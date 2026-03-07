@@ -3,6 +3,8 @@ import { Task, Priority, TaskStatus } from '../types';
 import { useApp } from '../contexts/AppContext';
 import HashtagAutocomplete from './HashtagAutocomplete';
 import DiaryEditor from './DiaryEditor';
+import TableEditor from './TableEditor';
+import MindmapEditor from './MindmapEditor';
 import Badge from './ui/Badge';
 import TaskDatePicker from './TaskDatePicker';
 
@@ -15,6 +17,9 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const { updateTask, toggleTaskStatus, deleteTask, addTask, people = [], projects = [] } = useApp();
 
   const isNote = task.category === 'note';
+  const isTable = task.category === 'table';
+  const isMindmap = task.category === 'mindmap';
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -75,6 +80,11 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
 
   const toggleType = () => {
     updateTask({ ...task, category: isNote ? 'tasks' : 'note' });
+    setShowActionsMenu(false);
+  };
+
+  const setCategory = (category: string) => {
+    updateTask({ ...task, category });
     setShowActionsMenu(false);
   };
 
@@ -179,8 +189,13 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             </button>
             {showActionsMenu && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-[var(--bg-card)] shadow-xl border border-[var(--border-color)] rounded-xl z-[120] py-1 tiktok-blur animate-in zoom-in-95">
+                <MenuSection title="Формат">
+                  <MenuItem icon="fa-bolt" label="Зробити завданням" onClick={() => setCategory('tasks')} />
+                  <MenuItem icon="fa-note-sticky" label="Зробити нотаткою" onClick={() => setCategory('note')} />
+                  <MenuItem icon="fa-table" label="Зробити таблицею" onClick={() => setCategory('table')} />
+                  <MenuItem icon="fa-diagram-project" label="Зробити майндмапою" onClick={() => setCategory('mindmap')} />
+                </MenuSection>
                 <MenuSection title="Дії">
-                  <MenuItem icon={isNote ? "fa-bolt" : "fa-note-sticky"} label={isNote ? "Зробити завданням" : "Зробити нотаткою"} onClick={toggleType} />
                   <MenuItem icon="fa-thumbtack" label={task.isPinned ? "Відкріпити" : "Закріпити"} onClick={() => { updateTask({ ...task, isPinned: !task.isPinned }); setShowActionsMenu(false); }} />
                 </MenuSection>
                 <MenuSection title="Організація">
@@ -224,7 +239,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             autoCorrect="off"
             spellCheck="false"
             className={`w-full bg-transparent text-[22px] font-black border-none focus:ring-0 p-0 placeholder:text-[var(--text-muted)] placeholder:opacity-20 resize-none leading-tight outline-none shadow-none ${isDone ? 'line-through text-[var(--text-muted)] opacity-50' : 'text-[var(--text-main)]'} overflow-hidden h-auto transition-all`}
-            placeholder={isNote ? "Текст нотатки..." : "Текст завдання..."}
+            placeholder={isNote ? "Текст нотатки..." : isTable ? "Назва таблиці..." : isMindmap ? "Назва майндмапи..." : "Текст завдання..."}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
@@ -234,14 +249,22 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
         </div>
 
         <div className="flex-1 overflow-hidden relative">
-          <DiaryEditor
-            id={task.id}
-            date={new Date(task.createdAt).toISOString().split('T')[0]}
-            onClose={() => { }}
-            standaloneMode={true}
-            initialContent={task.content}
-            onContentChange={(newContent) => updateTask({ ...task, content: newContent })}
-          />
+          {isTable ? (
+            <TableEditor task={task} />
+          ) : isMindmap ? (
+            <div className="h-full w-full p-2">
+              <MindmapEditor task={task} />
+            </div>
+          ) : (
+            <DiaryEditor
+              id={task.id}
+              date={new Date(task.createdAt).toISOString().split('T')[0]}
+              onClose={() => { }}
+              standaloneMode={true}
+              initialContent={task.content}
+              onContentChange={(newContent) => updateTask({ ...task, content: newContent })}
+            />
+          )}
         </div>
       </div>
 

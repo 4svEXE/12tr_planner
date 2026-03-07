@@ -44,10 +44,12 @@ const TreeNode: React.FC<{
             <div className="w-3"></div>
           )}
           <i className={`fa-solid ${icon} text-[11px] w-4 text-center ${type === 'note' ? 'text-indigo-500' :
-            type === 'task' ? 'text-slate-400' :
-              type === 'folder' ? 'text-amber-500' :
-                type === 'list' ? 'text-indigo-500' :
-                  label === 'Календар' ? 'text-rose-500' : 'text-blue-500'
+            type === 'table' ? 'text-emerald-500' :
+              type === 'mindmap' ? 'text-blue-500' :
+                type === 'task' ? 'text-slate-400' :
+                  type === 'folder' ? 'text-amber-500' :
+                    type === 'list' ? 'text-indigo-500' :
+                      label === 'Календар' ? 'text-rose-500' : 'text-blue-500'
             }`} style={color ? { color } : {}}></i>
         </div>
 
@@ -179,8 +181,8 @@ const BacklogSidebar: React.FC<{ onSelectTask: (id: string) => void }> = ({ onSe
         key={t.id}
         id={t.id}
         label={labelWithDate}
-        icon={t.category === 'note' ? 'fa-note-sticky' : 'fa-circle-dot'}
-        type={t.category === 'note' ? 'note' : 'task'}
+        icon={t.category === 'note' ? 'fa-note-sticky' : t.category === 'table' ? 'fa-table' : t.category === 'mindmap' ? 'fa-diagram-project' : 'fa-circle-dot'}
+        type={t.category === 'note' ? 'note' : t.category === 'table' ? 'table' : t.category === 'mindmap' ? 'mindmap' : 'task'}
         level={level}
         onClick={() => onSelectTask(t.id)}
         isDone={t.status === TaskStatus.DONE || (t.status as any) === 'DONE'}

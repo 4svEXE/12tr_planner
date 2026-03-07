@@ -26,6 +26,46 @@ export interface RecurrenceConfig {
   endDate?: number;
 }
 
+export interface TableColumn {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'badge';
+  width?: number;
+}
+
+export interface TableRow {
+  id: string;
+  cells: Record<string, any>; // key is column.id
+}
+
+export interface TableData {
+  columns: TableColumn[];
+  rows: TableRow[];
+}
+
+export interface MindmapNode {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color?: string;
+}
+
+export interface MindmapEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  label?: string;
+}
+
+export interface MindmapData {
+  nodes: MindmapNode[];
+  edges: MindmapEdge[];
+  viewport?: { x: number; y: number; zoom: number };
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -48,7 +88,7 @@ export interface Task {
   isEvent?: boolean;
   isPinned?: boolean;
   isTactic?: boolean;
-  category?: string;
+  category?: 'tasks' | 'note' | 'table' | 'mindmap' | string;
   checklist?: ChecklistItem[];
   isDeleted?: boolean;
   isArchived?: boolean;
@@ -68,4 +108,6 @@ export interface Task {
   isHypothesis?: boolean;
   hypothesisDetails?: string;
   hypothesisNotes?: string;
+  tableData?: TableData;
+  mindmapData?: MindmapData;
 }
