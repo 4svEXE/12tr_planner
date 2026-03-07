@@ -1,5 +1,5 @@
 
-const CACHE_NAME = '12tr-v7';
+const CACHE_NAME = '12tr-v8'; // Incremented version to force flush
 const ASSETS = [
   '/',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
 ];
 
-// Ресурси, які можуть мати CORS обмеження, кешуємо через окрему логіку або пропускаємо в addAll
+// Resources that might have CORS restrictions, cache separately or skip in addAll
 const EXTERNAL_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
@@ -16,11 +16,11 @@ const EXTERNAL_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Installing new cache v6');
-      // Окремо додаємо критичні ресурси
+      console.log('Installing new cache v8');
+      // Adding assets
       cache.addAll(ASSETS).catch(err => console.error('Critical assets failed to cache', err));
 
-      // Спроба кешувати зовнішні ресурси без блокування всієї установки
+      // Attempt to cache external assets without blocking
       EXTERNAL_ASSETS.forEach(url => {
         fetch(url, { mode: 'no-cors' }).then(response => {
           cache.put(url, response);
@@ -52,9 +52,15 @@ self.addEventListener('fetch', (event) => {
   const urlObj = new URL(event.request.url);
   const url = event.request.url;
 
-  // Bypass dev server requests to fix Vite ERR_FAILED
-  if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
-    return;
+  // BYPASS CACHE FOR ALL LOCAL NETWORK REQUESTS (DEV MODE)
+  const isLocal = urlObj.hostname === 'localhost' ||
+    urlObj.hostname === '127.0.0.1' ||
+    urlObj.hostname.startsWith('192.168.') ||
+    urlObj.hostname.startsWith('10.') ||
+    urlObj.hostname.startsWith('172.');
+
+  if (isLocal) {
+    return; // Let the browser handle it normally (network first)
   }
 
   // Bypass non-http protocols (like wss://, chrome-extension://)
