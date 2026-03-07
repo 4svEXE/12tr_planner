@@ -371,14 +371,20 @@
 
 <body>
   <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      // Aggressively unregister SW in development to avoid caching issues
+      const isLocal = location.hostname === 'localhost' || 
+                     location.hostname === '127.0.0.1' || 
+                     location.hostname.startsWith('192.168.');
+
+      if (isLocal) {
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
           for (let registration of registrations) {
-            registration.unregister();
+            registration.unregister().then(() => {
+              console.log('SW unregistered for development');
+            });
           }
         });
       } else {

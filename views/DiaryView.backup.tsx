@@ -9,17 +9,8 @@ import DiaryEditor from '../components/DiaryEditor';
 import DailyReportAiWizard from '../components/DailyReportAiWizard';
 import { useResizer } from '../hooks/useResizer';
 
-/**
- * Backup of previous DiaryView state before restore from commit 88e51808
- * saved at views/DiaryView.backup.tsx
- */
-
 const DiaryView: React.FC = () => {
-  const {
-    diary = [], tasks, deleteDiaryEntry, character, aiEnabled,
-    setActiveTab, setIsReportWizardOpen, saveDiaryEntry
-  } = useApp();
-
+  const { diary = [], tasks, deleteDiaryEntry, character, aiEnabled, setActiveTab, setIsReportWizardOpen, saveDiaryEntry } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
@@ -51,14 +42,13 @@ const DiaryView: React.FC = () => {
   }, [diary]);
 
   const filteredDiary = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return sortedDiary;
+    if (!searchQuery.trim()) return sortedDiary;
     return sortedDiary.filter(e => {
       try {
         const blocks = JSON.parse(e.content);
-        return blocks.some((b: any) => b.content?.toLowerCase().includes(query));
+        return blocks.some((b: any) => b.content?.toLowerCase().includes(searchQuery.toLowerCase()));
       } catch {
-        return e.content.toLowerCase().includes(query);
+        return e.content.toLowerCase().includes(searchQuery.toLowerCase());
       }
     });
   }, [sortedDiary, searchQuery]);
@@ -168,47 +158,6 @@ const DiaryView: React.FC = () => {
     );
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
-    if (!taskId) return;
-
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    // Use selected date or today
-    const targetDate = selectedDate || new Date().toLocaleDateString('en-CA');
-    const existingEntry = diary.find(ent => ent.date === targetDate);
-
-    let content: string;
-    const taskBullet = `[ ] ${task.title}${task.description ? ': ' + task.description : ''}`;
-
-    if (existingEntry) {
-      try {
-        const blocks = JSON.parse(existingEntry.content);
-        blocks.push({
-          id: Math.random().toString(36).substr(2, 9),
-          type: 'bullet',
-          content: taskBullet
-        });
-        content = JSON.stringify(blocks);
-      } catch {
-        content = existingEntry.content + `\n- ${taskBullet}`;
-      }
-    } else {
-      content = JSON.stringify([
-        { id: 'b1', type: 'h1', content: `Запис від ${new Date(targetDate).toLocaleDateString('uk-UA')}` },
-        { id: 'b2', type: 'bullet', content: taskBullet }
-      ]);
-    }
-
-    const savedId = saveDiaryEntry(targetDate, content, existingEntry?.id);
-    if (savedId) {
-      setEditingEntryId(savedId);
-      setSelectedDate(targetDate);
-    }
-  };
-
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
@@ -237,12 +186,6 @@ const DiaryView: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsReportWizardOpen(true)}
-                className="hidden md:flex px-6 h-12 bg-indigo-600 text-white rounded-2xl items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                Звіт дня
-              </button>
-              <button
                 onClick={() => setEditingEntryId('new')}
                 className="w-10 h-10 md:w-auto md:px-6 bg-[var(--primary)] text-white rounded-2xl md:h-12 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
@@ -256,46 +199,7 @@ const DiaryView: React.FC = () => {
         {renderTopCalendar()}
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Restored Sidebar from commit 88e51808 */}
-          <aside className="w-64 md:w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
-            <div className="p-5 bg-[var(--primary)]/5 rounded-3xl border border-[var(--primary)]/10 mb-2">
-              <Typography variant="tiny" className="text-[var(--primary)] font-black mb-2 uppercase text-[8px] tracking-[0.2em] opacity-60">Статистика</Typography>
-              <div className="text-3xl font-black text-[var(--text-main)]">{diary.length}</div>
-              <div className="text-[9px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-wider">Всього спогадів</div>
-            </div>
-
-            <button
-              onClick={() => {
-                const today = new Date().toLocaleDateString('en-CA');
-                setSelectedDate(today);
-                const ent = diary.find(e => e.date === today);
-                if (ent) setEditingEntryId(ent.id); else setEditingEntryId('new');
-              }}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--primary)]/30 transition-all group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center transition-transform group-hover:scale-110">
-                <i className="fa-solid fa-calendar-today"></i>
-              </div>
-              <div className="text-left">
-                <div className="text-[10px] font-black uppercase tracking-tight text-[var(--text-main)]">Сьогодні</div>
-                <div className="text-[8px] font-bold text-[var(--text-muted)] uppercase opacity-50">Швидкий перехід</div>
-              </div>
-            </button>
-
-            <div className="mt-auto opacity-20 hover:opacity-100 transition-opacity">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-px bg-[var(--border-color)]"></div>
-                <span className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)]">12TR Engine v4.0</span>
-                <div className="w-6 h-px bg-[var(--border-color)]"></div>
-              </div>
-            </div>
-          </aside>
-
-          <main
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 bg-[var(--bg-main)]/30 relative no-scrollbar"
-          >
+          <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 bg-[var(--bg-main)]/30 relative no-scrollbar">
             <div className="absolute left-[3.5rem] md:left-[6.2rem] top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[var(--border-color)] to-transparent opacity-30 hidden md:block"></div>
 
             <div className="max-w-3xl mx-auto space-y-12 pb-40">
@@ -343,13 +247,15 @@ const DiaryView: React.FC = () => {
                                     <i className="fa-regular fa-clock text-[var(--primary)]"></i>
                                     {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
                                   </div>
-                                  <Badge variant="indigo" className="text-[8px] py-0 px-2 opacity-50">{entry.date}</Badge>
                                   {dailyHabits.length > 0 && (
                                     <div className="flex items-center gap-1.5 text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10">
                                       <i className="fa-solid fa-repeat"></i>
                                       {dailyHabits.filter(h => h.habitHistory?.[entry.date]?.status === 'completed').length} / {dailyHabits.length}
                                     </div>
                                   )}
+                                  <div className="text-[8px] font-black text-[var(--text-muted)] opacity-30 uppercase tracking-widest">
+                                    {entry.date.replaceAll('-', '.')}
+                                  </div>
                                 </div>
                               </div>
                               <div className="opacity-0 group-hover/card:opacity-100 transition-all flex gap-2">
