@@ -25,6 +25,8 @@ const HabitsView: React.FC = () => {
   };
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'habits' | 'hypotheses'>('all');
+  const [showFilterPopup, setShowFilterPopup] = useState(false);
 
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
@@ -43,12 +45,17 @@ const HabitsView: React.FC = () => {
   };
 
   const habits = useMemo(() =>
-    tasks.filter(t =>
-      !t.isDeleted &&
-      (activeTab === 'archived' ? t.isArchived === true : !t.isArchived) &&
-      (t.projectSection === 'habits' || t.tags.includes('habit'))
-    ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [tasks, activeTab]);
+    tasks.filter(t => {
+      const isDeleted = t.isDeleted;
+      const isArchivedMatch = activeTab === 'archived' ? t.isArchived === true : !t.isArchived;
+      const isHabit = t.projectSection === 'habits' || t.tags.includes('habit');
+      if (isDeleted || !isArchivedMatch || !isHabit) return false;
+
+      if (filter === 'habits') return !t.isHypothesis;
+      if (filter === 'hypotheses') return t.isHypothesis;
+      return true;
+    }).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [tasks, activeTab, filter]);
 
   const days = useMemo(() => {
     return Array.from({ length: 14 }, (_, i) => {
@@ -176,25 +183,27 @@ const HabitsView: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden relative">
-      <header className="z-20 bg-[var(--bg-card)] border-b border-[var(--border-color)] px-5 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          <Typography variant="h2" className="text-lg font-bold">Звички</Typography>
-          <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)] ml-2">
+      <header className="z-40 bg-[var(--bg-card)] border-b border-[var(--border-color)] px-0 md:px-5 py-0 md:py-3 flex items-center justify-between shadow-sm h-14 md:h-auto">
+        <div className="flex items-center gap-1 md:gap-3 h-full px-4 md:px-0">
+          <Typography variant="h2" className="text-sm md:text-lg font-bold">Звички</Typography>
+          <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)] ml-1 md:ml-2">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-3 py-1 rounded-md text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
+              className={`px-2 md:px-3 py-1 rounded-md text-[7px] md:text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
               Активні
             </button>
             <button
               onClick={() => setActiveTab('archived')}
-              className={`px-3 py-1 rounded-md text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
+              className={`px-2 md:px-3 py-1 rounded-md text-[7px] md:text-[8px] font-bold uppercase tracking-widest transition-all ${activeTab === 'archived' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}
             >
               Архів
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Desktop Header Actions */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--primary)] opacity-70 hover:opacity-100 transition-all group"
@@ -210,16 +219,75 @@ const HabitsView: React.FC = () => {
             <span className="hidden md:inline">{isEditMode ? 'ГОТОВО' : 'ПОРЯДОК'}</span>
           </button>
         </div>
+
+        {/* Mobile Header Actions */}
+        <div className="md:hidden flex h-full">
+          <button
+            onClick={() => setIsAdding(true)}
+            className="w-14 h-14 flex items-center justify-center text-[var(--primary)] active:bg-black/5"
+            aria-label="Add Habit"
+          >
+            <i className="fa-solid fa-plus text-[14px]"></i>
+          </button>
+          <button
+            onClick={() => setShowFilterPopup(true)}
+            className={`w-14 h-14 flex items-center justify-center active:bg-black/5 ${isEditMode || filter !== 'all' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+            aria-label="Edit and Filter"
+          >
+            <i className="fa-solid fa-pencil text-[14px]"></i>
+          </button>
+        </div>
+
+        {/* Mobile Filter Popup */}
+        {showFilterPopup && (
+          <>
+            <div className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-[2px]" onClick={() => setShowFilterPopup(false)} />
+            <div className="fixed top-16 right-4 z-[101] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 duration-200">
+              <div className="p-2 border-b border-[var(--border-color)] mb-2 flex justify-between items-center">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Налаштування</span>
+                <button
+                  onClick={() => {
+                    setIsEditMode(!isEditMode);
+                    setShowFilterPopup(false);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase ${isEditMode ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'}`}
+                >
+                  {isEditMode ? 'Готово' : 'Порядок'}
+                </button>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => { setFilter('all'); setShowFilterPopup(false); }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-colors ${filter === 'all' ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'}`}
+                >
+                  <i className="fa-solid fa-list-ul mr-3 opacity-60"></i> Показати усі
+                </button>
+                <button
+                  onClick={() => { setFilter('habits'); setShowFilterPopup(false); }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-colors ${filter === 'habits' ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'}`}
+                >
+                  <i className="fa-solid fa-repeat mr-3 opacity-60"></i> Лише звички
+                </button>
+                <button
+                  onClick={() => { setFilter('hypotheses'); setShowFilterPopup(false); }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-colors ${filter === 'hypotheses' ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'}`}
+                >
+                  <i className="fa-solid fa-flask mr-3 opacity-60"></i> Лише гіпотези
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
       <div className="flex-1 overflow-x-auto custom-scrollbar z-10 no-scrollbar">
         <div className="min-w-full inline-block align-middle p-0">
-          <table className="border-separate border-spacing-0 table-fixed">
+          <table className="w-full border-separate border-spacing-0 table-fixed">
             <thead>
               <tr className="bg-[var(--bg-main)]">
-                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[45vw] min-w-[45vw] md:w-64 md:min-w-[16rem] border-b border-[var(--border-color)]">
-                  <div className="h-full w-full flex items-center px-3 py-2">
-                    <span className="text-[7px] font-bold uppercase text-[var(--text-muted)] tracking-[0.2em] ml-8">Звичка</span>
+                <th className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 text-left w-[50vw] min-w-[50vw] max-w-[50vw] md:w-64 md:min-w-[16rem] md:max-w-[16rem] border-b border-[var(--border-color)] transition-all">
+                  <div className="h-full w-full flex items-center px-4 md:px-3 py-2">
+                    <span className={`text-[7px] font-bold uppercase text-[var(--text-muted)] tracking-[0.2em] transition-all ${isEditMode ? 'ml-14' : 'ml-8'}`}>Звичка</span>
                   </div>
                 </th>
                 {days.map(d => {
@@ -256,24 +324,26 @@ const HabitsView: React.FC = () => {
                       isTarget ? 'border-t-[3px] border-t-indigo-500 bg-indigo-50/30' : 'hover:bg-[var(--bg-main)]/30'
                       }`}
                   >
-                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] h-9 p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[45vw] min-w-[45vw] md:w-64 md:min-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
-                      <div className="flex items-center gap-2 md:gap-3 px-3 h-full w-full">
+                    <td className="sticky left-0 z-30 bg-[var(--bg-card)] p-0 shadow-[1px_0_0_var(--border-color),0_1px_0_0_var(--border-color)] w-[50vw] min-w-[50vw] max-w-[50vw] md:w-64 md:min-w-[16rem] md:max-w-[16rem]" onClick={() => setSelectedHabitId(habit.id)}>
+                      <div className="flex items-center gap-2 md:gap-3 px-3 py-2 min-h-[3rem] w-full">
                         <div className="flex items-center gap-2 shrink-0">
-                          <div className={`w-4 flex justify-center transition-all ${isEditMode ? 'cursor-grab active:cursor-grabbing text-[var(--primary)] scale-110' : 'text-slate-300 opacity-0 w-0 overflow-hidden'}`}>
-                            <i className="fa-solid fa-grip-vertical text-[10px]"></i>
-                          </div>
+                          {isEditMode && (
+                            <div className="w-4 flex justify-center text-[var(--primary)] cursor-grab active:cursor-grabbing transition-all scale-110">
+                              <i className="fa-solid fa-grip-vertical text-[10px]"></i>
+                            </div>
+                          )}
                           <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
                             <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 32 32">
                               <circle cx="16" cy="16" r="14" fill="transparent" stroke="var(--border-color)" strokeWidth="2" />
                               <circle cx="16" cy="16" r="14" fill="transparent" stroke={color} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - Math.min(streak, 30) / 30)} strokeLinecap="round" className="transition-all duration-700 ease-in-out" />
                             </svg>
                             <span className="absolute text-[7px] font-bold flex flex-col items-center leading-none" style={{ color }}>
-                              <span>{streak}</span>
+                              {habit.isHypothesis ? <i className="fa-solid fa-flask text-[8px]"></i> : <span>{streak}</span>}
                             </span>
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12px] md:text-[13px] font-light text-[var(--text-main)] truncate group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center gap-1">
+                          <div className="text-[12px] md:text-[13px] font-light text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors tracking-tight flex items-center flex-wrap gap-1 leading-tight py-1">
                             {habit.title}
                             {streak >= 3 && <span className="text-[var(--primary)] text-[7px] animate-pulse">🔥</span>}
                           </div>
@@ -289,7 +359,7 @@ const HabitsView: React.FC = () => {
 
                       return (
                         <td key={d.dateStr} className={`p-0 text-center relative border-b border-solid border-[var(--border-color)] ${isToday ? 'bg-[var(--primary)]/5' : ''}`}>
-                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full h-9 flex flex-col items-center justify-center transition-all group/btn`}>
+                          <button onClick={() => openPopover(habit.id, d.dateStr)} className={`w-full min-h-[3rem] h-full flex flex-col items-center justify-center transition-all group/btn`}>
                             <div className="relative transform transition-transform group-hover/btn:scale-110">
                               {status === 'completed' ? (
                                 <i className="fa-solid fa-check text-lg" style={{ color }}></i>

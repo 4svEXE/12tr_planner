@@ -181,8 +181,8 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
       <header className="p-5 border-b border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-md shrink-0" style={{ backgroundColor: selectedColor }}>
-              <i className="fa-solid fa-repeat"></i>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-md shrink-0 transition-transform ${habit.isHypothesis ? 'rotate-12' : ''}`} style={{ backgroundColor: selectedColor }}>
+              <i className={`fa-solid ${habit.isHypothesis ? 'fa-flask' : 'fa-repeat'}`}></i>
             </div>
             <div className="min-w-0 flex-1">
               <input
@@ -192,10 +192,17 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                 onKeyDown={(e) => e.key === 'Enter' && onUpdate({ title: editingTitle })}
                 className="text-sm font-black text-[var(--text-main)] bg-transparent border-none p-0 focus:ring-0 w-full uppercase tracking-tight"
               />
-              <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px] tracking-widest">Дисципліна та аналіз</Typography>
+              <Typography variant="tiny" className="text-[var(--text-muted)] text-[8px] tracking-widest">{habit.isHypothesis ? 'Аналіз гіпотези' : 'Дисципліна та аналіз'}</Typography>
             </div>
           </div>
           <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => onUpdate({ isHypothesis: !habit.isHypothesis })}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${habit.isHypothesis ? 'bg-[var(--primary)] text-white shadow-md' : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--primary)]'}`}
+              title={habit.isHypothesis ? "Це звичка" : "Це гіпотеза"}
+            >
+              <i className="fa-solid fa-flask text-xs"></i>
+            </button>
             <button
               onClick={() => { if (confirm('Видалити звичку?')) { deleteTask(habit.id); onClose(); } }}
               className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"
@@ -223,31 +230,58 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
         {/* STREAK SECTION */}
-        <section>
-          <Card padding="md" className="bg-gradient-to-br from-orange-500 to-rose-500 text-white border-none shadow-xl flex items-center justify-between overflow-hidden relative">
-            <div className="relative z-10">
-              <Typography variant="tiny" className="text-white/70 font-black uppercase text-[8px] tracking-widest mb-1">Поточна серія</Typography>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black">{calculateSmartStreak}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest">Днів</span>
+        {!habit.isHypothesis && (
+          <section>
+            <Card padding="md" className="bg-gradient-to-br from-orange-500 to-rose-500 text-white border-none shadow-xl flex items-center justify-between overflow-hidden relative">
+              <div className="relative z-10">
+                <Typography variant="tiny" className="text-white/70 font-black uppercase text-[8px] tracking-widest mb-1">Поточна серія</Typography>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black">{calculateSmartStreak}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Днів</span>
+                </div>
               </div>
-            </div>
-            <div className="relative z-10 w-16 h-16 flex items-center justify-center">
-              <i className="fa-solid fa-fire text-5xl animate-pulse text-white/90"></i>
-            </div>
-            {/* Background Decor */}
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-          </Card>
-        </section>
+              <div className="relative z-10 w-16 h-16 flex items-center justify-center">
+                <i className="fa-solid fa-fire text-5xl animate-pulse text-white/90"></i>
+              </div>
+              {/* Background Decor */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            </Card>
+          </section>
+        )}
 
-        <section>
-          <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60 mb-2">Нотатки звички</Typography>
-          <textarea
-            value={habit.content || ''}
-            onChange={(e) => onUpdate({ content: e.target.value })}
-            placeholder="Глобальні нотатки щодо цієї звички..."
-            className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl p-3 text-xs font-medium outline-none h-24 resize-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all text-[var(--text-main)] shadow-inner"
-          />
+        <section className="space-y-4">
+          {habit.isHypothesis ? (
+            <>
+              <div className="space-y-2">
+                <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60">Деталі гіпотези</Typography>
+                <textarea
+                  value={habit.hypothesisDetails || ''}
+                  onChange={(e) => onUpdate({ hypothesisDetails: e.target.value })}
+                  placeholder="Що саме ми перевіряємо?.."
+                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl p-3 text-xs font-medium outline-none h-20 resize-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all text-[var(--text-main)] shadow-inner"
+                />
+              </div>
+              <div className="space-y-2">
+                <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60">Нотатки гіпотези</Typography>
+                <textarea
+                  value={habit.hypothesisNotes || ''}
+                  onChange={(e) => onUpdate({ hypothesisNotes: e.target.value })}
+                  placeholder="Зауваження та спостереження..."
+                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl p-3 text-xs font-medium outline-none h-20 resize-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all text-[var(--text-main)] shadow-inner"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <Typography variant="tiny" className="text-[var(--text-main)] font-black uppercase text-[8px] px-1 opacity-60">Нотатки звички</Typography>
+              <textarea
+                value={habit.content || ''}
+                onChange={(e) => onUpdate({ content: e.target.value })}
+                placeholder="Глобальні нотатки щодо цієї звички..."
+                className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl p-3 text-xs font-medium outline-none h-24 resize-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all text-[var(--text-main)] shadow-inner"
+              />
+            </>
+          )}
         </section>
 
         <section className="space-y-3">
@@ -299,7 +333,7 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
         </section>
 
         <section>
-          <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-2 uppercase text-[8px] px-1 opacity-60">Колір звички</Typography>
+          <Typography variant="tiny" className="text-[var(--text-main)] font-black mb-2 uppercase text-[8px] px-1 opacity-60">{habit.isHypothesis ? 'Колір нотатки' : 'Колір звички'}</Typography>
           <div className="flex flex-wrap gap-1.5 px-1">
             {colorOptions.map(c => (
               <button

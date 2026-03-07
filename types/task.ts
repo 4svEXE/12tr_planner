@@ -37,7 +37,7 @@ export interface Task {
   xp: number;
   tags: string[];
   projectId?: string;
-  personId?: string; 
+  personId?: string;
   projectSection?: ProjectSection;
   goalId?: string;
   createdAt: number;
@@ -45,24 +45,27 @@ export interface Task {
   dueDate?: number;
   scheduledDate?: number; // Start timestamp
   endDate?: number;       // End timestamp
-  isEvent?: boolean; 
+  isEvent?: boolean;
   isPinned?: boolean;
-  isTactic?: boolean; 
+  isTactic?: boolean;
   category?: string;
   checklist?: ChecklistItem[];
   isDeleted?: boolean;
   isArchived?: boolean;
-  color?: string; 
+  color?: string;
   recurrence?: RecurrenceType;
   recurrenceConfig?: RecurrenceConfig;
   reminders?: number[]; // Minutes before
-  daysOfWeek?: number[]; 
+  daysOfWeek?: number[];
   habitHistory?: Record<string, HabitDayData>;
   completedAt?: number;
   plannerWeek?: number;
-  plannerDay?: number; 
+  plannerDay?: number;
   plannerComment?: string;
-  order?: number; 
-  isAllDay?: boolean; 
+  order?: number;
+  isAllDay?: boolean;
   showInCalendar?: boolean;
+  isHypothesis?: boolean;
+  hypothesisDetails?: string;
+  hypothesisNotes?: string;
 }
