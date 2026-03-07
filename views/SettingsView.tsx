@@ -8,6 +8,8 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { useResizer } from '../hooks/useResizer';
 import ReportDesigner from '../components/settings/ReportDesigner';
+import { exportAsBackup, exportAsFiles } from '../services/exportService';
+import { StoreState } from '../types';
 
 const CleanupModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { clearSelectedData } = useApp();
@@ -83,7 +85,8 @@ const SettingsView: React.FC = () => {
     isSyncing, syncData, lastSyncTime,
     diaryNotificationEnabled, setDiaryNotificationEnabled,
     diaryNotificationTime, setDiaryNotificationTime,
-    setActiveTab
+    setActiveTab,
+    ...state
   } = useApp();
   const { user, login, logout, isGuest, loginWithEmail, registerWithEmail, sendResetEmail, sendVerificationEmail, addPasswordToAccount } = useAuth();
 
@@ -524,6 +527,22 @@ const SettingsView: React.FC = () => {
             <Card padding="md" className="border-rose-100 bg-rose-50/20">
               <Typography variant="h3" className="text-rose-600 mb-2 text-sm font-black uppercase">Управління даними</Typography>
               <p className="text-[10px] text-slate-500 font-bold uppercase mb-4 leading-relaxed tracking-tight">Повне або вибіркове очищення вашого простору в локальному сховищі та хмарі.</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <button
+                  onClick={() => exportAsBackup(state as unknown as StoreState)}
+                  className="py-4 rounded-2xl bg-white text-indigo-600 border-2 border-indigo-100 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  <i className="fa-solid fa-file-export"></i> Повний бекап (JSON)
+                </button>
+                <button
+                  onClick={() => exportAsFiles(state as unknown as StoreState)}
+                  className="py-4 rounded-2xl bg-white text-emerald-600 border-2 border-emerald-100 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  <i className="fa-solid fa-folder-open"></i> Зберегти як файли
+                </button>
+              </div>
+
               <button
                 onClick={() => setShowCleanup(true)}
                 className="w-full py-4 rounded-2xl bg-white text-rose-500 border-2 border-rose-100 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all shadow-sm"
