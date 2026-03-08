@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import Typography from './ui/Typography';
@@ -17,6 +17,55 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
   const { user, login, isGuest } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Horizontal resize for sidebar
+  const SIDEBAR_COLLAPSED_W = 48;
+  const SIDEBAR_MIN_W = 160;
+  const SIDEBAR_MAX_W = 400;
+  const SIDEBAR_KEY = '12tr_global_sidebar_width';
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const saved = localStorage.getItem(SIDEBAR_KEY);
+    return saved ? Math.max(SIDEBAR_MIN_W, Math.min(SIDEBAR_MAX_W, Number(saved))) : 240;
+  });
+  const isResizingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWRef = useRef(0);
+  const currentWidthRef = useRef(sidebarWidth);
+
+  // Keep ref in sync
+  useEffect(() => { currentWidthRef.current = sidebarWidth; }, [sidebarWidth]);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    startXRef.current = e.clientX;
+    startWRef.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = e.clientX - startXRef.current;
+      const next = Math.max(SIDEBAR_MIN_W, Math.min(SIDEBAR_MAX_W, startWRef.current + delta));
+      setSidebarWidth(next);
+      currentWidthRef.current = next;
+    };
+    const onUp = () => {
+      if (!isResizingRef.current) return;
+      isResizingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem(SIDEBAR_KEY, String(currentWidthRef.current));
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []); // no deps — uses refs
 
   const sections = [
     {
@@ -116,7 +165,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
 
   return (
     <>
-      <aside className={`${isSidebarCollapsed ? 'w-12' : 'w-60'} hidden md:flex flex-col h-screen sticky top-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] shrink-0 z-40 transition-all duration-300`}>
+      <aside
+        className={`hidden md:flex flex-col h-screen sticky top-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] shrink-0 z-40 relative overflow-hidden`}
+        style={{ width: isSidebarCollapsed ? SIDEBAR_COLLAPSED_W : sidebarWidth }}
+      >
+        {/* Resize handle */}
+        {!isSidebarCollapsed && (
+          <div
+            onMouseDown={startResize}
+            className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] hover:bg-[var(--primary)]/30 transition-colors"
+          />
+        )}
         <div className="p-2 flex items-center h-16 shrink-0">
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-2 pl-2">

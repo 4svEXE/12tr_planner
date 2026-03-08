@@ -4,6 +4,7 @@ import { Task, TaskStatus, Priority } from '../../types';
 import { useApp } from '../../contexts/AppContext';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
+import Input from '../ui/Input';
 
 interface TaskItemProps {
   task: Task;
@@ -145,7 +146,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </div>
 
           {isEditing ? (
-            <input ref={inputRef} autoFocus value={inputValue} onChange={e => onInputChange(e.target.value)} onBlur={() => onFinishEdit(task)} onKeyDown={e => e.key === 'Enter' && onFinishEdit(task)} onClick={e => e.stopPropagation()} placeholder="Назва..." className="flex-1 bg-transparent border-none p-0 text-[13px] font-semibold focus:ring-0 outline-none text-[var(--text-main)] h-full" />
+            <Input
+              variant="ghost"
+              ref={inputRef}
+              autoFocus
+              value={inputValue}
+              onChange={e => onInputChange(e.target.value)}
+              onBlur={() => onFinishEdit(task)}
+              onKeyDown={e => e.key === 'Enter' && onFinishEdit(task)}
+              onClick={e => e.stopPropagation()}
+              placeholder="Назва..."
+              className="flex-1 text-[13px] font-semibold h-full"
+            />
           ) : (
             <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
               <i className={`fa-solid fa-flag text-[7px] shrink-0 ${getPriorityColor(task.priority)}`}></i>
@@ -297,22 +309,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
                         )}
                       </div>
 
-                      <input
+                      <Input
+                        variant="ghost"
                         value={node.text || ''}
                         onChange={(e) => {
                           const newNodes = nodes.map(n => n.id === node.id ? { ...n, text: e.target.value } : n);
                           updateMindmap(newNodes, edges);
                         }}
-                        className={`font-normal tracking-tight focus:ring-0 outline-none flex-1 truncate !bg-transparent !h-max !min-h-0 !p-0 !text-[12px] !rounded-none !border-none ${node.completed ? 'line-through opacity-30 text-[var(--text-muted)]' : 'text-[var(--text-main)] opacity-90'}`}
-                        style={{
-                          minHeight: 'unset',
-                          height: 'auto',
-                          paddingLeft: '0',
-                          paddingRight: '0',
-                          backgroundColor: 'transparent !important',
-                          border: 'none',
-                          borderRadius: '0'
-                        }}
+                        className={`text-[12px] font-normal tracking-tight flex-1 truncate ${node.completed ? 'line-through opacity-30 text-[var(--text-muted)]' : 'text-[var(--text-main)] opacity-90'}`}
                       />
 
                       <div className="flex items-center gap-1 opacity-0 group-hover/m-node:opacity-100 transition-opacity ml-1">

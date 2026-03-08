@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Task, MindmapNode, MindmapEdge } from '../types';
 import { useApp } from '../contexts/AppContext';
+import Input from './ui/Input';
 
 interface MindmapListViewProps {
     task: Task;
@@ -120,10 +121,11 @@ const MindmapListView: React.FC<MindmapListViewProps> = ({ task }) => {
                         </button>
                     )}
 
-                    <input
+                    <Input
+                        variant="ghost"
                         value={node.text}
                         onChange={(e) => updateNode(node.id, { text: e.target.value })}
-                        className={`flex-1 focus:ring-0 p-0 text-[13px] font-bold !bg-transparent !h-max !min-h-0 !p-0 !text-[13px] !rounded-none !border-none ${isCompleted ? 'line-through text-slate-400 opacity-50' : 'text-slate-700 dark:text-slate-200'}`}
+                        className={`flex-1 text-[13px] font-bold ${isCompleted ? 'line-through text-slate-400 opacity-50' : 'text-slate-700 dark:text-slate-200'}`}
                         placeholder="Введіть текст..."
                     />
 

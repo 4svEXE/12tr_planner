@@ -5,7 +5,6 @@ import HashtagAutocomplete from './HashtagAutocomplete';
 import DiaryEditor from './DiaryEditor';
 import TableEditor from './TableEditor';
 import MindmapEditor from './MindmapEditor';
-import MindmapListView from './MindmapListView';
 import Badge from './ui/Badge';
 import TaskDatePicker from './TaskDatePicker';
 
@@ -27,7 +26,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [showTagPopover, setShowTagPopover] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [localTitle, setLocalTitle] = useState(task.title);
-  const [mindmapView, setMindmapView] = useState<'canvas' | 'list'>('canvas');
+  const [mindmapView, setMindmapView] = useState<'canvas' | 'list'>('canvas'); // kept for compat
 
   const menuRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
@@ -254,30 +253,8 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           {isTable ? (
             <TableEditor task={task} />
           ) : isMindmap ? (
-            <div className="h-full w-full flex flex-col">
-              <div className="flex items-center gap-1 p-2 border-b border-[var(--border-color)]/20 shadow-sm shrink-0">
-                <button
-                  onClick={() => setMindmapView('canvas')}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mindmapView === 'canvas' ? 'bg-primary text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
-                >
-                  <i className="fa-solid fa-diagram-project mr-2"></i> Полотно
-                </button>
-                <button
-                  onClick={() => setMindmapView('list')}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mindmapView === 'list' ? 'bg-primary text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-black/5'}`}
-                >
-                  <i className="fa-solid fa-list-ul mr-2"></i> Список
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                {mindmapView === 'canvas' ? (
-                  <div className="h-full w-full p-2">
-                    <MindmapEditor task={task} />
-                  </div>
-                ) : (
-                  <MindmapListView task={task} />
-                )}
-              </div>
+            <div className="h-full w-full p-2">
+              <MindmapEditor task={task} />
             </div>
           ) : (
             <DiaryEditor

@@ -186,13 +186,8 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
         if (isPanning) {
             panDistance.current += Math.abs(e.movementX) + Math.abs(e.movementY);
             setViewport(v => ({ ...v, x: v.x + e.movementX, y: v.y + e.movementY }));
-        } else if (dragNodeId) {
+        } else if (resizeNodeId) {
             const zoom = viewport.zoom;
-            setNodes(ns => ns.map(n =>
-                n.id === dragNodeId
-                    ? { ...n, x: n.x + e.movementX / zoom, y: n.y + e.movementY / zoom }
-                    : n
-            ));
             setNodes(ns => ns.map(n =>
                 n.id === resizeNodeId
                     ? {
@@ -200,6 +195,15 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                         width: Math.max(80, n.width + e.movementX / zoom),
                         height: Math.max(40, n.height + e.movementY / zoom)
                     }
+                    : n
+            ));
+        } else if (dragNodeId) {
+            const zoom = viewport.zoom;
+            // Move all selected nodes together
+            const idsToMove = selectedNodeIds.includes(dragNodeId) ? selectedNodeIds : [dragNodeId];
+            setNodes(ns => ns.map(n =>
+                idsToMove.includes(n.id)
+                    ? { ...n, x: n.x + e.movementX / zoom, y: n.y + e.movementY / zoom }
                     : n
             ));
         } else if (selectionRect) {
@@ -964,6 +968,30 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                 </button>
                                 <button onClick={() => copyNode(contextMenu.nodeId!)} className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3">
                                     <i className="fa-regular fa-copy opacity-60 w-4 font-normal text-center"></i> Копіювати
+                                </button>
+                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                                <div className="px-4 py-1 text-[9px] uppercase tracking-widest text-slate-400 font-black">Перетворити на</div>
+                                <button
+                                    onClick={() => {
+                                        const newNodes = nodes.map(n => n.id === contextMenu.nodeId ? { ...n, type: 'task' as const } : n);
+                                        setNodes(newNodes);
+                                        pushToHistory(newNodes, edges);
+                                        setContextMenu(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-700 flex items-center gap-3"
+                                >
+                                    <i className="fa-solid fa-check-square w-4 font-normal text-center"></i> Таск (з чекбоксом)
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const newNodes = nodes.map(n => n.id === contextMenu.nodeId ? { ...n, type: 'note' as const } : n);
+                                        setNodes(newNodes);
+                                        pushToHistory(newNodes, edges);
+                                        setContextMenu(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 flex items-center gap-3"
+                                >
+                                    <i className="fa-solid fa-note-sticky w-4 font-normal text-center"></i> Нотатка
                                 </button>
                                 <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
                                 <button onClick={() => { deleteNode(contextMenu.nodeId!); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 flex items-center gap-3">
