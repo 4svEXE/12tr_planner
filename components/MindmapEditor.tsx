@@ -46,10 +46,60 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
     // Interaction States
     const [isPanning, setIsPanning] = useState(false);
     const [dragNodeId, setDragNodeId] = useState<string | null>(null);
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+    const selectedNodeId = selectedNodeIds.length === 1 ? selectedNodeIds[0] : null;
+
     const [theme, setTheme] = useState<'default' | 'dark' | 'ocean' | 'sunset' | 'forest'>(task.mindmapData?.theme || 'default');
     const [drawEdgeStart, setDrawEdgeStart] = useState<string | null>(null);
     const [drawEdgeCurrentEnd, setDrawEdgeCurrentEnd] = useState<{ x: number, y: number } | null>(null);
+    const [resizeNodeId, setResizeNodeId] = useState<string | null>(null);
+    const [selectionRect, setSelectionRect] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
+    const [showExplorer, setShowExplorer] = useState(false);
+
+    // History for Undo/Redo
+    const [history, setHistory] = useState<{ nodes: MindmapNode[], edges: MindmapEdge[] }[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    const isInternalStateChange = useRef(false);
+
+    const pushToHistory = (newNodes: MindmapNode[], newEdges: MindmapEdge[]) => {
+        if (isInternalStateChange.current) return;
+        const newState = { nodes: JSON.parse(JSON.stringify(newNodes)), edges: JSON.parse(JSON.stringify(newEdges)) };
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push(newState);
+        if (newHistory.length > 50) newHistory.shift(); // Limit history
+        setHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+    };
+
+    const undo = () => {
+        if (historyIndex > 0) {
+            isInternalStateChange.current = true;
+            const prevState = history[historyIndex - 1];
+            setNodes(prevState.nodes);
+            setEdges(prevState.edges);
+            setHistoryIndex(historyIndex - 1);
+            setTimeout(() => { isInternalStateChange.current = false; }, 0);
+        }
+    };
+
+    const redo = () => {
+        if (historyIndex < history.length - 1) {
+            isInternalStateChange.current = true;
+            const nextState = history[historyIndex + 1];
+            setNodes(nextState.nodes);
+            setEdges(nextState.edges);
+            setHistoryIndex(historyIndex + 1);
+            setTimeout(() => { isInternalStateChange.current = false; }, 0);
+        }
+    };
+
+    // Initialize history
+    useEffect(() => {
+        if (history.length === 0) {
+            setHistory([{ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }]);
+            setHistoryIndex(0);
+        }
+    }, []);
 
     // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, nodeId?: string, canvasX: number, canvasY: number } | null>(null);
@@ -113,16 +163,22 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
 
     // Mouse Handlers for Container
     const handlePointerDown = (e: React.PointerEvent) => {
-        // Clear selection and menu on background click
-        setSelectedNodeId(null);
+        // Clear selection and menu on background click if not shifting
+        if (!e.shiftKey) {
+            setSelectedNodeIds([]);
+        }
         setContextMenu(null);
 
-        if (e.button === 0 && !e.shiftKey) { // LMB = Pan
-            setIsPanning(true);
-            panDistance.current = 0;
+        if (e.button === 0) { // LMB
+            const canvasPos = screenToCanvas(e.clientX, e.clientY);
+            if (e.shiftKey) {
+                // Start selection marquee
+                setSelectionRect({ x1: canvasPos.x, y1: canvasPos.y, x2: canvasPos.x, y2: canvasPos.y });
+            } else {
+                setIsPanning(true);
+                panDistance.current = 0;
+            }
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        } else if (e.button === 2) { // RMB
-            // Clearing already handled by clear above
         }
     };
 
@@ -137,14 +193,44 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                     ? { ...n, x: n.x + e.movementX / zoom, y: n.y + e.movementY / zoom }
                     : n
             ));
+            setNodes(ns => ns.map(n =>
+                n.id === resizeNodeId
+                    ? {
+                        ...n,
+                        width: Math.max(80, n.width + e.movementX / zoom),
+                        height: Math.max(40, n.height + e.movementY / zoom)
+                    }
+                    : n
+            ));
+        } else if (selectionRect) {
+            const canvasPos = screenToCanvas(e.clientX, e.clientY);
+            setSelectionRect(prev => prev ? { ...prev, x2: canvasPos.x, y2: canvasPos.y } : null);
+
+            // Dynamically update selection while dragging
+            const xMin = Math.min(selectionRect.x1, canvasPos.x);
+            const xMax = Math.max(selectionRect.x1, canvasPos.x);
+            const yMin = Math.min(selectionRect.y1, canvasPos.y);
+            const yMax = Math.max(selectionRect.y1, canvasPos.y);
+
+            const nodesInRect = nodes.filter(n =>
+                n.x < xMax && n.x + n.width > xMin &&
+                n.y < yMax && n.y + n.height > yMin
+            ).map(n => n.id);
+
+            setSelectedNodeIds(nodesInRect);
         } else if (drawEdgeStart) {
             setDrawEdgeCurrentEnd(screenToCanvas(e.clientX, e.clientY));
         }
     };
 
     const handlePointerUp = (e: React.PointerEvent) => {
+        if (dragNodeId || resizeNodeId) {
+            pushToHistory(nodes, edges);
+        }
         setIsPanning(false);
         setDragNodeId(null);
+        setResizeNodeId(null);
+        setSelectionRect(null);
 
         if (e.currentTarget instanceof HTMLElement && e.currentTarget.hasPointerCapture(e.pointerId)) {
             e.currentTarget.releasePointerCapture(e.pointerId);
@@ -193,6 +279,8 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
     const handlePointerCancel = () => {
         setIsPanning(false);
         setDragNodeId(null);
+        setResizeNodeId(null);
+        setSelectionRect(null);
         setDrawEdgeStart(null);
         setDrawEdgeCurrentEnd(null);
     };
@@ -208,17 +296,29 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (!selectedNodeId) return;
             // Prevent if editing text
             if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
 
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) redo();
+                else undo();
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
+                return;
+            }
+
+            if (selectedNodeIds.length === 0) return;
+
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                deleteNode(selectedNodeId);
-                setSelectedNodeId(null);
-            } else if (e.key === 'Tab') {
+                deleteSelectedNodes();
+            } else if (e.key === 'Tab' && selectedNodeId) {
                 e.preventDefault();
                 quickAddChild(selectedNodeId);
-            } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedNodeId) {
                 copyNode(selectedNodeId);
             } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 const rect = containerRef.current?.getBoundingClientRect();
@@ -229,25 +329,44 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedNodeId, nodes, edges, clipboardNode, viewport, containerRef]);
+    }, [selectedNodeIds, selectedNodeId, nodes, edges, clipboardNode, viewport, containerRef, historyIndex, history]);
 
     // Node Handlers
     const handleNodePointerDown = (e: React.PointerEvent, nodeId: string) => {
         e.stopPropagation();
         if (e.button === 2) { // Right Click
             setContextMenu(null);
-            setSelectedNodeId(null);
+            if (!selectedNodeIds.includes(nodeId)) {
+                setSelectedNodeIds([nodeId]);
+            }
             return;
         }
         setContextMenu(null);
-        setSelectedNodeId(nodeId);
-        if (e.button === 0) setDragNodeId(nodeId);
+
+        if (e.shiftKey) {
+            setSelectedNodeIds(prev =>
+                prev.includes(nodeId)
+                    ? prev.filter(id => id !== nodeId)
+                    : [...prev, nodeId]
+            );
+        } else {
+            if (!selectedNodeIds.includes(nodeId)) {
+                setSelectedNodeIds([nodeId]);
+            }
+            if (e.button === 0) setDragNodeId(nodeId);
+        }
     };
 
     const handleDotPointerDown = (e: React.PointerEvent, nodeId: string) => {
         e.stopPropagation();
         setDrawEdgeStart(nodeId);
         setDrawEdgeCurrentEnd(screenToCanvas(e.clientX, e.clientY));
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const handleResizePointerDown = (e: React.PointerEvent, nodeId: string) => {
+        e.stopPropagation();
+        setResizeNodeId(nodeId);
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     };
 
@@ -266,9 +385,26 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
         setNodes(ns => ns.map(n => n.id === id ? { ...n, text } : n));
     };
 
+    const toggleNodeCompletion = (id: string) => {
+        setNodes(ns => ns.map(n => n.id === id ? { ...n, completed: !n.completed } : n));
+    };
+
     const deleteNode = (id: string) => {
-        setNodes(ns => ns.filter(n => n.id !== id));
-        setEdges(es => es.filter(e => e.sourceId !== id && e.targetId !== id));
+        const newNodes = nodes.filter(n => n.id !== id);
+        const newEdges = edges.filter(e => e.sourceId !== id && e.targetId !== id);
+        setNodes(newNodes);
+        setEdges(newEdges);
+        pushToHistory(newNodes, newEdges);
+    };
+
+    const deleteSelectedNodes = () => {
+        if (selectedNodeIds.length === 0) return;
+        const newNodes = nodes.filter(n => !selectedNodeIds.includes(n.id));
+        const newEdges = edges.filter(e => !selectedNodeIds.includes(e.sourceId) && !selectedNodeIds.includes(e.targetId));
+        setNodes(newNodes);
+        setEdges(newEdges);
+        setSelectedNodeIds([]);
+        pushToHistory(newNodes, newEdges);
     };
 
     // Double click canvas to add node
@@ -276,14 +412,16 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
         if (e.target !== containerRef.current && (e.target as HTMLElement).tagName !== 'svg') return;
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
         const newNodeId = 'node_' + Math.random().toString(36).substring(2, 9);
-        setNodes(ns => [...ns, {
+        const newNodes = [...nodes, {
             id: newNodeId,
             text: 'Нова ідея',
             x: canvasPos.x - 70,
             y: canvasPos.y - 30,
             width: 140,
             height: 60
-        }]);
+        }];
+        setNodes(newNodes);
+        pushToHistory(newNodes, edges);
     };
 
     const autoLayout = () => {
@@ -333,8 +471,10 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
     };
 
     const updateSelectedNodeStyle = (updates: Partial<MindmapNode>) => {
-        if (!selectedNodeId) return;
-        setNodes(ns => ns.map(n => n.id === selectedNodeId ? { ...n, ...updates } : n));
+        if (selectedNodeIds.length === 0) return;
+        const newNodes = nodes.map(n => selectedNodeIds.includes(n.id) ? { ...n, ...updates } : n);
+        setNodes(newNodes);
+        pushToHistory(newNodes, edges);
     };
 
     const handleContextMenu = (e: React.MouseEvent, nodeId?: string) => {
@@ -342,7 +482,9 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
         e.stopPropagation();
 
         if (nodeId) {
-            setSelectedNodeId(null); // Hide toolbar when RMB menu shows
+            if (!selectedNodeIds.includes(nodeId)) {
+                setSelectedNodeIds([nodeId]);
+            }
         }
 
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
@@ -367,12 +509,14 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
             return;
         }
         const newNodeId = 'node_' + Math.random().toString(36).substring(2, 9);
-        setNodes(ns => [...ns, {
+        const newNodes = [...nodes, {
             ...clipboardNode,
             id: newNodeId,
             x: canvasX - clipboardNode.width / 2,
             y: canvasY - clipboardNode.height / 2
-        }]);
+        }];
+        setNodes(newNodes);
+        pushToHistory(newNodes, edges);
         setContextMenu(null);
     };
 
@@ -386,19 +530,24 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
             text: 'Нова ідея',
             x: parent.x + parent.width + 50,
             y: parent.y + parent.height / 2 - 30,
-            width: 140,
-            height: 60,
+            width: parent.width,
+            height: parent.height,
             color: parent.color,
-            shape: parent.shape
+            shape: parent.shape,
+            type: parent.type
         };
 
-        setNodes(ns => [...ns, newNode]);
-        setEdges(es => [...es, {
+        const newNodes = [...nodes, newNode];
+        const newEdges = [...edges, {
             id: 'edge_' + Math.random().toString(36).substring(2, 9),
             sourceId: parent.id,
             targetId: newNodeId
-        }]);
-        setSelectedNodeId(newNodeId);
+        }];
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+        pushToHistory(newNodes, newEdges);
+        setSelectedNodeIds([newNodeId]);
         setContextMenu(null);
     };
 
@@ -514,26 +663,50 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                 <button onClick={exportToPNG} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black/5 flex items-center gap-2 transition-colors ${currentTheme.toolbarText}`}>
                     <i className="fa-solid fa-download"></i> Експорт (PNG)
                 </button>
+                <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-700"></div>
+                <button onClick={() => setShowExplorer(!showExplorer)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${showExplorer ? 'bg-primary/10 text-primary' : `${currentTheme.toolbarText} hover:bg-black/5`} flex items-center gap-2 transition-colors`}>
+                    <i className="fa-solid fa-folder-tree"></i> Провідник
+                </button>
                 <div className="flex-1"></div>
-                {selectedNodeId && !contextMenu && (
+                {selectedNodeIds.length > 0 && !contextMenu && (
                     <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4">
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.toolbarText} opacity-50`}>Стиль вузла:</span>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.toolbarText} opacity-50`}>Стиль ({selectedNodeIds.length}):</span>
                         <div className="flex items-center gap-1">
                             {['rectangle', 'ellipse', 'diamond'].map(shape => (
-                                <button key={shape} onClick={() => updateSelectedNodeStyle({ shape: shape as any })} className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${nodes.find(n => n.id === selectedNodeId)?.shape === shape || (!nodes.find(n => n.id === selectedNodeId)?.shape && shape === 'rectangle') ? 'bg-primary/20 text-primary' : `${currentTheme.toolbarText} opacity-50 hover:bg-black/5 hover:opacity-100`}`}>
+                                <button key={shape} onClick={() => updateSelectedNodeStyle({ shape: shape as any })} className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${selectedNodeId && (nodes.find(n => n.id === selectedNodeId)?.shape === shape || (!nodes.find(n => n.id === selectedNodeId)?.shape && shape === 'rectangle')) ? 'bg-primary/20 text-primary' : `${currentTheme.toolbarText} opacity-50 hover:bg-black/5 hover:opacity-100`}`}>
                                     <i className={`fa-solid ${shape === 'rectangle' ? 'fa-square' : shape === 'ellipse' ? 'fa-circle' : 'fa-play rotate-[-90deg]'}`}></i>
                                 </button>
                             ))}
                         </div>
                         <div className="flex items-center gap-1">
                             {NODE_COLORS.map(colorOption => {
-                                const isSelected = nodes.find(n => n.id === selectedNodeId)?.color === colorOption.color || (!nodes.find(n => n.id === selectedNodeId)?.color && colorOption.id === 'default');
+                                const isSelected = selectedNodeId && (nodes.find(n => n.id === selectedNodeId)?.color === colorOption.color || (!nodes.find(n => n.id === selectedNodeId)?.color && colorOption.id === 'default'));
                                 return (
-                                    <button key={colorOption.id} onClick={() => updateSelectedNodeStyle({ color: colorOption.color })} className={`w-5 h-5 rounded-full border-2 ${isSelected ? 'border-primary' : 'border-slate-200'} flex items-center justify-center shadow-sm text-[8px] transition-all`} style={{ backgroundColor: colorOption.id === 'default' ? '#fff' : `var(--${colorOption.id}-100)` }}>
+                                    <button
+                                        key={colorOption.id}
+                                        onClick={() => updateSelectedNodeStyle({ color: colorOption.color })}
+                                        className={`w-5 h-5 rounded-full border-2 ${isSelected ? 'border-primary' : 'border-slate-200'} flex items-center justify-center shadow-sm text-[8px] transition-all`}
+                                        style={{ backgroundColor: colorOption.id === 'default' ? '#fff' : undefined }}
+                                    >
                                         {isSelected && <i className={`fa-solid fa-check text-opacity-80`}></i>}
                                     </button>
                                 )
                             })}
+                        </div>
+                        <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                        <div className="flex items-center gap-1 bg-black/5 rounded-lg p-0.5">
+                            <button
+                                onClick={() => updateSelectedNodeStyle({ type: 'note' })}
+                                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-all ${selectedNodeId && (!nodes.find(n => n.id === selectedNodeId)?.type || nodes.find(n => n.id === selectedNodeId)?.type === 'note') ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <i className="fa-solid fa-note-sticky mr-1"></i> нотатка
+                            </button>
+                            <button
+                                onClick={() => updateSelectedNodeStyle({ type: 'task' })}
+                                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-all ${selectedNodeId && nodes.find(n => n.id === selectedNodeId)?.type === 'task' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <i className="fa-solid fa-check-double mr-1"></i> таск
+                            </button>
                         </div>
                     </div>
                 )}
@@ -555,6 +728,19 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                     backgroundPosition: `${viewport.x}px ${viewport.y}px`,
                 }}
             >
+                {/* Selection Marquee */}
+                {selectionRect && (
+                    <div
+                        className="absolute border-2 border-primary/50 bg-primary/10 z-50 pointer-events-none"
+                        style={{
+                            left: Math.min(selectionRect.x1, selectionRect.x2) * viewport.zoom + viewport.x,
+                            top: Math.min(selectionRect.y1, selectionRect.y2) * viewport.zoom + viewport.y,
+                            width: Math.abs(selectionRect.x2 - selectionRect.x1) * viewport.zoom,
+                            height: Math.abs(selectionRect.y2 - selectionRect.y1) * viewport.zoom,
+                        }}
+                    ></div>
+                )}
+
                 <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -614,7 +800,15 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                         const childrenCount = edges.filter(e => e.sourceId === node.id).length;
 
                                         const defaultClasses = `${currentTheme.nodeBg} ${currentTheme.nodeBorder} ${currentTheme.text}`;
-                                        const dynamicClasses = node.color ? node.color : defaultClasses;
+                                        const isTask = node.type === 'task';
+                                        const isCompleted = node.completed && isTask;
+
+                                        let dynamicClasses = node.color ? node.color : defaultClasses;
+
+                                        if (isCompleted) {
+                                            dynamicClasses += ' opacity-50 grayscale-[0.5] bg-slate-100 border-slate-300 text-slate-400 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-500';
+                                        }
+
                                         const shapeClasses = NODE_SHAPES[node.shape || 'rectangle'];
 
                                         return (
@@ -624,7 +818,7 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                                 onPointerDown={(e) => handleNodePointerDown(e, node.id)}
                                                 onPointerUp={(e) => handleNodePointerUp(e, node.id)}
                                                 onContextMenu={(e) => handleContextMenu(e, node.id)}
-                                                className={`absolute border-2 shadow-md group transition-shadow flex flex-col justify-center select-none pointer-events-auto ${dynamicClasses} ${shapeClasses} ${isSelected ? 'shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-transparent' : 'hover:shadow-lg'}`}
+                                                className={`absolute border-2 shadow-md group transition-shadow flex flex-col justify-center select-none pointer-events-auto ${dynamicClasses} ${shapeClasses} ${selectedNodeIds.includes(node.id) ? 'shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-transparent' : 'hover:shadow-lg'}`}
                                                 style={{
                                                     left: node.x,
                                                     top: node.y,
@@ -633,18 +827,28 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                                     cursor: dragNodeId === node.id ? 'grabbing' : 'grab',
                                                     borderColor: dragNodeId === node.id ? 'var(--primary)' : undefined,
                                                     boxShadow: dragNodeId === node.id ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : undefined,
-                                                    zIndex: isSelected || dragNodeId === node.id ? 10 : 1
+                                                    zIndex: selectedNodeIds.includes(node.id) || dragNodeId === node.id ? 10 : 1
                                                 }}
                                             >
-                                                <textarea
-                                                    value={node.text}
-                                                    onChange={e => updateNodeText(node.id, e.target.value)}
-                                                    onPointerDown={e => e.stopPropagation()}
-                                                    className={`w-full text-center text-[11px] font-black uppercase tracking-tight bg-transparent resize-none px-4 py-2 outline-none ${node.color ? 'text-inherit placeholder-black/30' : currentTheme.text}`}
-                                                    placeholder="Введіть текст"
-                                                    rows={2}
-                                                    spellCheck="false"
-                                                />
+                                                <div className="flex items-center w-full px-2">
+                                                    {isTask && (
+                                                        <button
+                                                            onPointerDown={e => { e.stopPropagation(); toggleNodeCompletion(node.id); }}
+                                                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0 ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white'}`}
+                                                        >
+                                                            {isCompleted && <i className="fa-solid fa-check text-[8px]"></i>}
+                                                        </button>
+                                                    )}
+                                                    <textarea
+                                                        value={node.text}
+                                                        onChange={e => updateNodeText(node.id, e.target.value)}
+                                                        onPointerDown={e => e.stopPropagation()}
+                                                        className={`w-full text-center text-[11px] font-black uppercase tracking-tight bg-transparent resize-none px-2 py-2 outline-none ${isCompleted ? 'line-through text-slate-400' : (node.color ? 'text-inherit placeholder-black/30' : currentTheme.text)}`}
+                                                        placeholder="Введіть текст"
+                                                        rows={2}
+                                                        spellCheck="false"
+                                                    />
+                                                </div>
 
                                                 {/* Delete Button */}
                                                 {nodes.length > 1 && (
@@ -668,7 +872,7 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                                 )}
 
                                                 {/* Quick Add Child Button (Floating) */}
-                                                {isSelected && !node.isCollapsed && !contextMenu && (
+                                                {(selectedNodeIds.length === 1 && selectedNodeId === node.id) && !node.isCollapsed && !contextMenu && (
                                                     <button
                                                         onPointerDown={e => { e.stopPropagation(); quickAddChild(node.id); }}
                                                         className="absolute -right-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-slate-200 text-indigo-600 rounded-full shadow-md hover:bg-indigo-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -699,6 +903,14 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                                     style={{ left: -6, top: '50%', transform: 'translateY(-50%)' }}
                                                     onPointerDown={(e) => handleDotPointerDown(e, node.id)}
                                                 />
+
+                                                {/* Resize Handle */}
+                                                <div
+                                                    className="absolute w-4 h-4 bottom-0 right-0 cursor-se-resize flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onPointerDown={(e) => handleResizePointerDown(e, node.id)}
+                                                >
+                                                    <div className="w-1.5 h-1.5 border-r-2 border-b-2 border-slate-400/50"></div>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -763,6 +975,12 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                                 <button onClick={() => { handleDoubleClick({ clientX: contextMenu.x, clientY: contextMenu.y, target: containerRef.current } as any); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3">
                                     <i className="fa-solid fa-plus text-emerald-500 w-4 font-normal text-center"></i> Додати вузол тут
                                 </button>
+                                <button onClick={undo} disabled={historyIndex <= 0} className={`w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3 ${historyIndex <= 0 ? 'opacity-30' : ''}`}>
+                                    <i className="fa-solid fa-rotate-left w-4 font-normal text-center"></i> Відмінити (Ctrl+Z)
+                                </button>
+                                <button onClick={redo} disabled={historyIndex >= history.length - 1} className={`w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3 ${historyIndex >= history.length - 1 ? 'opacity-30' : ''}`}>
+                                    <i className="fa-solid fa-rotate-right w-4 font-normal text-center"></i> Повторити (Ctrl+Y)
+                                </button>
                                 {clipboardNode && (
                                     <button onClick={() => pasteNode(contextMenu.canvasX, contextMenu.canvasY)} className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3">
                                         <i className="fa-regular fa-clipboard opacity-60 w-4 font-normal text-center"></i> Вставити ({clipboardNode.text.substring(0, 10)}...)
@@ -773,6 +991,143 @@ const MindmapEditor: React.FC<MindmapEditorProps> = ({ task }) => {
                     </div>
                 )}
             </div>
+
+            {/* Nodes Explorer Sidebar */}
+            {showExplorer && (
+                <div className={`absolute top-[48px] bottom-0 right-0 w-64 ${currentTheme.toolbarBg} backdrop-blur border-l ${currentTheme.toolbarBorder} shadow-2xl z-30 flex flex-col animate-in slide-in-from-right duration-300`}>
+                    <div className="p-4 border-b border-black/5 flex items-center justify-between">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.toolbarText}`}>Структура майндмапи</span>
+                        <button onClick={() => setShowExplorer(false)} className={`w-6 h-6 rounded-full hover:bg-black/5 flex items-center justify-center ${currentTheme.toolbarText} opacity-50`}>
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                        {(() => {
+                            const targets = new Set(edges.map(e => e.targetId));
+                            const roots = nodes.filter(n => !targets.has(n.id) || n.id === 'root');
+
+                            const renderTreeNode = (node: MindmapNode, depth = 0) => {
+                                const children = edges
+                                    .filter(e => e.sourceId === node.id)
+                                    .map(e => nodes.find(n => n.id === e.targetId))
+                                    .filter(Boolean) as MindmapNode[];
+
+                                const isTask = node.type === 'task';
+                                const isCompleted = node.completed && isTask;
+                                const isSelected = selectedNodeIds.includes(node.id);
+
+                                return (
+                                    <React.Fragment key={node.id}>
+                                        <div
+                                            onClick={() => {
+                                                setSelectedNodeIds([node.id]);
+                                                const rect = containerRef.current?.getBoundingClientRect();
+                                                if (rect) {
+                                                    setViewport(v => ({
+                                                        ...v,
+                                                        x: (rect.width / 2) - (node.x + node.width / 2) * v.zoom,
+                                                        y: (rect.height / 2) - (node.y + node.height / 2) * v.zoom
+                                                    }));
+                                                }
+                                            }}
+                                            className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-primary/10 ring-1 ring-primary/20' : 'hover:bg-black/5'}`}
+                                            style={{ marginLeft: depth * 12 }}
+                                        >
+                                            <div className="flex items-center justify-center w-3 shrink-0">
+                                                {children.length > 0 ? (
+                                                    <i className={`fa-solid fa-chevron-right text-[8px] opacity-30 ${node.isCollapsed ? '' : 'rotate-90'} transition-transform`}></i>
+                                                ) : (
+                                                    <div className="w-2 h-2 rounded-full bg-slate-200" />
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-center w-4 shrink-0">
+                                                {isTask ? (
+                                                    <i className={`fa-solid ${isCompleted ? 'fa-circle-check text-emerald-500' : 'fa-circle text-slate-300'}`}></i>
+                                                ) : (
+                                                    <i className="fa-solid fa-note-sticky text-slate-400"></i>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`text-[11px] font-bold truncate ${isCompleted ? 'line-through opacity-50' : currentTheme.toolbarText}`}>
+                                                    {node.text || 'Без назви'}
+                                                </div>
+                                            </div>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); quickAddChild(node.id); }}
+                                                    className="w-5 h-5 rounded hover:bg-emerald-50 text-emerald-500 flex items-center justify-center text-[10px]"
+                                                    title="Додати підвузол"
+                                                >
+                                                    <i className="fa-solid fa-plus"></i>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+                                                    className="w-5 h-5 rounded hover:bg-rose-50 text-rose-400 flex items-center justify-center text-[10px]"
+                                                >
+                                                    <i className="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {!node.isCollapsed && children.map(child => renderTreeNode(child, depth + 1))}
+                                    </React.Fragment>
+                                );
+                            };
+
+                            return roots.map(root => renderTreeNode(root));
+                        })()}
+                    </div>
+                    <div className="p-3 bg-black/5 space-y-2">
+                        <button
+                            onClick={() => {
+                                const rect = containerRef.current?.getBoundingClientRect();
+                                const centerX = rect ? (rect.width / 2 - viewport.x) / viewport.zoom : 200;
+                                const centerY = rect ? (rect.height / 2 - viewport.y) / viewport.zoom : 200;
+                                const nid = 'node_' + Math.random().toString(36).substring(2, 9);
+                                const n: MindmapNode = {
+                                    id: nid,
+                                    text: 'Нове завдання',
+                                    x: centerX - 70,
+                                    y: centerY - 30,
+                                    width: 140,
+                                    height: 60,
+                                    type: 'task'
+                                };
+                                const newNodes = [...nodes, n];
+                                setNodes(newNodes);
+                                pushToHistory(newNodes, edges);
+                                setSelectedNodeIds([nid]);
+                            }}
+                            className="w-full py-2 rounded-lg bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-emerald-600 flex items-center justify-center gap-2"
+                        >
+                            <i className="fa-solid fa-check-double"></i> Додати квест
+                        </button>
+                        <button
+                            onClick={() => {
+                                const rect = containerRef.current?.getBoundingClientRect();
+                                const centerX = rect ? (rect.width / 2 - viewport.x) / viewport.zoom : 200;
+                                const centerY = rect ? (rect.height / 2 - viewport.y) / viewport.zoom : 200;
+                                const nid = 'node_' + Math.random().toString(36).substring(2, 9);
+                                const n: MindmapNode = {
+                                    id: nid,
+                                    text: 'Нова секція',
+                                    x: centerX - 70,
+                                    y: centerY - 30,
+                                    width: 140,
+                                    height: 60,
+                                    type: 'note'
+                                };
+                                const newNodes = [...nodes, n];
+                                setNodes(newNodes);
+                                pushToHistory(newNodes, edges);
+                                setSelectedNodeIds([nid]);
+                            }}
+                            className="w-full py-2 rounded-lg bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-indigo-600 flex items-center justify-center gap-2"
+                        >
+                            <i className="fa-solid fa-layer-group"></i> Додати секцію
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

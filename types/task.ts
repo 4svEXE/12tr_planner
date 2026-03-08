@@ -64,6 +64,8 @@ export interface MindmapNode {
   color?: string;
   shape?: 'rectangle' | 'ellipse' | 'diamond';
   isCollapsed?: boolean;
+  type?: 'note' | 'task';
+  completed?: boolean;
 }
 
 export interface MindmapEdge {

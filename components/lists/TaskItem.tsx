@@ -28,7 +28,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isNote = task.category === 'note';
+  const isMindmap = task.category === 'mindmap';
   const isDone = task.status === TaskStatus.DONE;
+  const [isMindmapExpanded, setIsMindmapExpanded] = useState(false);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -112,12 +115,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <>
       <Card
         padding="none"
+        border={false}
         draggable
         onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
         onClick={() => !isEditing && onSelect(task.id)}
         onContextMenu={handleContextMenu}
-        className={`flex flex-col gap-0 px-3 py-1.5 hover:border-[var(--primary)]/30 transition-all cursor-pointer border rounded group bg-[var(--bg-card)] ${isSelected ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-inner' : 'border-[var(--border-color)]'
-          }`}
+        className={`flex flex-col gap-0 px-3 py-1.5 hover:bg-black/5 transition-all cursor-pointer group relative ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}
       >
         <div className="flex items-center gap-3 w-full h-[26px]">
           <div className="w-4 h-4 flex items-center justify-center shrink-0 text-indigo-400 opacity-60">
@@ -158,7 +161,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+          <div className="flex items-center gap-1 transition-all shrink-0">
+            {isMindmap && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsMindmapExpanded(!isMindmapExpanded); }}
+                className={`w-6 h-6 rounded hover:bg-black/10 flex items-center justify-center transition-transform ${isMindmapExpanded ? 'rotate-90' : ''}`}
+                title="Розгорнути структуру"
+              >
+                <i className="fa-solid fa-chevron-right text-[10px]"></i>
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -166,14 +178,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 setMenuPos({ x: rect.right - 180, y: rect.bottom });
                 setShowMenu(!showMenu);
               }}
-              className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)]"
+              className="w-6 h-6 rounded hover:bg-black/5 flex items-center justify-center text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <i className="fa-solid fa-ellipsis-vertical text-[10px]"></i>
             </button>
           </div>
         </div>
 
-        {/* DETAILS SECTION */}
         {showDetails && (
           <div className="pl-7 pr-2 pb-1 space-y-2 animate-in fade-in duration-300">
             {descriptionPreview && (
@@ -188,6 +199,154 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {isMindmap && isMindmapExpanded && task.mindmapData && (
+          <div className="pl-7 pr-2 pb-2 space-y-0.5 border-t border-[var(--border-color)]/20 pt-1.5 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+            {(() => {
+              const nodes = task.mindmapData.nodes || [];
+              const edges = task.mindmapData.edges || [];
+              const targets = new Set(edges.map(e => e.targetId));
+              const roots = nodes.filter(n => !targets.has(n.id) || n.id === 'root');
+
+              const toggleExpand = (nodeId: string, e: React.MouseEvent) => {
+                e.stopPropagation();
+                setExpandedNodes(prev => {
+                  const next = new Set(prev);
+                  if (next.has(nodeId)) next.delete(nodeId);
+                  else next.add(nodeId);
+                  return next;
+                });
+              };
+
+              const updateMindmap = (newNodes: any[], newEdges: any[]) => {
+                updateTask({
+                  ...task,
+                  mindmapData: { nodes: newNodes, edges: newEdges }
+                });
+              };
+
+              const toggleNodeStatus = (nodeId: string) => {
+                const newNodes = nodes.map(n => n.id === nodeId ? { ...n, completed: !n.completed } : n);
+                updateMindmap(newNodes, edges);
+              };
+
+              const deleteNode = (nodeId: string) => {
+                if (nodeId === 'root') return;
+                const nodesToDelete = new Set([nodeId]);
+                const findChildren = (pid: string) => {
+                  edges.filter(e => e.sourceId === pid).forEach(e => {
+                    nodesToDelete.add(e.targetId);
+                    findChildren(e.targetId);
+                  });
+                };
+                findChildren(nodeId);
+                const newNodes = nodes.filter(n => !nodesToDelete.has(n.id));
+                const newEdges = edges.filter(e => !nodesToDelete.has(e.sourceId) && !nodesToDelete.has(e.targetId));
+                updateMindmap(newNodes, newEdges);
+              };
+
+              const addNewNode = (parentId: string, type: 'task' | 'note') => {
+                const newNode = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  text: type === 'task' ? 'Нове завдання' : 'Нова секція',
+                  type,
+                  completed: false,
+                  x: 0, y: 0
+                };
+                const newEdge = { id: `e-${newNode.id}`, sourceId: parentId, targetId: newNode.id };
+                updateMindmap([...nodes, newNode], [...edges, newEdge]);
+              };
+
+              const renderMindmapNode = (node: any, depth = 0) => {
+                const children = edges
+                  .filter(e => e.sourceId === node.id)
+                  .map(e => nodes.find(n => n.id === e.targetId))
+                  .filter(Boolean);
+
+                const isExpanded = expandedNodes.has(node.id);
+
+                return (
+                  <div key={node.id} className="space-y-0" onClick={e => e.stopPropagation()}>
+                    <div
+                      className="flex items-center py-1 px-3 cursor-pointer group/m-node transition-all relative rounded-xl mx-0.5 h-7 hover:bg-black/5"
+                      style={{ marginLeft: depth * 12 }}
+                    >
+                      <button
+                        onClick={(e) => toggleExpand(node.id, e)}
+                        className="w-4 flex items-center justify-center shrink-0 transition-transform duration-200"
+                      >
+                        {children.length > 0 ? (
+                          <i className={`fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[7px] text-slate-400`}></i>
+                        ) : (
+                          <div className="w-1 h-1 rounded-full bg-slate-300/30" />
+                        )}
+                      </button>
+
+                      <div className="w-5 flex justify-center shrink-0 text-[var(--text-muted)] group-hover/m-node:text-[var(--primary)] transition-colors">
+                        {node.type === 'task' ? (
+                          <button
+                            onClick={() => toggleNodeStatus(node.id)}
+                            className={`w-3.5 h-3.5 rounded-md border flex items-center justify-center shrink-0 transition-all ${node.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'}`}
+                          >
+                            {node.completed && <i className="fa-solid fa-check text-[7px]"></i>}
+                          </button>
+                        ) : (
+                          <i className="fa-solid fa-rectangle-list text-[11px] opacity-70"></i>
+                        )}
+                      </div>
+
+                      <input
+                        value={node.text || ''}
+                        onChange={(e) => {
+                          const newNodes = nodes.map(n => n.id === node.id ? { ...n, text: e.target.value } : n);
+                          updateMindmap(newNodes, edges);
+                        }}
+                        className={`font-normal tracking-tight focus:ring-0 outline-none flex-1 truncate !bg-transparent !h-max !min-h-0 !p-0 !text-[12px] !rounded-none !border-none ${node.completed ? 'line-through opacity-30 text-[var(--text-muted)]' : 'text-[var(--text-main)] opacity-90'}`}
+                        style={{
+                          minHeight: 'unset',
+                          height: 'auto',
+                          paddingLeft: '0',
+                          paddingRight: '0',
+                          backgroundColor: 'transparent !important',
+                          border: 'none',
+                          borderRadius: '0'
+                        }}
+                      />
+
+                      <div className="flex items-center gap-1 opacity-0 group-hover/m-node:opacity-100 transition-opacity ml-1">
+                        <button onClick={() => addNewNode(node.id, 'task')} className="w-6 h-6 rounded-lg hover:bg-emerald-50 text-emerald-500/50 hover:text-emerald-600 flex items-center justify-center transition-all">
+                          <i className="fa-solid fa-plus text-[9px]"></i>
+                        </button>
+                        {node.id !== 'root' && (
+                          <button onClick={() => deleteNode(node.id)} className="w-6 h-6 rounded-lg hover:bg-rose-50 text-rose-500/50 hover:text-rose-600 flex items-center justify-center transition-all">
+                            <i className="fa-solid fa-trash-can text-[9px]"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {isExpanded && children.map(child => renderMindmapNode(child, depth + 1))}
+                  </div>
+                );
+              };
+
+              return roots.length > 0 ? (
+                <div className="space-y-0 pb-1">
+                  {roots.map(root => renderMindmapNode(root))}
+                  <button
+                    onClick={() => addNewNode('root', 'task')}
+                    className="flex items-center gap-1.5 py-0.5 px-2 mt-1 rounded-lg text-slate-400/60 hover:text-emerald-500 hover:bg-emerald-50/30 transition-all text-[8px] font-bold"
+                  >
+                    <i className="fa-solid fa-plus text-[7px]"></i> Додати квест...
+                  </button>
+                </div>
+              ) : (
+                <div className="py-1 text-center">
+                  <button onClick={() => updateMindmap([{ id: 'root', text: 'Центральна тема', type: 'note', x: 0, y: 0 }], [])} className="text-[7px] font-black text-primary uppercase tracking-widest border border-dashed border-primary/20 px-2 py-0.5 rounded-md hover:bg-primary/5">Створити структуру</button>
+                </div>
+              );
+            })()}
           </div>
         )}
       </Card>
