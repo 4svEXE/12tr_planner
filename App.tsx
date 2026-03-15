@@ -118,16 +118,21 @@ const MainLayout: React.FC = () => {
       Notification.requestPermission();
     }
 
+    // Додаємо початковий стан в историю (щоб перша кнопка назад спрацювала)
+    window.history.pushState({ tab: activeTab }, '', window.location.href);
+
     // Handle back button for Mobile/PWA
     const handlePopState = (e: PopStateEvent) => {
       if (activeTab !== 'today') {
         setActiveTab('today');
-        window.history.pushState(null, '', window.location.href);
       }
+      // Завжди додаємо новий стан, щоб наступний натиск кнопки назад теж перехоплювався
+      window.history.pushState({ tab: 'today' }, '', window.location.href);
     };
 
     const handleOpenAiChat = () => setIsAiOpen(true);
     window.addEventListener('open-ai-chat', handleOpenAiChat);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);

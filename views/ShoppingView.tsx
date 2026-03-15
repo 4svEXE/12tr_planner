@@ -262,6 +262,8 @@ const QuickAddShoppingModal: React.FC<{
   );
 };
 
+type SortMode = 'date' | 'alpha' | 'status';
+
 const ShoppingView: React.FC = () => {
   const { shoppingStores, shoppingItems, addStore, updateStore, deleteStore, shareStore, addShoppingItem, toggleShoppingItem, deleteShoppingItem, detailsWidth } = useApp();
   const { user } = useAuth();
@@ -276,6 +278,9 @@ const ShoppingView: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [isContentViewVisible, setIsContentViewVisible] = useState(false);
+  const [showBought, setShowBought] = useState(true);
+  const [sortMode, setSortMode] = useState<SortMode>('date');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
@@ -284,13 +289,18 @@ const ShoppingView: React.FC = () => {
   }, []);
 
   const filteredItems = useMemo(() => {
-    if (activeStoreId === 'all') return shoppingItems;
-    return shoppingItems.filter(item => item.storeId === activeStoreId);
-  }, [shoppingItems, activeStoreId]);
+    let items = activeStoreId === 'all' ? shoppingItems : shoppingItems.filter(item => item.storeId === activeStoreId);
+    if (!showBought) items = items.filter(i => !i.isBought);
+    return items;
+  }, [shoppingItems, activeStoreId, showBought]);
 
   const sortedItems = useMemo(() => {
-    return filteredItems;
-  }, [filteredItems]);
+    const items = [...filteredItems];
+    if (sortMode === 'alpha') return items.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+    if (sortMode === 'status') return items.sort((a, b) => Number(a.isBought) - Number(b.isBought));
+    // date (default) — newer first
+    return items.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }, [filteredItems, sortMode]);
 
   const getBestPriceFor = (name: string) => {
     const allMatching = shoppingItems.filter(i => i.name.toLowerCase() === name.toLowerCase());
@@ -386,15 +396,15 @@ const ShoppingView: React.FC = () => {
       </aside>
 
       <main className={`flex-1 flex flex-col bg-main relative min-w-0 transition-all duration-300 ${isMobileView && !isContentViewVisible ? 'translate-x-full' : 'translate-x-0'}`}>
-        <header className="px-6 md:px-10 py-4 border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center bg-card sticky top-0 z-10 gap-4 shrink-0">
-          <div className="flex items-center gap-3 w-full min-w-0">
+        <header className="px-4 md:px-10 py-3 border-b border-theme flex flex-col md:flex-row justify-between items-start md:items-center bg-card sticky top-0 z-10 gap-3 shrink-0">
+          <div className="flex items-center gap-2 w-full min-w-0">
             {isMobileView && (
-              <button onClick={() => setIsContentViewVisible(false)} className="w-8 h-8 rounded bg-black/5 flex items-center justify-center text-muted mr-1">
+              <button onClick={() => setIsContentViewVisible(false)} className="w-8 h-8 rounded bg-black/5 flex items-center justify-center text-muted mr-1 shrink-0">
                 <i className="fa-solid fa-chevron-left"></i>
               </button>
             )}
-            <div className="flex flex-col min-w-0">
-              <Typography variant="h2" className="text-lg md:text-xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
+            <div className="flex flex-col min-w-0 flex-1">
+              <Typography variant="h2" className="text-base md:text-xl font-black uppercase tracking-tight text-main flex items-center gap-3 truncate">
                 <i className={`fa-solid ${activeStoreId === 'all' ? 'fa-layer-group' : 'fa-shop'} opacity-20 text-base md:text-lg`}></i>
                 {activeStoreId === 'all' ? 'Усі покупки' : (shoppingStores.find(s => s.id === activeStoreId)?.name || 'Магазин')}
               </Typography>
@@ -402,6 +412,47 @@ const ShoppingView: React.FC = () => {
                 <div className="flex items-center gap-2 mt-0.5">
                   <Badge variant="indigo" className="text-[6px] py-0 px-1 font-black uppercase">Спільний список</Badge>
                 </div>
+              )}
+            </div>
+
+            {/* Фільтри */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setShowFilterMenu(v => !v)}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${showBought && sortMode === 'date' ? 'text-muted hover:bg-black/5' : 'text-primary bg-primary/10'}`}
+                title="Фільтри"
+              >
+                <i className="fa-solid fa-sliders text-sm"></i>
+              </button>
+              {showFilterMenu && (
+                <>
+                  <div className="fixed inset-0 z-[200]" onClick={() => setShowFilterMenu(false)} />
+                  <div className="absolute right-0 top-10 z-[201] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 duration-150">
+                    <div className="p-2 border-b border-[var(--border-color)] mb-2">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted">Фільтри та сортування</span>
+                    </div>
+                    <button
+                      onClick={() => { setShowBought(v => !v); setShowFilterMenu(false); }}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-3 transition-colors ${!showBought ? 'bg-primary/10 text-primary' : 'hover:bg-[var(--bg-main)] text-main'}`}
+                    >
+                      <i className={`fa-solid ${showBought ? 'fa-eye' : 'fa-eye-slash'} w-4 text-center opacity-60`}></i>
+                      {showBought ? 'Показати лише непридбані' : 'Показати всі'}
+                    </button>
+                    <div className="my-1 border-t border-[var(--border-color)] opacity-30"></div>
+                    <div className="px-3 py-1 text-[8px] font-black uppercase tracking-widest text-muted">Сортування</div>
+                    {(['date', 'alpha', 'status'] as SortMode[]).map(mode => (
+                      <button
+                        key={mode}
+                        onClick={() => { setSortMode(mode); setShowFilterMenu(false); }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-3 transition-colors ${sortMode === mode ? 'bg-primary/10 text-primary' : 'hover:bg-[var(--bg-main)] text-main'}`}
+                      >
+                        <i className={`fa-solid ${mode === 'date' ? 'fa-clock-rotate-left' : mode === 'alpha' ? 'fa-arrow-down-a-z' : 'fa-list-check'} w-4 text-center opacity-60`}></i>
+                        {mode === 'date' ? 'За датою додавання' : mode === 'alpha' ? 'За алфавітом' : 'За статусом'}
+                        {sortMode === mode && <i className="fa-solid fa-check ml-auto text-primary text-[10px]"></i>}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -416,6 +467,24 @@ const ShoppingView: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-10 relative">
           <div className="flex flex-col gap-1.5 max-w-xl mx-auto md:mx-0 pb-32">
+            {/* Статус-баджі фільтрів */}
+            {(!showBought || sortMode !== 'date') && (
+              <div className="flex items-center gap-2 px-1 mb-1">
+                {!showBought && (
+                  <span className="text-[8px] font-black uppercase px-2 py-1 bg-primary/10 text-primary rounded-lg flex items-center gap-1">
+                    <i className="fa-solid fa-eye-slash text-[7px]"></i> Без куплених
+                    <button onClick={() => setShowBought(true)} className="ml-1 hover:text-rose-500"><i className="fa-solid fa-xmark text-[7px]"></i></button>
+                  </span>
+                )}
+                {sortMode !== 'date' && (
+                  <span className="text-[8px] font-black uppercase px-2 py-1 bg-primary/10 text-primary rounded-lg flex items-center gap-1">
+                    <i className={`fa-solid ${sortMode === 'alpha' ? 'fa-arrow-down-a-z' : 'fa-list-check'} text-[7px]`}></i>
+                    {sortMode === 'alpha' ? 'А-Я' : 'За статусом'}
+                    <button onClick={() => setSortMode('date')} className="ml-1 hover:text-rose-500"><i className="fa-solid fa-xmark text-[7px]"></i></button>
+                  </span>
+                )}
+              </div>
+            )}
             {sortedItems.length > 0 ? sortedItems.map(item => {
               const store = shoppingStores.find(s => s.id === item.storeId);
               const bestP = getBestPriceFor(item.name);
@@ -426,7 +495,7 @@ const ShoppingView: React.FC = () => {
                   key={item.id}
                   padding="none"
                   onClick={() => setSelectedItemId(item.id)}
-                  className={`px-3 py-1.5 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-40 grayscale bg-black/5 border-theme' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
+                  className={`px-3 py-1.5 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-50 bg-black/5 border-theme' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <button
@@ -441,14 +510,24 @@ const ShoppingView: React.FC = () => {
                         {lastPriceEntry && (
                           <Badge variant="orange" className="text-[7px] py-0 px-1 font-black">{lastPriceEntry.price} ₴</Badge>
                         )}
-                        {item.isBought && item.lastModifiedBy && (
-                          <span className="text-[6px] font-black text-emerald-600 uppercase opacity-60">Bought by {item.lastModifiedBy.split('@')[0]}</span>
+                        {activeStoreId === 'all' && store && (
+                          <span className="text-[7px] font-black text-muted uppercase opacity-50">{store.name}</span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
                     {item.note && <i className="fa-solid fa-comment-dots text-primary/30 text-[8px]"></i>}
+                    {/* Кнопка видалення — видима при hover */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Видалити "${item.name}"?`)) deleteShoppingItem(item.id);
+                      }}
+                      className="w-7 h-7 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <i className="fa-solid fa-trash-can text-[9px]"></i>
+                    </button>
                     <i className="fa-solid fa-chevron-right text-[8px] text-muted group-hover:text-primary transition-all"></i>
                   </div>
                 </Card>

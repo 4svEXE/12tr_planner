@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- Вимикаємо автозаповнення для всього PWA на рівні мета-тегів -->
+  <meta name="format-detection" content="telephone=no, address=no, email=no">
   <title>12TR: Ігровий Двигун Життя</title>
 
   <link rel="manifest" href="/manifest.json" />
@@ -309,6 +311,70 @@
       font-size: inherit !important;
     }
 
+    /* ============================================
+       ANDROID AUTOFILL FIX
+       Прибираємо Android Chrome autofill overlay
+       (іконки ключа / адреси / паролю)
+       ============================================ */
+
+    /* Вимикаємо жовтий/синій фон автофілу */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
+      box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
+      -webkit-text-fill-color: var(--text-main) !important;
+      caret-color: var(--text-main) !important;
+      transition: background-color 9999s ease !important;
+    }
+
+    /* Глобально вимикаємо credential / password / address autofill icons */
+    input::-webkit-credentials-auto-fill-button,
+    input::-webkit-contacts-auto-fill-button,
+    input::-webkit-strong-password-auto-fill-button {
+      visibility: hidden !important;
+      display: none !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+    }
+
+    /* Для Firefox */
+    input {
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    /* Ховаємо Chrome autofill dropdown icon (calendar, contacts, etc.) */
+    input::-webkit-calendar-picker-indicator {
+      display: none !important;
+      opacity: 0 !important;
+    }
+
+    /* Додаткові Android Chrome autofill іконки */
+    input::-webkit-search-cancel-button,
+    input::-webkit-search-decoration,
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      display: none !important;
+    }
+
+    /* Ховаємо Android autofill overlay bar через відключення autofill highlight */
+    input[autocomplete="off"]:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
+    }
+
+
     .tiktok-blur {
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
@@ -341,6 +407,49 @@
     }
   </style>
   <script>
+    // ============================================
+    // ANDROID AUTOFILL FIX — JavaScript частина
+    // Динамічно додаємо autocomplete="off" до
+    // всіх форм і прибираємо autofill на Android
+    // ============================================
+    (function() {
+      // Додаємо autocomplete=off до всіх форм після рендеру
+      const disableAutofill = () => {
+        // Для всіх існуючих форм
+        document.querySelectorAll('form').forEach(form => {
+          if (!form.getAttribute('autocomplete')) {
+            form.setAttribute('autocomplete', 'off');
+          }
+        });
+        // MutationObserver — слідкуємо за новими формами
+      };
+
+      // Спостерігаємо за новими елементами в DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === 1) {
+              if (node.tagName === 'FORM') {
+                node.setAttribute('autocomplete', 'off');
+              }
+              node.querySelectorAll && node.querySelectorAll('form').forEach(f => {
+                f.setAttribute('autocomplete', 'off');
+              });
+            }
+          });
+        });
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        disableAutofill();
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+
+      // Також запускаємо через невеликий delay (для React-рендерених форм)
+      setTimeout(disableAutofill, 500);
+      setTimeout(disableAutofill, 2000);
+    })();
+
     // EXE Build Helpers
     window.addEventListener('click', (e) => {
       const isExe = /12TR-Engine/i.test(navigator.userAgent);

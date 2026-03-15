@@ -8,15 +8,17 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { useResizer } from '../hooks/useResizer';
 
+const HOUR_HEIGHT = 44;
+
 const TodayView: React.FC = () => {
   const {
     tasks, projects, timeBlocks, toggleTaskStatus, toggleHabitStatus,
     character, cycle, people, setActiveTab
   } = useApp();
-  // FIX: useResizer hook expects two arguments (minWidth, maxWidth).
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 700);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showRoutineMobile, setShowRoutineMobile] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -60,14 +62,12 @@ const TodayView: React.FC = () => {
     const horizon = todayTimestamp + (30 * 24 * 60 * 60 * 1000);
     const events: any[] = [];
 
-    // Звичайні події з календаря
     tasks.forEach(t => {
       if (!t.isDeleted && t.isEvent && t.scheduledDate && t.scheduledDate > todayTimestamp && t.scheduledDate <= horizon) {
         events.push({ id: t.id, title: t.title, date: t.scheduledDate, type: 'task' });
       }
     });
 
-    // Дні народження та дати людей
     people.forEach(p => {
       if (p.birthDate) {
         const bd = new Date(p.birthDate);
@@ -94,6 +94,17 @@ const TodayView: React.FC = () => {
     const hour = currentTime.getHours();
     return timeBlocks.find(b => b.dayOfWeek === dayOfWeek && hour >= b.startHour && hour < b.endHour);
   }, [timeBlocks, currentTime]);
+
+  // Розпорядок на сьогодні (для правого сайдбару)
+  const todaySchedule = useMemo(() => {
+    const dayOfWeek = currentTime.getDay();
+    return timeBlocks
+      .filter(b => b.dayOfWeek === dayOfWeek)
+      .sort((a, b) => a.startHour - b.startHour);
+  }, [timeBlocks, currentTime]);
+
+  // Поточна позиція часу (для лінії на розкладі)
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
   const habitProgress = useMemo(() => {
     if (dailyHabits.length === 0) return 0;
@@ -136,7 +147,15 @@ const TodayView: React.FC = () => {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              {/* Mobile: кнопка-перемикач рутини */}
+              <button
+                onClick={() => setShowRoutineMobile(true)}
+                className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+              >
+                <i className="fa-solid fa-calendar-clock text-orange-400"></i>
+                <span>Розклад</span>
+              </button>
               {stats.map(s => (
                 <Card key={s.label} padding="none" className="px-4 py-2 flex items-center gap-3 bg-white border-slate-100 shadow-sm">
                   <i className={`fa-solid ${s.icon} ${s.color} text-sm`}></i>
@@ -266,11 +285,21 @@ const TodayView: React.FC = () => {
                       <p className="text-[10px] font-black uppercase">Всі квести на сьогодні закрито!</p>
                     </div>
                   )}
+                  {/* Кнопка додати таск — красиво, як рядок */}
+                  <button
+                    onClick={() => setActiveTab('inbox')}
+                    className="w-full flex items-center gap-3 p-4 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500 hover:bg-orange-50/30 transition-all group"
+                  >
+                    <div className="w-6 h-6 rounded-lg border-2 border-dashed border-current flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 group-hover:text-white transition-all">
+                      <i className="fa-solid fa-plus text-[10px]"></i>
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-widest">Додати завдання</span>
+                  </button>
                 </div>
               </section>
             </div>
 
-            {/* ПРАВА КОЛОНКА (РАДАР) */}
+            {/* ПРАВА КОЛОНКА */}
             <div className="lg:col-span-4 space-y-8">
 
               {/* ПРОФІЛЬ ГЕРОЯ СТИСЛО */}
@@ -298,35 +327,95 @@ const TodayView: React.FC = () => {
                 </Card>
               </section>
 
-              {/* РАДАР ПОДІЙ НА 30 ДНІВ */}
-              <section className="space-y-4">
+              {/* РОЗПОРЯДОК ДНЯ (Desktop only right sidebar) */}
+              <section className="hidden lg:block space-y-4">
                 <div className="flex justify-between items-center px-2">
-                  <Typography variant="tiny" className="font-black uppercase tracking-widest text-[9px]">Радар (30 днів)</Typography>
-                  <i className="fa-solid fa-radar text-orange-500 animate-pulse text-[10px]"></i>
+                  <Typography variant="tiny" className="font-black uppercase tracking-widest text-[9px]">Розпорядок Дня</Typography>
+                  <button
+                    onClick={() => setActiveTab('calendar')}
+                    className="text-[8px] font-black text-orange-600 uppercase hover:underline transition-opacity"
+                  >
+                    Редагувати
+                  </button>
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto no-scrollbar">
-                  {upcomingEvents.length > 0 ? upcomingEvents.map((ev, i) => {
-                    const dateObj = new Date(ev.date);
-                    const diffDays = Math.ceil((ev.date - todayTimestamp) / (1000 * 60 * 60 * 24));
-
-                    return (
-                      <div key={`${ev.id}-${i}`} className="p-4 bg-white border border-slate-50 rounded-2xl shadow-sm flex items-center gap-4 group hover:border-orange-200 transition-all">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ev.type === 'birthday' ? 'bg-amber-50 text-amber-500' : ev.type === 'ally' ? 'bg-indigo-50 text-indigo-500' : 'bg-pink-50 text-pink-500'}`}>
-                          <i className={`fa-solid ${ev.type === 'birthday' ? 'fa-cake-candles' : ev.type === 'ally' ? 'fa-bell' : 'fa-calendar-star'}`}></i>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-black text-slate-800 uppercase truncate mb-0.5">{ev.title}</div>
-                          <div className="text-[8px] font-bold text-slate-400 uppercase">{dateObj.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} • Через {diffDays} дн.</div>
-                        </div>
-                      </div>
-                    );
-                  }) : (
+                <div className="relative">
+                  {todaySchedule.length > 0 ? (
+                    <div className="space-y-2 max-h-[420px] overflow-y-auto no-scrollbar pr-1">
+                      {todaySchedule.map(block => {
+                        const isCurrent = currentBlock?.id === block.id;
+                        return (
+                          <div
+                            key={block.id}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                              isCurrent
+                                ? 'bg-slate-900 border-slate-800 text-white shadow-xl scale-[1.02]'
+                                : 'bg-white border-slate-100 shadow-sm'
+                            }`}
+                          >
+                            <div
+                              className="w-2 h-8 rounded-full shrink-0"
+                              style={{ backgroundColor: block.color || 'var(--primary)' }}
+                            ></div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-[11px] font-black uppercase truncate ${isCurrent ? 'text-white' : 'text-slate-800'}`}>
+                                {isCurrent && <span className="text-orange-400 mr-1">▶</span>}
+                                {block.title}
+                              </div>
+                              <div className={`text-[8px] font-bold tabular-nums ${isCurrent ? 'text-orange-400' : 'text-slate-400'}`}>
+                                {block.startHour}:00 — {block.endHour}:00
+                              </div>
+                            </div>
+                            {isCurrent && (
+                              <div className="shrink-0">
+                                <i className="fa-solid fa-hourglass-half text-orange-400 animate-pulse text-[10px]"></i>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
                     <div className="p-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-100 opacity-30">
-                      <p className="text-[8px] font-black uppercase tracking-widest">Горизонт чистий</p>
+                      <i className="fa-solid fa-calendar-days text-4xl mb-3 text-slate-400"></i>
+                      <p className="text-[8px] font-black uppercase tracking-widest">Розклад не налаштовано</p>
+                      <button
+                        onClick={() => setActiveTab('calendar')}
+                        className="mt-3 text-[8px] font-black text-orange-600 uppercase hover:underline pointer-events-auto"
+                      >
+                        Налаштувати →
+                      </button>
                     </div>
                   )}
                 </div>
               </section>
+
+              {/* РАДАР ПОДІЙ НА 30 ДНІВ (зменшений, тільки якщо є події) */}
+              {upcomingEvents.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex justify-between items-center px-2">
+                    <Typography variant="tiny" className="font-black uppercase tracking-widest text-[9px]">Радар (30 днів)</Typography>
+                    <i className="fa-solid fa-radar text-orange-500 animate-pulse text-[10px]"></i>
+                  </div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar">
+                    {upcomingEvents.slice(0, 5).map((ev, i) => {
+                      const dateObj = new Date(ev.date);
+                      const diffDays = Math.ceil((ev.date - todayTimestamp) / (1000 * 60 * 60 * 24));
+
+                      return (
+                        <div key={`${ev.id}-${i}`} className="p-3 bg-white border border-slate-50 rounded-2xl shadow-sm flex items-center gap-3 group hover:border-orange-200 transition-all">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm ${ev.type === 'birthday' ? 'bg-amber-50 text-amber-500' : ev.type === 'ally' ? 'bg-indigo-50 text-indigo-500' : 'bg-pink-50 text-pink-500'}`}>
+                            <i className={`fa-solid ${ev.type === 'birthday' ? 'fa-cake-candles' : ev.type === 'ally' ? 'fa-bell' : 'fa-calendar-star'}`}></i>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-black text-slate-800 uppercase truncate mb-0.5">{ev.title}</div>
+                            <div className="text-[8px] font-bold text-slate-400 uppercase">{dateObj.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} • Через {diffDays} дн.</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         </div>
@@ -348,6 +437,70 @@ const TodayView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile: Модальний розклад дня */}
+      {showRoutineMobile && (
+        <div className="fixed inset-0 z-[500] flex flex-col bg-slate-950 text-white animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div>
+              <div className="text-[9px] font-black uppercase text-orange-400 tracking-widest mb-1">Розпорядок дня</div>
+              <div className="text-lg font-black uppercase">{currentTime.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            </div>
+            <button
+              onClick={() => setShowRoutineMobile(false)}
+              className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+            {todaySchedule.length > 0 ? todaySchedule.map(block => {
+              const isCurrent = currentBlock?.id === block.id;
+              return (
+                <div
+                  key={block.id}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                    isCurrent
+                      ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/20'
+                      : 'border-white/10 bg-white/5'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-10 rounded-full shrink-0"
+                    style={{ backgroundColor: block.color || 'var(--primary)' }}
+                  ></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-black uppercase truncate">
+                      {isCurrent && <span className="text-orange-400 mr-1">▶</span>}
+                      {block.title}
+                    </div>
+                    <div className={`text-[9px] font-bold tabular-nums ${isCurrent ? 'text-orange-400' : 'text-white/40'}`}>
+                      {block.startHour}:00 — {block.endHour}:00
+                    </div>
+                  </div>
+                  {isCurrent && (
+                    <i className="fa-solid fa-hourglass-half text-orange-400 animate-pulse"></i>
+                  )}
+                </div>
+              );
+            }) : (
+              <div className="py-20 text-center opacity-30">
+                <i className="fa-solid fa-calendar-days text-5xl mb-4 block"></i>
+                <p className="text-[10px] font-black uppercase tracking-widest">Розклад на сьогодні порожній</p>
+              </div>
+            )}
+          </div>
+          <div className="p-6 border-t border-white/10">
+            <button
+              onClick={() => { setShowRoutineMobile(false); setActiveTab('calendar'); }}
+              className="w-full py-3.5 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl"
+            >
+              <i className="fa-solid fa-pencil mr-2"></i>
+              Редагувати розпорядок
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { TimeBlock } from '../../types';
 import Button from '../ui/Button';
@@ -12,8 +12,21 @@ export const CalendarRoutineView: React.FC = () => {
     const { timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useApp();
     const [showBlockModal, setShowBlockModal] = useState<Partial<TimeBlock> | null>(null);
     const [modalDays, setModalDays] = useState<number[]>([]);
-    const [resizingBlock, setResizingBlock] = useState<{ id: string, startY: number, startHour: number, endHour: number, day: number } | null>(null);
+
+    // Resize: зберігаємо ВСЕ в refs, щоб уникнути stale closure
+    const resizingRef = useRef<{ id: string; startY: number; startHour: number; origEndHour: number } | null>(null);
+    const resizePreviewEndRef = useRef<number | null>(null);
+    const [resizePreview, setResizePreview] = useState<{ id: string; endHour: number } | null>(null);
+
+    // Drag — переміщення блоку
+    const draggingBlockRef = useRef<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // refs для timeBlocks щоб не було stale closure у mousemove/mouseup
+    const timeBlocksRef = useRef(timeBlocks);
+    useEffect(() => { timeBlocksRef.current = timeBlocks; }, [timeBlocks]);
+    const updateTimeBlockRef = useRef(updateTimeBlock);
+    useEffect(() => { updateTimeBlockRef.current = updateTimeBlock; }, [updateTimeBlock]);
 
     // Default to 5 AM
     useEffect(() => {
@@ -22,11 +35,39 @@ export const CalendarRoutineView: React.FC = () => {
         }
     }, []);
 
-    const handleSaveBlock = (data: Omit<TimeBlock, 'id'>) => {
-        if (showBlockModal?.id && modalDays.length === 1 && modalDays[0] === showBlockModal?.dayOfWeek) {
-            updateTimeBlock({ ...data, dayOfWeek: modalDays[0], id: showBlockModal.id } as TimeBlock);
+    // Знайти "дублі" блоку
+    const findRelatedBlocks = useCallback((block: Partial<TimeBlock>) => {
+        return timeBlocks.filter(b =>
+            b.title === block.title &&
+            b.color === block.color &&
+            b.startHour === block.startHour &&
+            b.endHour === block.endHour
+        );
+    }, [timeBlocks]);
+
+    const handleSaveBlock = (data: Omit<TimeBlock, 'id'>, applyToAll: boolean) => {
+        if (!showBlockModal) return;
+
+        if (showBlockModal.id) {
+            if (applyToAll) {
+                const related = findRelatedBlocks(showBlockModal);
+                related.forEach(b => {
+                    updateTimeBlock({ ...b, title: data.title, color: data.color, type: data.type });
+                });
+                const currentDays = related.map(b => b.dayOfWeek);
+                const addDays = modalDays.filter(d => !currentDays.includes(d));
+                const removeDays = currentDays.filter(d => !modalDays.includes(d));
+                removeDays.forEach(day => {
+                    const toRemove = related.find(b => b.dayOfWeek === day);
+                    if (toRemove) deleteTimeBlock(toRemove.id);
+                });
+                addDays.forEach(day => {
+                    addTimeBlock({ ...data, dayOfWeek: day });
+                });
+            } else {
+                updateTimeBlock({ ...data, dayOfWeek: modalDays[0] ?? showBlockModal.dayOfWeek ?? 1, id: showBlockModal.id } as TimeBlock);
+            }
         } else {
-            if (showBlockModal?.id) deleteTimeBlock(showBlockModal.id as string);
             modalDays.forEach(day => {
                 addTimeBlock({ ...data, dayOfWeek: day } as TimeBlock);
             });
@@ -34,55 +75,114 @@ export const CalendarRoutineView: React.FC = () => {
         setShowBlockModal(null);
     };
 
+    const handleDeleteBlock = (id: string, deleteAll: boolean) => {
+        if (deleteAll && showBlockModal) {
+            const related = findRelatedBlocks(showBlockModal);
+            related.forEach(b => deleteTimeBlock(b.id));
+        } else {
+            deleteTimeBlock(id);
+        }
+        setShowBlockModal(null);
+    };
+
+    // ---- Resize — виправлений, без stale closure ----
+    const handleResizeMouseMove = useCallback((e: MouseEvent) => {
+        if (!resizingRef.current) return;
+        const deltaY = e.clientY - resizingRef.current.startY;
+        const deltaHours = Math.round(deltaY / HOUR_HEIGHT);
+        const newEndHour = Math.min(24, Math.max(resizingRef.current.startHour + 1, resizingRef.current.origEndHour + deltaHours));
+        resizePreviewEndRef.current = newEndHour;
+        setResizePreview({ id: resizingRef.current.id, endHour: newEndHour });
+    }, []);
+
+    const handleResizeMouseUp = useCallback(() => {
+        if (resizingRef.current && resizePreviewEndRef.current !== null) {
+            const block = timeBlocksRef.current.find(b => b.id === resizingRef.current!.id);
+            if (block) {
+                updateTimeBlockRef.current({ ...block, endHour: resizePreviewEndRef.current });
+            }
+        }
+        resizingRef.current = null;
+        resizePreviewEndRef.current = null;
+        setResizePreview(null);
+        window.removeEventListener('mousemove', handleResizeMouseMove);
+        window.removeEventListener('mouseup', handleResizeMouseUp);
+    }, [handleResizeMouseMove]);
+
+    const startResize = (e: React.MouseEvent, block: TimeBlock) => {
+        e.stopPropagation();
+        e.preventDefault();
+        resizingRef.current = {
+            id: block.id,
+            startY: e.clientY,
+            startHour: block.startHour,
+            origEndHour: block.endHour,
+        };
+        resizePreviewEndRef.current = block.endHour;
+        setResizePreview({ id: block.id, endHour: block.endHour });
+        window.addEventListener('mousemove', handleResizeMouseMove);
+        window.addEventListener('mouseup', handleResizeMouseUp);
+    };
+
+    // ---- Drag-and-drop переміщення ----
+    const [dragOverCell, setDragOverCell] = useState<{ day: number; hour: number } | null>(null);
+
+    const handleDragOver = (e: React.DragEvent, day: number, hour: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverCell({ day, hour });
+    };
+
     const handleDrop = (e: React.DragEvent, targetDay: number, targetHour: number) => {
         e.preventDefault();
+        setDragOverCell(null);
         const blockId = e.dataTransfer.getData('blockId');
         if (!blockId) return;
-        const block = timeBlocks.find(b => b.id === blockId);
+        const block = timeBlocksRef.current.find(b => b.id === blockId);
         if (block) {
             const duration = block.endHour - block.startHour;
-            updateTimeBlock({ ...block, dayOfWeek: targetDay, startHour: targetHour, endHour: Math.min(24, targetHour + duration) });
+            updateTimeBlockRef.current({ ...block, dayOfWeek: targetDay, startHour: targetHour, endHour: Math.min(24, targetHour + duration) });
         }
+        draggingBlockRef.current = null;
     };
-
-    const handleResizeMouseMove = (e: MouseEvent) => {
-        if (!resizingBlock) return;
-        const deltaY = e.clientY - resizingBlock.startY;
-        const deltaHours = Math.round(deltaY / HOUR_HEIGHT);
-        const newEndHour = Math.min(24, Math.max(resizingBlock.startHour + 1, resizingBlock.endHour + deltaHours));
-        if (newEndHour !== resizingBlock.endHour) {
-            setResizingBlock(prev => prev ? { ...prev, endHour: newEndHour } : null);
-        }
-    };
-
-    const handleResizeMouseUp = () => {
-        if (resizingBlock) {
-            const block = timeBlocks.find(b => b.id === resizingBlock.id);
-            if (block && block.endHour !== resizingBlock.endHour) {
-                updateTimeBlock({ ...block, endHour: resizingBlock.endHour });
-            }
-            setResizingBlock(null);
-        }
-    };
-
-    useEffect(() => {
-        if (resizingBlock) {
-            window.addEventListener('mousemove', handleResizeMouseMove);
-            window.addEventListener('mouseup', handleResizeMouseUp);
-        } else {
-            window.removeEventListener('mousemove', handleResizeMouseMove);
-            window.removeEventListener('mouseup', handleResizeMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleResizeMouseMove);
-            window.removeEventListener('mouseup', handleResizeMouseUp);
-        };
-    }, [resizingBlock]);
 
     const openModal = (block: Partial<TimeBlock>) => {
         setShowBlockModal(block);
-        setModalDays([block.dayOfWeek ?? 1]);
+        setModalDays(block.dayOfWeek !== undefined ? [block.dayOfWeek] : [1]);
     };
+
+    // --- Клавіша Delete при відкритих деталях ---
+    useEffect(() => {
+        if (!showBlockModal?.id) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+                const related = timeBlocks.filter(b =>
+                    b.title === showBlockModal.title &&
+                    b.color === showBlockModal.color &&
+                    b.startHour === showBlockModal.startHour &&
+                    b.endHour === showBlockModal.endHour
+                );
+                if (related.length > 1) {
+                    const choice = confirm(`Видалити лише цей блок (${WEEK_DAYS[(showBlockModal.dayOfWeek ?? 1) === 0 ? 6 : (showBlockModal.dayOfWeek ?? 1) - 1]}) чи всі ${related.length} однакові блоки?\n\nОК = всі, Скасувати = лише цей`);
+                    if (choice) {
+                        related.forEach(b => deleteTimeBlock(b.id));
+                    } else {
+                        deleteTimeBlock(showBlockModal.id as string);
+                    }
+                } else {
+                    deleteTimeBlock(showBlockModal.id as string);
+                }
+                setShowBlockModal(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showBlockModal, timeBlocks, deleteTimeBlock]);
+
+    const relatedBlocksForModal = showBlockModal ? findRelatedBlocks(showBlockModal) : [];
+    const isMultiDayBlock = relatedBlocksForModal.length > 1;
 
     return (
         <div className="flex flex-col h-full bg-[var(--bg-card)] rounded-xl md:rounded-3xl overflow-hidden shadow-xl border border-[var(--border-color)] animate-in fade-in duration-300">
@@ -112,49 +212,61 @@ export const CalendarRoutineView: React.FC = () => {
                         </div>
 
                         {WEEK_DAYS.map((_, idx) => {
-                            const dayOfWeekNum = idx === 6 ? 0 : idx + 1; // 0=Sun, 1=Mon...
+                            const dayOfWeekNum = idx === 6 ? 0 : idx + 1;
                             const dayBlocks = timeBlocks.filter(b => b.dayOfWeek === dayOfWeekNum);
 
                             return (
                                 <div key={idx} style={{ width: `calc((100vw - ${HOUR_COLUMN_WIDTH}px - 48px) / 7)` }} className="flex-1 min-w-[100px] md:min-w-[140px] border-r border-[var(--border-color)] last:border-r-0 relative group shrink-0">
-                                    {Array.from({ length: 24 }, (_, i) => (
-                                        <div
-                                            key={i}
-                                            onClick={() => openModal({ dayOfWeek: dayOfWeekNum, startHour: i, endHour: i + 1 })}
-                                            onDragOver={e => e.preventDefault()}
-                                            onDrop={e => handleDrop(e, dayOfWeekNum, i)}
-                                            style={{ height: HOUR_HEIGHT }}
-                                            className="border-b border-[var(--border-color)]/10 hover:bg-[var(--primary)]/10 cursor-pointer transition-colors cursor-crosshair z-0 relative"
-                                        ></div>
-                                    ))}
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        const isOver = dragOverCell?.day === dayOfWeekNum && dragOverCell?.hour === i;
+                                        return (
+                                            <div
+                                                key={i}
+                                                onClick={() => openModal({ dayOfWeek: dayOfWeekNum, startHour: i, endHour: i + 1 })}
+                                                onDragOver={(e) => handleDragOver(e, dayOfWeekNum, i)}
+                                                onDragLeave={() => setDragOverCell(null)}
+                                                onDrop={(e) => handleDrop(e, dayOfWeekNum, i)}
+                                                style={{ height: HOUR_HEIGHT }}
+                                                className={`border-b border-[var(--border-color)]/10 cursor-crosshair z-0 relative transition-colors ${isOver ? 'bg-[var(--primary)]/20' : 'hover:bg-[var(--primary)]/10'}`}
+                                            ></div>
+                                        );
+                                    })}
 
                                     {dayBlocks.map(block => {
-                                        const isResizingThis = resizingBlock?.id === block.id;
-                                        const endHour = isResizingThis ? resizingBlock.endHour : block.endHour;
+                                        const isPreview = resizePreview?.id === block.id;
+                                        const endHour = isPreview ? resizePreview.endHour : block.endHour;
                                         const top = block.startHour * HOUR_HEIGHT;
                                         const h = (endHour - block.startHour) * HOUR_HEIGHT;
+                                        const isResizingThis = resizingRef.current?.id === block.id;
                                         return (
                                             <div
                                                 key={block.id}
-                                                draggable
-                                                onDragStart={e => e.dataTransfer.setData('blockId', block.id)}
-                                                onClick={() => openModal(block)}
-                                                className={`absolute left-1 right-1 rounded-xl shadow-sm border border-black/10 p-2 cursor-pointer transition-all hover:shadow-md z-10 flex flex-col justify-start min-h-[24px] overflow-hidden group ${isResizingThis ? 'opacity-80 scale-[1.02] z-20' : 'hover:scale-[1.02]'}`}
+                                                draggable={!isResizingThis}
+                                                onDragStart={e => {
+                                                    draggingBlockRef.current = block.id;
+                                                    e.dataTransfer.setData('blockId', block.id);
+                                                    e.dataTransfer.effectAllowed = 'move';
+                                                }}
+                                                onDragEnd={() => { draggingBlockRef.current = null; setDragOverCell(null); }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!resizingRef.current) openModal(block);
+                                                }}
+                                                className={`absolute left-1 right-1 rounded-xl shadow-sm border border-black/10 p-2 cursor-pointer transition-all hover:shadow-md z-10 flex flex-col justify-start min-h-[24px] overflow-hidden group/block select-none ${isResizingThis ? 'opacity-80 scale-[1.02] z-20 cursor-ns-resize' : 'hover:scale-[1.02]'}`}
                                                 style={{ top: top + 1, height: h - 2, backgroundColor: block.color || 'var(--primary)', color: '#fff' }}
                                             >
-                                                <div className="text-[8px] md:text-[10px] font-black tracking-tight leading-none truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
+                                                <div className="text-[11px] md:text-[13px] font-black tracking-tight leading-none truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
                                                 {h >= HOUR_HEIGHT && (
-                                                    <div className="text-[6px] md:text-[7px] font-bold opacity-90 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
+                                                    <div className="text-[8px] md:text-[10px] font-bold opacity-90 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
                                                         <i className="fa-regular fa-clock"></i>
                                                         {block.startHour}:00 - {endHour}:00
                                                     </div>
                                                 )}
+                                                {/* Resize handle */}
                                                 <div
-                                                    className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity flex items-center justify-center hover:bg-black/20"
-                                                    onMouseDown={e => {
-                                                        e.stopPropagation();
-                                                        setResizingBlock({ id: block.id, startY: e.clientY, startHour: block.startHour, endHour: block.endHour, day: dayOfWeekNum });
-                                                    }}
+                                                    className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover/block:opacity-100 bg-black/10 transition-opacity flex items-center justify-center hover:bg-black/20"
+                                                    onMouseDown={e => startResize(e, block)}
+                                                    onClick={e => e.stopPropagation()}
                                                 >
                                                     <div className="w-4 h-0.5 bg-white/50 rounded-full"></div>
                                                 </div>
@@ -178,16 +290,40 @@ export const CalendarRoutineView: React.FC = () => {
                                 {showBlockModal.id ? 'Редагувати Блок' : 'Новий Блок'}
                             </Typography>
                             {showBlockModal.id && (
-                                <button onClick={() => { if (confirm('Видалити блок?')) { deleteTimeBlock(showBlockModal.id as string); setShowBlockModal(null); } }} className="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center">
-                                    <i className="fa-solid fa-trash text-[10px]"></i>
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    {isMultiDayBlock && (
+                                        <span className="text-[7px] font-black uppercase text-[var(--primary)] bg-[var(--primary)]/10 px-2 py-1 rounded-lg">
+                                            {relatedBlocksForModal.length} дні
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            if (isMultiDayBlock) {
+                                                const choice = confirm(`Видалити лише цей блок чи всі ${relatedBlocksForModal.length} однакові?\n\nОК = всі, Скасувати = лише цей`);
+                                                handleDeleteBlock(showBlockModal.id as string, choice);
+                                            } else {
+                                                if (confirm('Видалити блок?')) handleDeleteBlock(showBlockModal.id as string, false);
+                                            }
+                                        }}
+                                        className="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center"
+                                    >
+                                        <i className="fa-solid fa-trash text-[10px]"></i>
+                                    </button>
+                                </div>
                             )}
                         </div>
 
                         <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1 flex-1">
                             <div>
                                 <label className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1 block tracking-widest pl-1">Дія або Рутина</label>
-                                <input autoFocus value={showBlockModal.title || ''} onChange={e => setShowBlockModal({ ...showBlockModal, title: e.target.value })} placeholder="Репетитор..." className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2.5 px-3 text-xs font-bold focus:border-[var(--primary)] outline-none text-[var(--text-main)] transition-colors" />
+                                <input
+                                    autoFocus
+                                    value={showBlockModal.title || ''}
+                                    onChange={e => setShowBlockModal({ ...showBlockModal, title: e.target.value })}
+                                    placeholder="Репетитор..."
+                                    autoComplete="off"
+                                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2.5 px-3 text-xs font-bold focus:border-[var(--primary)] outline-none text-[var(--text-main)] transition-colors"
+                                />
                             </div>
 
                             <div>
@@ -212,11 +348,21 @@ export const CalendarRoutineView: React.FC = () => {
                             <div className="flex gap-3">
                                 <div className="flex-1">
                                     <label className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1 block tracking-widest pl-1">Початок</label>
-                                    <input type="number" min="0" max="23" value={showBlockModal.startHour || 5} onChange={e => setShowBlockModal({ ...showBlockModal, startHour: parseInt(e.target.value) })} className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-main)] transition-colors" />
+                                    <input
+                                        type="number" min="0" max="23"
+                                        value={showBlockModal.startHour ?? 5}
+                                        onChange={e => setShowBlockModal({ ...showBlockModal, startHour: parseInt(e.target.value) })}
+                                        className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-main)] transition-colors"
+                                    />
                                 </div>
                                 <div className="flex-1">
                                     <label className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1 block tracking-widest pl-1">Кінець</label>
-                                    <input type="number" min="1" max="24" value={showBlockModal.endHour || 6} onChange={e => setShowBlockModal({ ...showBlockModal, endHour: Math.max(parseInt(e.target.value), (showBlockModal.startHour || 0) + 1) })} className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-main)] transition-colors" />
+                                    <input
+                                        type="number" min="1" max="24"
+                                        value={showBlockModal.endHour ?? 6}
+                                        onChange={e => setShowBlockModal({ ...showBlockModal, endHour: Math.max(parseInt(e.target.value), (showBlockModal.startHour || 0) + 1) })}
+                                        className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-main)] transition-colors"
+                                    />
                                 </div>
                             </div>
 
@@ -232,7 +378,56 @@ export const CalendarRoutineView: React.FC = () => {
 
                         <div className="flex gap-2 pt-4 mt-2 border-t border-[var(--border-color)]/50 shrink-0">
                             <Button variant="white" className="flex-1 py-2.5 text-[9px] rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]" onClick={() => setShowBlockModal(null)}>ВІДМІНА</Button>
-                            <Button variant="primary" disabled={!showBlockModal.title || modalDays.length === 0} className="flex-[2] py-2.5 text-[9px] rounded-xl border-none bg-[var(--primary)] text-white hover:brightness-110 shadow-md shadow-[var(--primary)]/20" onClick={() => handleSaveBlock({ title: showBlockModal.title || 'Block', startHour: showBlockModal.startHour || 5, endHour: showBlockModal.endHour || 6, type: 'work', color: showBlockModal.color || 'var(--primary)', dayOfWeek: modalDays[0] || 1 })}>ЗБЕРЕГТИ</Button>
+                            {showBlockModal.id && isMultiDayBlock ? (
+                                <>
+                                    <Button
+                                        variant="secondary"
+                                        disabled={!showBlockModal.title || modalDays.length === 0}
+                                        className="flex-1 py-2.5 text-[8px] rounded-xl"
+                                        onClick={() => handleSaveBlock({
+                                            title: showBlockModal.title || 'Block',
+                                            startHour: showBlockModal.startHour ?? 5,
+                                            endHour: showBlockModal.endHour ?? 6,
+                                            type: 'work',
+                                            color: showBlockModal.color || 'var(--primary)',
+                                            dayOfWeek: modalDays[0] || 1
+                                        }, false)}
+                                    >
+                                        ЦЬОГО ДНЯ
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        disabled={!showBlockModal.title || modalDays.length === 0}
+                                        className="flex-1 py-2.5 text-[8px] rounded-xl border-none bg-[var(--primary)] text-white hover:brightness-110 shadow-md shadow-[var(--primary)]/20"
+                                        onClick={() => handleSaveBlock({
+                                            title: showBlockModal.title || 'Block',
+                                            startHour: showBlockModal.startHour ?? 5,
+                                            endHour: showBlockModal.endHour ?? 6,
+                                            type: 'work',
+                                            color: showBlockModal.color || 'var(--primary)',
+                                            dayOfWeek: modalDays[0] || 1
+                                        }, true)}
+                                    >
+                                        УСІ ДНІ
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    variant="primary"
+                                    disabled={!showBlockModal.title || modalDays.length === 0}
+                                    className="flex-[2] py-2.5 text-[9px] rounded-xl border-none bg-[var(--primary)] text-white hover:brightness-110 shadow-md shadow-[var(--primary)]/20"
+                                    onClick={() => handleSaveBlock({
+                                        title: showBlockModal.title || 'Block',
+                                        startHour: showBlockModal.startHour ?? 5,
+                                        endHour: showBlockModal.endHour ?? 6,
+                                        type: 'work',
+                                        color: showBlockModal.color || 'var(--primary)',
+                                        dayOfWeek: modalDays[0] || 1
+                                    }, false)}
+                                >
+                                    ЗБЕРЕГТИ
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,18 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { DiaryEntry, TaskStatus, AiSuggestion } from '../types';
+import { DiaryEntry, AiSuggestion } from '../types';
 import Typography from '../components/ui/Typography';
-import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import DiaryEditor from '../components/DiaryEditor';
 import DailyReportAiWizard from '../components/DailyReportAiWizard';
 import { useResizer } from '../hooks/useResizer';
-
-/**
- * Backup of previous DiaryView state before restore from commit 88e51808
- * saved at views/DiaryView.backup.tsx
- */
 
 const DiaryView: React.FC = () => {
   const {
@@ -25,18 +19,26 @@ const DiaryView: React.FC = () => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[] | null>(null);
 
   const { isResizing, startResizing, detailsWidth } = useResizer(400, 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (showSearch && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showSearch]);
 
   const dailyHabits = useMemo(() =>
     tasks.filter(t => !t.isDeleted && !t.isArchived && (t.projectSection === 'habits' || t.tags.includes('habit'))),
@@ -108,89 +110,20 @@ const DiaryView: React.FC = () => {
     }
   };
 
-  const renderTopCalendar = () => {
-    return (
-      <div className={`transition-all duration-500 ease-in-out bg-[var(--bg-card)] border-b border-[var(--border-color)] overflow-hidden ${isCalendarExpanded ? 'max-h-[500px] py-6' : 'max-h-24 py-3'}`}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <Typography variant="h3" className="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">
-                {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
-              </Typography>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="w-8 h-8 rounded-xl hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-left text-[10px]"></i></button>
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="w-8 h-8 rounded-xl hover:bg-black/5 text-[var(--text-muted)] flex items-center justify-center transition-all"><i className="fa-solid fa-chevron-right text-[10px]"></i></button>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-              className="px-4 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] transition-all flex items-center gap-2"
-            >
-              <i className={`fa-solid ${isCalendarExpanded ? 'fa-compress' : 'fa-expand'} text-[10px]`}></i>
-              {isCalendarExpanded ? 'ЗГОРНУТИ' : 'ВЕСЬ МІСЯЦЬ'}
-            </button>
-          </div>
-
-          <div className={`grid grid-cols-7 gap-1 md:gap-2 transition-opacity duration-300`}>
-            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => (
-              <div key={w} className="text-[7px] md:text-[8px] font-black text-[var(--text-muted)] opacity-40 text-center uppercase">{w}</div>
-            ))}
-            {calendarDays.map((date, i) => {
-              if (!date) return <div key={`empty-${i}`} className="h-8 md:h-12" />;
-              const ds = date.toLocaleDateString('en-CA');
-              const isSelected = selectedDate === ds;
-              const hasEntry = diary.some(e => e.date === ds);
-              const isToday = ds === new Date().toLocaleDateString('en-CA');
-
-              return (
-                <button
-                  key={ds}
-                  onClick={() => {
-                    setSelectedDate(ds);
-                    if (!hasEntry) setEditingEntryId('new');
-                    else {
-                      const entry = diary.find(e => e.date === ds);
-                      if (entry) setEditingEntryId(entry.id);
-                    }
-                  }}
-                  className={`h-8 md:h-12 rounded-xl md:rounded-2xl flex flex-col items-center justify-center relative transition-all group border ${isSelected ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-105 z-10' : isToday ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5' : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-main)]'}`}
-                >
-                  <span className={`text-[9px] md:text-[13px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{date.getDate()}</span>
-                  {hasEntry && (
-                    <div className={`w-0.5 md:w-1 h-0.5 md:h-1 rounded-full mt-0.5 md:mt-1 ${isSelected ? 'bg-white' : 'bg-[var(--primary)] shadow-[0_0_8px_var(--primary)]'}`}></div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
-
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
-
-    // Use selected date or today
     const targetDate = selectedDate || new Date().toLocaleDateString('en-CA');
     const existingEntry = diary.find(ent => ent.date === targetDate);
-
     let content: string;
     const taskBullet = `[ ] ${task.title}${task.description ? ': ' + task.description : ''}`;
-
     if (existingEntry) {
       try {
         const blocks = JSON.parse(existingEntry.content);
-        blocks.push({
-          id: Math.random().toString(36).substr(2, 9),
-          type: 'bullet',
-          content: taskBullet
-        });
+        blocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'bullet', content: taskBullet });
         content = JSON.stringify(blocks);
       } catch {
         content = existingEntry.content + `\n- ${taskBullet}`;
@@ -201,69 +134,206 @@ const DiaryView: React.FC = () => {
         { id: 'b2', type: 'bullet', content: taskBullet }
       ]);
     }
-
     const savedId = saveDiaryEntry(targetDate, content, existingEntry?.id);
-    if (savedId) {
-      setEditingEntryId(savedId);
-      setSelectedDate(targetDate);
-    }
+    if (savedId) { setEditingEntryId(savedId); setSelectedDate(targetDate); }
   };
+
+  const getEntryTitle = (entry: DiaryEntry) => {
+    try {
+      const blocks = JSON.parse(entry.content);
+      return blocks.find((b: any) => b.content && b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
+    } catch { return entry.content.split('\n')[0].trim() || 'Без заголовка'; }
+  };
+
+  const renderCalendar = () => (
+    <div className={`bg-[var(--bg-card)] border-b border-[var(--border-color)] overflow-hidden ${isCalendarExpanded ? 'pb-4' : ''}`}>
+      <div className="px-4 md:px-8 py-3">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+              className="w-8 h-8 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all active:scale-90"
+            >
+              <i className="fa-solid fa-chevron-left text-[10px]"></i>
+            </button>
+            <span className="text-[11px] font-black uppercase tracking-widest text-[var(--primary)]">
+              {currentMonth.toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
+            </span>
+            <button
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+              className="w-8 h-8 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] flex items-center justify-center transition-all active:scale-90"
+            >
+              <i className="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+          </div>
+          <button
+            onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
+            className="px-3 py-1.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] transition-all flex items-center gap-1.5"
+          >
+            <i className={`fa-solid ${isCalendarExpanded ? 'fa-compress' : 'fa-expand'} text-[9px]`}></i>
+            {isCalendarExpanded ? 'ТИЖДЕНЬ' : 'МІСЯЦЬ'}
+          </button>
+        </div>
+
+        {/* Weekday labels */}
+        <div className="grid grid-cols-7 mb-1.5">
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map(w => (
+            <div key={w} className="text-[7px] font-black text-[var(--text-muted)] opacity-40 text-center uppercase">{w}</div>
+          ))}
+        </div>
+
+        {/* Days grid */}
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
+          {calendarDays.map((date, i) => {
+            if (!date) return <div key={`e-${i}`} className="h-9 md:h-11" />;
+            const ds = date.toLocaleDateString('en-CA');
+            const isSelected = selectedDate === ds;
+            const hasEntry = diary.some(e => e.date === ds);
+            const isToday = ds === new Date().toLocaleDateString('en-CA');
+            return (
+              <button
+                key={ds}
+                onClick={() => {
+                  setSelectedDate(ds);
+                  if (!hasEntry) setEditingEntryId('new');
+                  else { const entry = diary.find(e => e.date === ds); if (entry) setEditingEntryId(entry.id); }
+                }}
+                className={`h-9 md:h-11 rounded-xl flex flex-col items-center justify-center relative transition-all active:scale-90 ${
+                  isSelected
+                    ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/30 scale-105 z-10'
+                    : isToday
+                      ? 'bg-[var(--primary)]/10 border border-[var(--primary)]/30'
+                      : hasEntry
+                        ? 'bg-[var(--bg-main)] border border-[var(--border-color)]'
+                        : 'hover:bg-[var(--bg-main)]'
+                }`}
+              >
+                <span className={`text-[10px] md:text-[12px] font-black leading-none ${
+                  isSelected ? 'text-white' : isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'
+                }`}>{date.getDate()}</span>
+                {hasEntry && (
+                  <div className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? 'bg-white/80' : 'bg-[var(--primary)]'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-screen flex bg-[var(--bg-main)] overflow-hidden relative text-[var(--text-main)]">
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <header className="px-4 md:px-8 py-3 bg-[var(--bg-card)] border-b border-[var(--border-color)] z-30 flex flex-col shrink-0">
-          <div className="flex justify-between items-center h-12">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center shadow-xl shadow-[var(--primary)]/20 rotate-3 transition-transform hover:rotate-0"><i className="fa-solid fa-feather-pointed text-xs md:text-lg"></i></div>
-              <Typography variant="h1" className="text-xl md:text-3xl font-black uppercase tracking-tighter">Паттерни <span className="text-[var(--primary)]">Пам'яті</span></Typography>
+
+        {/* ===== HEADER ===== */}
+        <header className="bg-[var(--bg-card)] border-b border-[var(--border-color)] z-30 shrink-0">
+          <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-16 gap-3">
+
+            {/* Left: icon + title */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center shadow-lg shadow-[var(--primary)]/20 shrink-0">
+                <i className="fa-solid fa-feather-pointed text-sm md:text-base"></i>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[13px] md:text-xl font-black uppercase tracking-tight leading-none text-[var(--text-main)] truncate">
+                  Паттерни <span className="text-[var(--primary)]">Пам'яті</span>
+                </div>
+                <div className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-50 mt-0.5">
+                  {diary.length} спогадів
+                </div>
+              </div>
             </div>
 
-            <div className="flex-1 max-w-md mx-8 hidden md:block">
+            {/* Desktop search */}
+            <div className="flex-1 max-w-md mx-6 hidden md:block">
               <div className="relative group">
                 <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-[10px] opacity-40 group-focus-within:text-[var(--primary)] group-focus-within:opacity-100 transition-all"></i>
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   placeholder="ПОШУК ПО СПОГАДАХ..."
                   autoComplete="off"
                   autoCorrect="off"
-                  spellCheck="false"
+                  spellCheck={false}
                   className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-2.5 pl-10 pr-4 text-[9px] font-black tracking-widest uppercase focus:ring-4 focus:ring-[var(--primary)]/10 outline-none transition-all placeholder:opacity-50"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Right actions */}
+            <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+              {/* Mobile: search toggle */}
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className={`md:hidden w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${showSearch ? 'bg-[var(--primary)] text-white' : 'bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-muted)]'}`}
+              >
+                <i className="fa-solid fa-magnifying-glass text-sm"></i>
+              </button>
+
+              {/* Desktop: report button */}
               <button
                 onClick={() => setIsReportWizardOpen(true)}
-                className="hidden md:flex px-6 h-12 bg-indigo-600 text-white rounded-2xl items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="hidden md:flex px-5 h-10 bg-indigo-600 text-white rounded-2xl items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
               >
+                <i className="fa-solid fa-scroll text-[10px]"></i>
                 Звіт дня
               </button>
+
+              {/* New entry */}
               <button
                 onClick={() => setEditingEntryId('new')}
-                className="w-10 h-10 md:w-auto md:px-6 bg-[var(--primary)] text-white rounded-2xl md:h-12 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="h-10 px-3 md:px-5 bg-[var(--primary)] text-white rounded-2xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
-                <i className="fa-solid fa-plus text-xs"></i>
-                <span className="hidden md:inline">НОВИЙ СПОГАД</span>
+                <i className="fa-solid fa-plus text-sm"></i>
+                <span className="hidden md:inline">НОВИЙ</span>
               </button>
             </div>
           </div>
+
+          {/* Mobile search bar (collapsible) */}
+          {showSearch && (
+            <div className="px-4 pb-3 md:hidden">
+              <div className="relative">
+                <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] text-[11px]"></i>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Пошук по записах..."
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3 pl-11 pr-10 text-[12px] font-semibold outline-none focus:border-[var(--primary)] transition-colors placeholder:text-[var(--text-muted)]/50"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--text-muted)]/20 flex items-center justify-center"
+                  >
+                    <i className="fa-solid fa-xmark text-[9px]"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </header>
 
-        {renderTopCalendar()}
+        {/* ===== CALENDAR ===== */}
+        {renderCalendar()}
 
+        {/* ===== MAIN CONTENT ===== */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Restored Sidebar from commit 88e51808 */}
-          <aside className="w-64 md:w-72 p-6 hidden lg:flex flex-col gap-6 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
-            <div className="p-5 bg-[var(--primary)]/5 rounded-3xl border border-[var(--primary)]/10 mb-2">
-              <Typography variant="tiny" className="text-[var(--primary)] font-black mb-2 uppercase text-[8px] tracking-[0.2em] opacity-60">Статистика</Typography>
+          {/* Desktop sidebar */}
+          <aside className="w-64 md:w-72 p-6 hidden lg:flex flex-col gap-5 border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 overflow-y-auto no-print">
+            <div className="p-5 bg-[var(--primary)]/5 rounded-3xl border border-[var(--primary)]/10">
+              <div className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] opacity-60 mb-2">Статистика</div>
               <div className="text-3xl font-black text-[var(--text-main)]">{diary.length}</div>
               <div className="text-[9px] font-bold uppercase text-[var(--text-muted)] opacity-50 tracking-wider">Всього спогадів</div>
             </div>
-
             <button
               onClick={() => {
                 const today = new Date().toLocaleDateString('en-CA');
@@ -281,8 +351,7 @@ const DiaryView: React.FC = () => {
                 <div className="text-[8px] font-bold text-[var(--text-muted)] uppercase opacity-50">Швидкий перехід</div>
               </div>
             </button>
-
-            <div className="mt-auto opacity-20 hover:opacity-100 transition-opacity">
+            <div className="mt-auto opacity-20">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-px bg-[var(--border-color)]"></div>
                 <span className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)]">12TR Engine v4.0</span>
@@ -291,135 +360,204 @@ const DiaryView: React.FC = () => {
             </div>
           </aside>
 
+          {/* Entries list */}
           <main
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={e => e.preventDefault()}
             onDrop={handleDrop}
-            className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 bg-[var(--bg-main)]/30 relative no-scrollbar"
+            className="flex-1 overflow-y-auto no-scrollbar p-3 md:p-10 relative"
           >
-            <div className="absolute left-[3.5rem] md:left-[6.2rem] top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[var(--border-color)] to-transparent opacity-30 hidden md:block"></div>
+            {/* Vertical timeline line (desktop only) */}
+            <div className="absolute left-[6.2rem] top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[var(--border-color)] to-transparent opacity-20 hidden md:block pointer-events-none"></div>
 
-            <div className="max-w-3xl mx-auto space-y-12 pb-40">
-              {Object.entries(groupedByMonth).length > 0 ? (Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, monthEntries]) => (
-                <div key={month} className="space-y-6">
-                  <div className="sticky top-0 z-20 pt-4 pb-2 bg-gradient-to-b from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
-                    <div className="flex items-center justify-between gap-4 py-3 px-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md shadow-lg shadow-black/5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse"></div>
-                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">{month}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{monthEntries.length} записів</span>
+            <div className="max-w-3xl mx-auto space-y-8 pb-32 md:pb-20">
+              {Object.entries(groupedByMonth).length > 0 ? (
+                (Object.entries(groupedByMonth) as [string, DiaryEntry[]][]).map(([month, monthEntries]) => (
+                  <div key={month} className="space-y-3">
+                    {/* Month label */}
+                    <div className="sticky top-0 z-20 py-2">
+                      <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/90 backdrop-blur-md shadow-sm w-fit">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse"></div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">{month}</span>
+                        <span className="text-[8px] font-bold text-[var(--text-muted)] opacity-60">{monthEntries.length} зап.</span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    {monthEntries.map(entry => {
-                      const dateParts = entry.date.split('-').map(Number);
-                      const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                      let title = 'Запис';
-                      try {
-                        const blocks = JSON.parse(entry.content);
-                        title = blocks.find((b: any) => b.content && b.content.trim() !== '' && b.content !== '<br>')?.content?.replace(/<[^>]*>?/gm, '') || 'Без заголовка';
-                      } catch (e) { title = entry.content.split('\n')[0].trim(); }
+                    {/* Entries */}
+                    <div className="space-y-2 md:space-y-4">
+                      {monthEntries.map(entry => {
+                        const dateParts = entry.date.split('-').map(Number);
+                        const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                        const title = getEntryTitle(entry);
+                        const isSelected = selectedDate === entry.date && editingEntryId === entry.id;
+                        const habitsDone = dailyHabits.filter(h => h.habitHistory?.[entry.date]?.status === 'completed').length;
+                        const isToday = entry.date === new Date().toLocaleDateString('en-CA');
 
-                      const isSelected = selectedDate === entry.date && editingEntryId === entry.id;
+                        return (
+                          <div key={entry.id} className="relative md:pl-20 group">
+                            {/* Timeline dot (desktop) */}
+                            <div className={`absolute left-[5.55rem] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-[3px] border-[var(--bg-main)] shadow-sm hidden md:block z-10 transition-all ${
+                              isSelected ? 'bg-[var(--primary)] scale-125' : 'bg-slate-300 group-hover:bg-[var(--primary)]/50'
+                            }`}></div>
 
-                      return (
-                        <div key={entry.id} className="relative pl-0 md:pl-20 group">
-                          <div className={`absolute left-[5.55rem] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-[3px] border-[var(--bg-main)] shadow-sm hidden md:block z-10 transition-all duration-300 ${isSelected ? 'bg-[var(--primary)] scale-125' : 'bg-slate-300 group-hover:bg-[var(--primary)]/50'}`}></div>
-
-                          <Card padding="none" onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
-                            className={`bg-[var(--bg-card)] border-[var(--border-color)] rounded-3xl cursor-pointer overflow-hidden transition-all group/card ${isSelected ? 'ring-2 ring-[var(--primary)] border-transparent shadow-2xl scale-[1.01]' : 'shadow-sm hover:shadow-xl hover:border-[var(--primary)]/20'}`}>
-                            <div className="flex items-center gap-6 p-4 md:p-6 relative">
-                              <div className="w-12 md:w-16 flex flex-col items-center shrink-0 border-r border-[var(--border-color)] pr-6">
-                                <span className="text-[8px] md:text-[10px] font-black text-[var(--text-muted)] opacity-50 uppercase mb-1">{d.toLocaleString('uk-UA', { weekday: 'short' })}</span>
-                                <span className={`text-xl md:text-3xl font-black transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{d.getDate()}</span>
+                            {/* Card */}
+                            <div
+                              onClick={() => { setEditingEntryId(entry.id); setSelectedDate(entry.date); }}
+                              className={`flex items-stretch gap-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all border shadow-sm ${
+                                isSelected
+                                  ? 'ring-2 ring-[var(--primary)] border-transparent shadow-xl bg-[var(--bg-card)]'
+                                  : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:shadow-md hover:border-[var(--primary)]/20 active:scale-[0.99]'
+                              }`}
+                            >
+                              {/* Date column (mobile-optimized) */}
+                              <div className={`flex flex-col items-center justify-center px-3 md:px-5 py-3 shrink-0 border-r border-[var(--border-color)]/50 min-w-[52px] md:min-w-[60px] ${
+                                isToday ? 'bg-[var(--primary)]/5' : ''
+                              }`}>
+                                <span className="text-[8px] md:text-[9px] font-black text-[var(--text-muted)] opacity-50 uppercase leading-none mb-1">
+                                  {d.toLocaleString('uk-UA', { weekday: 'short' })}
+                                </span>
+                                <span className={`text-xl md:text-3xl font-black leading-none ${
+                                  isSelected ? 'text-[var(--primary)]' : isToday ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'
+                                }`}>{d.getDate()}</span>
+                                {isToday && <div className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1"></div>}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <span className={`text-base md:text-lg font-bold truncate block transition-all mb-2 ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>{title}</span>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-1.5 text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest bg-[var(--bg-main)] px-2 py-1 rounded-lg">
-                                    <i className="fa-regular fa-clock text-[var(--primary)]"></i>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0 py-3 px-3 md:px-5 flex flex-col justify-center gap-1.5">
+                                <div className={`text-[12px] md:text-[15px] font-bold truncate leading-tight ${
+                                  isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'
+                                }`}>
+                                  {title}
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex items-center gap-1 text-[8px] font-bold text-[var(--text-muted)] bg-[var(--bg-main)] px-2 py-0.5 rounded-lg">
+                                    <i className="fa-regular fa-clock text-[var(--primary)] text-[8px]"></i>
                                     {new Date(entry.updatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
                                   </div>
-                                  <Badge variant="indigo" className="text-[8px] py-0 px-2 opacity-50">{entry.date}</Badge>
                                   {dailyHabits.length > 0 && (
-                                    <div className="flex items-center gap-1.5 text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10">
-                                      <i className="fa-solid fa-repeat"></i>
-                                      {dailyHabits.filter(h => h.habitHistory?.[entry.date]?.status === 'completed').length} / {dailyHabits.length}
+                                    <div className={`flex items-center gap-1 text-[8px] font-bold px-2 py-0.5 rounded-lg ${
+                                      habitsDone === dailyHabits.length
+                                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/10'
+                                        : 'bg-[var(--bg-main)] text-[var(--text-muted)]'
+                                    }`}>
+                                      <i className="fa-solid fa-repeat text-[8px]"></i>
+                                      {habitsDone}/{dailyHabits.length}
                                     </div>
                                   )}
                                 </div>
                               </div>
-                              <div className="opacity-0 group-hover/card:opacity-100 transition-all flex gap-2">
+
+                              {/* Actions (swipe-style on mobile: always visible but small) */}
+                              <div className="flex flex-col items-center justify-center gap-1 px-2 shrink-0">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setEditingEntryId(entry.id); }}
-                                  className="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                  onClick={e => { e.stopPropagation(); setEditingEntryId(entry.id); }}
+                                  className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all flex items-center justify-center active:scale-90"
                                 >
-                                  <i className="fa-solid fa-pen-nib text-xs"></i>
+                                  <i className="fa-solid fa-pen-nib text-[10px]"></i>
                                 </button>
                                 <button
-                                  onClick={(e) => handleDeleteEntry(e, entry.id)}
-                                  className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                  onClick={e => handleDeleteEntry(e, entry.id)}
+                                  className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center active:scale-90"
                                 >
-                                  <i className="fa-solid fa-trash-can text-xs"></i>
+                                  <i className="fa-solid fa-trash-can text-[10px]"></i>
                                 </button>
                               </div>
                             </div>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )) : (
-                <div className="py-32 text-center opacity-10 flex flex-col items-center select-none pointer-events-none grayscale">
-                  <div className="w-32 h-32 rounded-[3.5rem] bg-[var(--primary)]/10 flex items-center justify-center mb-8 rotate-12">
-                    <i className="fa-solid fa-feather-pointed text-6xl text-[var(--primary)]"></i>
+                ))
+              ) : (
+                <div className="py-24 text-center flex flex-col items-center select-none pointer-events-none">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] bg-[var(--primary)]/10 flex items-center justify-center mb-6 opacity-20 rotate-12">
+                    <i className="fa-solid fa-feather-pointed text-5xl md:text-6xl text-[var(--primary)]"></i>
                   </div>
-                  <Typography variant="h2" className="text-3xl font-black uppercase tracking-[0.3em] text-[var(--text-main)]">Історія порожня</Typography>
-                  <p className="text-sm font-bold uppercase tracking-widest mt-4 text-[var(--text-muted)]">Час написати перший розділ вашої легенди...</p>
+                  <div className="text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-[var(--text-main)] opacity-10">
+                    {searchQuery ? 'Нічого не знайдено' : 'Історія порожня'}
+                  </div>
+                  {!searchQuery && (
+                    <p className="text-[9px] md:text-sm font-bold uppercase tracking-widest mt-3 text-[var(--text-muted)] opacity-30">
+                      Час написати перший розділ вашої легенди...
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </main>
         </div>
-
-        {isMobile && !editingEntryId && (
-          <button
-            onClick={() => { setEditingEntryId('new'); }}
-            className="fixed bottom-24 right-6 w-16 h-16 rounded-[2rem] bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[50] hover:scale-110 active:scale-95 transition-all border-4 border-[var(--bg-card)]"
-          >
-            <i className="fa-solid fa-plus text-2xl"></i>
-          </button>
-        )}
       </div>
 
-      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] z-[2100] transition-all duration-300 ${editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
+      {/* ===== EDITOR PANEL ===== */}
+      <div className={`fixed inset-0 lg:relative lg:inset-auto h-full border-l border-[var(--border-color)] bg-[var(--bg-sidebar)] z-[2100] transition-all duration-300 ${
+        editingEntryId ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+      } flex ${isMobile && !editingEntryId ? 'pointer-events-none' : ''}`}>
         <div style={{ width: isMobile ? '100vw' : detailsWidth }} className="h-full bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col">
+          {!isMobile && (
+            <div
+              onMouseDown={startResizing}
+              className={`absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-50 ${isResizing ? 'bg-[var(--primary)]' : 'hover:bg-[var(--primary)]/30'}`}
+            />
+          )}
+
           {editingEntryId && (
-            <div className="flex-1 flex flex-col">
-              <header className="p-5 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] shrink-0">
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Editor header */}
+              <header className="px-4 md:px-5 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card)] shrink-0 h-14">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm shadow-sm"><i className="fa-solid fa-pen-nib"></i></div>
-                  <Typography variant="h3" className="text-sm font-black uppercase tracking-widest">Редактор спогадів</Typography>
+                  {/* Mobile: back chevron */}
+                  <button
+                    onClick={() => setEditingEntryId(null)}
+                    className="lg:hidden w-9 h-9 rounded-xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] active:scale-90 transition-all"
+                  >
+                    <i className="fa-solid fa-chevron-left text-sm"></i>
+                  </button>
+                  <div className="w-8 h-8 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs shadow-sm">
+                    <i className="fa-solid fa-pen-nib"></i>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] leading-none">
+                      {editingEntryId === 'new' ? 'Новий Спогад' : 'Редактор'}
+                    </div>
+                    <div className="text-[8px] font-bold text-[var(--text-muted)] opacity-50 mt-0.5">
+                      {selectedDate ? new Date(selectedDate + 'T12:00').toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {editingEntryId !== 'new' && (
-                    <button onClick={(e) => handleDeleteEntry(e, editingEntryId)} className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"><i className="fa-solid fa-trash-can"></i></button>
+                    <button
+                      onClick={e => handleDeleteEntry(e, editingEntryId)}
+                      className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all active:scale-90"
+                    >
+                      <i className="fa-solid fa-trash-can text-xs"></i>
+                    </button>
                   )}
-                  <button onClick={() => setEditingEntryId(null)} className="w-12 h-12 rounded-2xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all"><i className="fa-solid fa-xmark text-lg"></i></button>
+                  <button
+                    onClick={() => setEditingEntryId(null)}
+                    className="hidden lg:flex w-10 h-10 rounded-xl bg-[var(--bg-main)] items-center justify-center text-[var(--text-muted)] hover:text-rose-500 transition-all active:scale-90"
+                  >
+                    <i className="fa-solid fa-xmark text-base"></i>
+                  </button>
                 </div>
               </header>
+
+              {/* Editor content */}
               <div className="flex-1 overflow-hidden">
-                <DiaryEditor id={editingEntryId === 'new' ? undefined : editingEntryId} date={selectedDate} onClose={() => setEditingEntryId(null)} />
+                <DiaryEditor
+                  id={editingEntryId === 'new' ? undefined : editingEntryId}
+                  date={selectedDate}
+                  onClose={() => setEditingEntryId(null)}
+                />
               </div>
-              <footer className="p-8 border-t border-[var(--border-color)] bg-[var(--bg-main)]/50 shrink-0 pb-safe">
+
+              {/* Mobile save footer */}
+              <footer className="px-4 py-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] shrink-0 lg:hidden safe-pb">
                 <button
                   onClick={() => setEditingEntryId(null)}
-                  className="w-full py-5 bg-[var(--primary)] text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-[var(--primary)]/30 active:scale-95 transition-all"
+                  className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-[0.98] transition-all"
                 >
+                  <i className="fa-solid fa-floppy-disk mr-2"></i>
                   Зберегти в паттернах
                 </button>
               </footer>

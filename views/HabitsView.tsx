@@ -231,12 +231,24 @@ const HabitsView: React.FC = () => {
           >
             <i className="fa-solid fa-plus text-[14px]"></i>
           </button>
+          {/* Кнопка переміщення — окремо і завжди видима */}
+          <button
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={`w-14 h-14 flex items-center justify-center active:bg-black/5 transition-colors relative ${isEditMode ? 'text-emerald-500' : 'text-[var(--text-muted)]'}`}
+            aria-label="Reorder Habits"
+            title={isEditMode ? 'Готово' : 'Змінити порядок'}
+          >
+            <i className={`fa-solid ${isEditMode ? 'fa-check' : 'fa-grip-lines'} text-[16px]`}></i>
+            {isEditMode && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            )}
+          </button>
           <button
             onClick={() => setShowFilterPopup(true)}
-            className={`w-14 h-14 flex items-center justify-center active:bg-black/5 ${isEditMode || filter !== 'all' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
-            aria-label="Edit and Filter"
+            className={`w-14 h-14 flex items-center justify-center active:bg-black/5 ${filter !== 'all' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+            aria-label="Filter"
           >
-            <i className="fa-solid fa-pencil text-[14px]"></i>
+            <i className="fa-solid fa-sliders text-[13px]"></i>
           </button>
         </div>
 

@@ -28,6 +28,7 @@ const Dashboard: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showDeadlines, setShowDeadlines] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
+  const [showRoutineMobile, setShowRoutineMobile] = useState(false);
 
   const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(() => {
     const saved = localStorage.getItem('12tr_habits_collapsed');
@@ -181,6 +182,13 @@ const Dashboard: React.FC = () => {
     );
   }, [timeBlocks, currentTime]);
 
+  const todaySchedule = useMemo(() => {
+    const dayOfWeek = currentTime.getDay();
+    return (timeBlocks || [])
+      .filter(b => b.dayOfWeek === dayOfWeek)
+      .sort((a, b) => a.startHour - b.startHour);
+  }, [timeBlocks, currentTime]);
+
   const filteredQuests = useMemo(() => {
     const active = tasks.filter(t => {
       if (t.isDeleted) return false;
@@ -331,6 +339,15 @@ const Dashboard: React.FC = () => {
                 </div>
               )}
 
+              {/* Mobile: кнопка перегляду розпорядку */}
+              <button
+                onClick={() => setShowRoutineMobile(true)}
+                className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all"
+              >
+                <i className="fa-solid fa-calendar-clock text-[var(--primary)] text-xs"></i>
+                <span className="text-[var(--text-main)]">Розклад</span>
+              </button>
+
               <div className="flex bg-[var(--bg-main)] p-0.5 rounded-lg border border-[var(--border-color)]">
                 <button onClick={() => setMainTab('tasks')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'tasks' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Завдання</button>
                 <button onClick={() => setMainTab('progress')} className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest ${mainTab === 'progress' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-sm' : 'text-[var(--text-muted)]'}`}>Прогрес</button>
@@ -464,6 +481,52 @@ const Dashboard: React.FC = () => {
                       <div className="flex justify-center mb-6">
                         <MiniCalendar />
                       </div>
+
+                      {/* РОЗПОРЯДОК ДНЯ — тільки десктоп */}
+                      {todaySchedule.length > 0 && (
+                        <div className="hidden lg:block space-y-2.5">
+                          <div className="flex justify-between items-center">
+                            <Typography variant="tiny" className="font-bold uppercase tracking-[0.2em] text-[10px] opacity-40">Розпорядок Дня</Typography>
+                            <button
+                              onClick={() => { setCalendarViewMode('routine' as any); setActiveTab('calendar'); }}
+                              className="text-[8px] font-bold text-[var(--primary)] uppercase tracking-widest hover:underline"
+                            >
+                              Редагувати
+                            </button>
+                          </div>
+                          <div className="space-y-1.5 max-h-[260px] overflow-y-auto no-scrollbar">
+                            {todaySchedule.map(block => {
+                              const isCurrent = currentBlock?.id === block.id;
+                              return (
+                                <div
+                                  key={block.id}
+                                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all ${
+                                    isCurrent
+                                      ? 'bg-[var(--text-main)] border-transparent text-[var(--bg-main)] shadow-md scale-[1.02]'
+                                      : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-sm'
+                                  }`}
+                                >
+                                  <div
+                                    className="w-1.5 h-7 rounded-full shrink-0"
+                                    style={{ backgroundColor: block.color || 'var(--primary)' }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`text-[10px] font-black uppercase truncate leading-none mb-0.5`}>
+                                      {isCurrent && <span className="text-[var(--primary)] mr-1">▶</span>}
+                                      {block.title}
+                                    </div>
+                                    <div className={`text-[8px] font-bold tabular-nums opacity-50`}>
+                                      {block.startHour}:00 — {block.endHour}:00
+                                    </div>
+                                  </div>
+                                  {isCurrent && <i className="fa-solid fa-hourglass-half text-[var(--primary)] animate-pulse text-[9px] shrink-0"></i>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-center px-2 cursor-pointer group" onClick={() => setShowDeadlines(!showDeadlines)}>
                         <div className="flex items-center gap-2">
                           <i className={`fa-solid ${showDeadlines ? 'fa-eye-slash' : 'fa-eye'} text-[10px] opacity-0 group-hover:opacity-100 transition-all text-[var(--primary)]`}></i>
@@ -607,15 +670,79 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile: Модальний розклад дня */}
+      {showRoutineMobile && (
+        <div className="fixed inset-0 z-[500] flex flex-col bg-[var(--bg-main)] animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center justify-between p-5 border-b border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div>
+              <div className="text-[9px] font-black uppercase text-[var(--primary)] tracking-widest mb-1">Розпорядок дня</div>
+              <div className="text-lg font-black uppercase text-[var(--text-main)]">{currentTime.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            </div>
+            <button
+              onClick={() => setShowRoutineMobile(false)}
+              className="w-10 h-10 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)]"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-2">
+            {todaySchedule.length > 0 ? todaySchedule.map(block => {
+              const isCurrent = currentBlock?.id === block.id;
+              return (
+                <div
+                  key={block.id}
+                  className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
+                    isCurrent
+                      ? 'bg-[var(--text-main)] border-transparent shadow-xl scale-[1.01]'
+                      : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-sm'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-10 rounded-full shrink-0"
+                    style={{ backgroundColor: block.color || 'var(--primary)' }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[13px] font-black uppercase truncate ${isCurrent ? 'text-[var(--bg-main)]' : 'text-[var(--text-main)]'}`}>
+                      {isCurrent && <span className="text-[var(--primary)] mr-1">▶</span>}
+                      {block.title}
+                    </div>
+                    <div className={`text-[9px] font-bold tabular-nums ${isCurrent ? 'text-[var(--bg-main)] opacity-60' : 'text-[var(--text-muted)] opacity-50'}`}>
+                      {block.startHour}:00 — {block.endHour}:00
+                    </div>
+                  </div>
+                  {isCurrent && <i className="fa-solid fa-hourglass-half text-[var(--primary)] animate-pulse shrink-0"></i>}
+                </div>
+              );
+            }) : (
+              <div className="py-20 text-center opacity-30">
+                <i className="fa-solid fa-calendar-days text-5xl mb-4 block text-[var(--text-muted)]"></i>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Розклад на сьогодні порожній</p>
+              </div>
+            )}
+          </div>
+          <div className="p-5 border-t border-[var(--border-color)] bg-[var(--bg-card)]">
+            <button
+              onClick={() => { setShowRoutineMobile(false); setCalendarViewMode('routine' as any); setActiveTab('calendar'); }}
+              className="w-full py-3.5 bg-[var(--primary)] text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl"
+            >
+              <i className="fa-solid fa-pencil mr-2"></i>
+              Редагувати розпорядок
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Quick Add Bar */}
       {isMobile && !selectedTaskId && (
-        <form onSubmit={handleQuickAdd} className="fixed bottom-3 left-3 right-3 z-[100] bg-[var(--bg-card)] rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex flex-col p-1 border border-[var(--border-color)]">
+        <form onSubmit={handleQuickAdd} autoComplete="off" className="fixed bottom-3 left-3 right-3 z-[100] bg-[var(--bg-card)] rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex flex-col p-1 border border-[var(--border-color)]">
           <input
             type="text"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            spellCheck="false"
+            spellCheck={false}
+            inputMode="text"
+            name="task-quick-add"
             placeholder="Що потрібно зробити?"
             value={quickAddInput}
             onChange={e => setQuickAddInput(e.target.value)}
