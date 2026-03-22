@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
-import Dashboard from './views/Dashboard';
+import TodayView from './views/TodayView';
 import Inbox from './views/Inbox';
 import Calendar from './views/Calendar';
 import Hashtags from './views/Hashtags';
@@ -123,11 +123,13 @@ const MainLayout: React.FC = () => {
 
     // Handle back button for Mobile/PWA
     const handlePopState = (e: PopStateEvent) => {
+      // If we are navigating back from a detail or special state, let the view handle it
+      if (e.state?.isDetail || e.state?.isModal) return;
+
       if (activeTab !== 'today') {
         setActiveTab('today');
+        window.history.pushState({ tab: 'today' }, '', window.location.href);
       }
-      // Завжди додаємо новий стан, щоб наступний натиск кнопки назад теж перехоплювався
-      window.history.pushState({ tab: 'today' }, '', window.location.href);
     };
 
     const handleOpenAiChat = () => setIsAiOpen(true);
@@ -152,7 +154,7 @@ const MainLayout: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'today': return <Dashboard />;
+      case 'today': return <TodayView />;
       case 'planner': return <PlannerView projectId={plannerProjectId} onExitProjectMode={() => setPlannerProjectId(undefined)} />;
       case 'inbox': return <Inbox />;
       case 'next_actions': return <Inbox showNextActions />;

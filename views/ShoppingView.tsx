@@ -288,6 +288,30 @@ const ShoppingView: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Back button handling for Mobile
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (selectedItemId) {
+        setSelectedItemId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedItemId]);
+
+  const handleSelectItem = (id: string) => {
+    setSelectedItemId(id);
+    window.history.pushState({ isDetail: true }, '');
+  };
+
+  const handleCloseDetails = () => {
+    if (window.history.state?.isDetail) {
+      window.history.back(); // This will trigger handlePopState and set selectedItemId to null
+    } else {
+      setSelectedItemId(null);
+    }
+  };
+
   const filteredItems = useMemo(() => {
     let items = activeStoreId === 'all' ? shoppingItems : shoppingItems.filter(item => item.storeId === activeStoreId);
     if (!showBought) items = items.filter(i => !i.isBought);
@@ -419,15 +443,16 @@ const ShoppingView: React.FC = () => {
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowFilterMenu(v => !v)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${showBought && sortMode === 'date' ? 'text-muted hover:bg-black/5' : 'text-primary bg-primary/10'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${showBought && sortMode === 'date' ? 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)]' : 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md'}`}
                 title="Фільтри"
               >
-                <i className="fa-solid fa-sliders text-sm"></i>
+                <i className="fa-solid fa-sliders text-[10px]"></i>
+                <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Фільтри</span>
               </button>
               {showFilterMenu && (
                 <>
                   <div className="fixed inset-0 z-[200]" onClick={() => setShowFilterMenu(false)} />
-                  <div className="absolute right-0 top-10 z-[201] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 top-12 z-[201] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 duration-150">
                     <div className="p-2 border-b border-[var(--border-color)] mb-2">
                       <span className="text-[8px] font-black uppercase tracking-widest text-muted">Фільтри та сортування</span>
                     </div>
@@ -494,7 +519,7 @@ const ShoppingView: React.FC = () => {
                 <Card
                   key={item.id}
                   padding="none"
-                  onClick={() => setSelectedItemId(item.id)}
+                  onClick={() => handleSelectItem(item.id)}
                   className={`px-3 py-1.5 flex items-center justify-between group transition-all cursor-pointer border rounded ${item.isBought ? 'opacity-50 bg-black/5 border-theme' : 'bg-card border-theme hover:border-primary/30 shadow-sm'}`}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -524,9 +549,9 @@ const ShoppingView: React.FC = () => {
                         e.stopPropagation();
                         if (confirm(`Видалити "${item.name}"?`)) deleteShoppingItem(item.id);
                       }}
-                      className="w-7 h-7 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                      className="w-8 h-8 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100"
                     >
-                      <i className="fa-solid fa-trash-can text-[9px]"></i>
+                      <i className="fa-solid fa-trash-can text-[10px]"></i>
                     </button>
                     <i className="fa-solid fa-chevron-right text-[8px] text-muted group-hover:text-primary transition-all"></i>
                   </div>
@@ -560,7 +585,7 @@ const ShoppingView: React.FC = () => {
           <div style={{ width: isMobileView ? '100vw' : detailsWidth }} className="h-full bg-card relative overflow-hidden flex flex-col shadow-2xl">
             <ShoppingItemDetails
               item={shoppingItems.find(i => i.id === selectedItemId)!}
-              onClose={() => setSelectedItemId(null)}
+              onClose={handleCloseDetails}
             />
           </div>
         </div>

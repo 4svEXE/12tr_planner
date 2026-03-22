@@ -36,10 +36,10 @@ export const CalendarRoutineView: React.FC = () => {
     }, []);
 
     // Знайти "дублі" блоку
-    const findRelatedBlocks = useCallback((block: Partial<TimeBlock>) => {
+    const findRelatedBlocks = useCallback((block: Partial<TimeBlock>, useCurrentTitle = false) => {
+        const titleToMatch = useCurrentTitle ? block.title : (timeBlocks.find(b => b.id === block.id)?.title || block.title);
         return timeBlocks.filter(b =>
-            b.title === block.title &&
-            b.color === block.color &&
+            b.title === titleToMatch &&
             b.startHour === block.startHour &&
             b.endHour === block.endHour
         );
@@ -52,7 +52,7 @@ export const CalendarRoutineView: React.FC = () => {
             if (applyToAll) {
                 const related = findRelatedBlocks(showBlockModal);
                 related.forEach(b => {
-                    updateTimeBlock({ ...b, title: data.title, color: data.color, type: data.type });
+                    updateTimeBlock({ ...b, title: data.title, color: data.color, type: data.type, startHour: data.startHour, endHour: data.endHour });
                 });
                 const currentDays = related.map(b => b.dayOfWeek);
                 const addDays = modalDays.filter(d => !currentDays.includes(d));
@@ -255,9 +255,9 @@ export const CalendarRoutineView: React.FC = () => {
                                                 className={`absolute left-1 right-1 rounded-xl shadow-sm border border-black/10 p-2 cursor-pointer transition-all hover:shadow-md z-10 flex flex-col justify-start min-h-[24px] overflow-hidden group/block select-none ${isResizingThis ? 'opacity-80 scale-[1.02] z-20 cursor-ns-resize' : 'hover:scale-[1.02]'}`}
                                                 style={{ top: top + 1, height: h - 2, backgroundColor: block.color || 'var(--primary)', color: '#fff' }}
                                             >
-                                                <div className="text-[11px] md:text-[13px] font-black tracking-tight leading-none truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
-                                                {h >= HOUR_HEIGHT && (
-                                                    <div className="text-[8px] md:text-[10px] font-bold opacity-90 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
+                                                <div className="text-[12px] md:text-[15px] font-black tracking-tight leading-tight truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
+                                                {h >= HOUR_HEIGHT / 1.5 && (
+                                                    <div className="text-[9px] md:text-[11px] font-bold opacity-95 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
                                                         <i className="fa-regular fa-clock"></i>
                                                         {block.startHour}:00 - {endHour}:00
                                                     </div>

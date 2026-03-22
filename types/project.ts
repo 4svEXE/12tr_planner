@@ -28,4 +28,5 @@ export interface Project {
   showCompleted?: boolean;
   showDetails?: boolean;
   sortBy?: 'priority' | 'name' | 'date';
+  timeBlockId?: string;
 }

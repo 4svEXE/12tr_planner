@@ -499,7 +499,7 @@ const HabitsView: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 z-[750] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[750] flex items-start justify-center p-4 pt-48 md:items-center md:pt-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAdding(false)}></div>
           <div className="bg-[var(--bg-card)] w-full max-w-xs rounded-[2rem] border border-[var(--border-color)] p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>

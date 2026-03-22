@@ -285,15 +285,12 @@ const TodayView: React.FC = () => {
                       <p className="text-[10px] font-black uppercase">Всі квести на сьогодні закрито!</p>
                     </div>
                   )}
-                  {/* Кнопка додати таск — красиво, як рядок */}
                   <button
                     onClick={() => setActiveTab('inbox')}
-                    className="w-full flex items-center gap-3 p-4 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500 hover:bg-orange-50/30 transition-all group"
+                    className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] hover:border-[var(--primary)]/30 transition-all shadow-sm"
                   >
-                    <div className="w-6 h-6 rounded-lg border-2 border-dashed border-current flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 group-hover:text-white transition-all">
-                      <i className="fa-solid fa-plus text-[10px]"></i>
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-widest">Додати завдання</span>
+                    <i className="fa-solid fa-plus-circle text-xs"></i>
+                    <span>Додати квест</span>
                   </button>
                 </div>
               </section>
@@ -357,13 +354,13 @@ const TodayView: React.FC = () => {
                               style={{ backgroundColor: block.color || 'var(--primary)' }}
                             ></div>
                             <div className="flex-1 min-w-0">
-                              <div className={`text-[11px] font-black uppercase truncate ${isCurrent ? 'text-white' : 'text-slate-800'}`}>
-                                {isCurrent && <span className="text-orange-400 mr-1">▶</span>}
-                                {block.title}
-                              </div>
-                              <div className={`text-[8px] font-bold tabular-nums ${isCurrent ? 'text-orange-400' : 'text-slate-400'}`}>
-                                {block.startHour}:00 — {block.endHour}:00
-                              </div>
+                            <div className={`text-[12px] md:text-[14px] font-black uppercase truncate ${isCurrent ? 'text-white' : 'text-slate-800'}`}>
+                              {isCurrent && <span className="text-orange-400 mr-2">▶</span>}
+                              {block.title}
+                            </div>
+                            <div className={`text-[9px] md:text-[10px] font-black tabular-nums opacity-60 ${isCurrent ? 'text-orange-300' : 'text-slate-400'}`}>
+                              {block.startHour}:00 — {block.endHour}:00
+                            </div>
                             </div>
                             {isCurrent && (
                               <div className="shrink-0">

@@ -294,7 +294,7 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
                   <button
                     key={idx}
                     onClick={() => toggleDayOfWeek(idx)}
-                    className={`w-8 h-8 rounded-lg text-[9px] font-black transition-all border ${isSelected ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--primary)]/20'}`}
+                    className={`w-8 h-8 rounded-lg text-[9px] font-black transition-all border ${isSelected ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md' : 'bg-transparent text-[var(--text-muted)] border-[var(--border-color)]/20 hover:border-[var(--primary)]/20'}`}
                   >
                     {day}
                   </button>
@@ -302,8 +302,8 @@ const HabitStatsSidebar: React.FC<HabitStatsSidebarProps> = ({ habit, onClose, o
               })}
             </div>
             <div className="flex gap-1.5">
-              <button onClick={() => setRecurrencePreset('daily')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'daily' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'}`}>Щодня</button>
-              <button onClick={() => setRecurrencePreset('weekdays')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'weekdays' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'}`}>Будні</button>
+              <button onClick={() => setRecurrencePreset('daily')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'daily' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-transparent text-[var(--text-muted)] border-[var(--border-color)]/20'}`}>Щодня</button>
+              <button onClick={() => setRecurrencePreset('weekdays')} className={`flex-1 py-1.5 rounded-lg text-[7px] font-black uppercase border transition-all ${habit.recurrence === 'weekdays' ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' : 'bg-transparent text-[var(--text-muted)] border-[var(--border-color)]/20'}`}>Будні</button>
             </div>
           </div>
         </section>

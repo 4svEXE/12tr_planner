@@ -143,13 +143,13 @@ const GoalModal: React.FC<{
 const ProjectsView: React.FC = () => {
   const {
     projects, tasks, aiEnabled, addProject, updateProject, deleteProject,
-    toggleTaskStatus, toggleHabitStatus, setActiveTab, setPlannerProjectId, updateTask
+    toggleTaskStatus, toggleHabitStatus, setActiveTab, setPlannerProjectId, updateTask, timeBlocks
   } = useApp();
 
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Project | null>(null);
-  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived' | 'timeline' | 'planner'>('active');
+  const [activeTab, setActiveTabLocal] = useState<'active' | 'archived' | 'timeline' | 'planner' | 'block'>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -217,10 +217,16 @@ const ProjectsView: React.FC = () => {
                 Таймлайн
               </button>
               <button
-                onClick={() => setActiveTab('planner')}
+                onClick={() => setActiveTabLocal('planner')}
                 className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'planner' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
               >
-                Планувальник
+                План
+              </button>
+              <button
+                onClick={() => setActiveTabLocal('block')}
+                className={`px-4 py-2 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'block' ? 'bg-[var(--bg-card)] text-[var(--primary)] shadow-md' : 'text-[var(--text-muted)]'}`}
+              >
+                Блок
               </button>
             </div>
           </div>
@@ -233,7 +239,7 @@ const ProjectsView: React.FC = () => {
           </Button>
         </header>
 
-        {activeTab !== 'timeline' && (
+        {activeTab !== 'timeline' && activeTab !== 'block' && (
           <div className="bg-[var(--bg-card)] border-b border-[var(--border-color)] px-4 md:px-8 py-2 overflow-x-auto no-scrollbar shrink-0">
             <div className="flex gap-2 max-w-4xl mx-auto">
               <button
@@ -267,6 +273,65 @@ const ProjectsView: React.FC = () => {
               projects={projects}
               onUpdateProject={updateProject}
             />
+          ) : activeTab === 'block' ? (
+            <div className="max-w-4xl mx-auto p-4 md:p-8 flex flex-col gap-6">
+              {(() => {
+                const now = new Date();
+                const day = now.getDay();
+                const hour = now.getHours();
+                const currentBlock = timeBlocks.find(b => b.dayOfWeek === day && hour >= b.startHour && hour < b.endHour);
+                
+                if (!currentBlock) return (
+                  <div className="py-20 text-center opacity-30 flex flex-col items-center">
+                    <i className="fa-solid fa-clock-rotate-left text-7xl mb-6"></i>
+                    <Typography variant="h2" className="text-xl font-black uppercase tracking-widest">Немає активного блоку</Typography>
+                  </div>
+                );
+
+                const blockTasks = tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && t.timeBlockId === currentBlock.title);
+                const blockProjects = projects.filter(p => p.status === 'active' && p.timeBlockId === currentBlock.title);
+
+                return (
+                  <>
+                    <div className="flex items-center gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] p-6 rounded-[2rem] shadow-xl">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl" style={{ backgroundColor: currentBlock.color || 'var(--primary)' }}>
+                        <i className="fa-solid fa-hourglass-start animate-pulse"></i>
+                      </div>
+                      <div>
+                        <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-widest">Активний Блок:</Typography>
+                        <Typography variant="h2" className="text-xl font-black uppercase">{currentBlock.title}</Typography>
+                      </div>
+                    </div>
+
+                    <section className="space-y-4">
+                      <Typography variant="tiny" className="font-black uppercase tracking-widest px-2">Проєкти Блоку</Typography>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {blockProjects.map(p => (
+                          <Card key={p.id} padding="none" onClick={() => setSelectedProjectId(p.id)} className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-primary/30 cursor-pointer shadow-sm rounded-2xl flex items-center gap-3">
+                            <div className="w-2 h-8 rounded-full" style={{ backgroundColor: p.color || 'var(--primary)' }}></div>
+                            <span className="text-[12px] font-black uppercase truncate">{p.name}</span>
+                          </Card>
+                        ))}
+                        {blockProjects.length === 0 && <p className="text-[10px] text-muted ml-2 opacity-50 uppercase font-bold tracking-widest">Проєктів не знайдено</p>}
+                      </div>
+                    </section>
+
+                    <section className="space-y-4">
+                      <Typography variant="tiny" className="font-black uppercase tracking-widest px-2">Завдання Блоку</Typography>
+                      <div className="space-y-2">
+                        {blockTasks.map(t => (
+                          <Card key={t.id} padding="none" onClick={() => setSelectedTaskId(t.id)} className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-primary/30 cursor-pointer shadow-sm rounded-2xl flex items-center gap-3">
+                            <i className="fa-solid fa-circle text-[6px] text-primary"></i>
+                            <span className="text-[12px] font-black truncate flex-1">{t.title}</span>
+                          </Card>
+                        ))}
+                        {blockTasks.length === 0 && <p className="text-[10px] text-muted ml-2 opacity-50 uppercase font-bold tracking-widest">Завдань не знайдено</p>}
+                      </div>
+                    </section>
+                  </>
+                );
+              })()}
+            </div>
           ) : (
             <div className="max-w-4xl mx-auto grid grid-cols-1 gap-4 p-4 md:p-8 pb-32">
               {goals.map(goal => (

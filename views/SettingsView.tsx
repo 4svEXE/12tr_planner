@@ -287,6 +287,7 @@ const SettingsView: React.FC = () => {
     { id: 'notifications', icon: 'fa-bell', label: 'Сповіщення', color: 'text-rose-500', desc: 'Push & Ритми' },
     { id: 'data', icon: 'fa-database', label: 'Дані та Сховище', color: 'text-rose-600', desc: 'Хмара та Очищення' },
     { id: 'feedback', icon: 'fa-paper-plane', label: 'Фідбек', color: 'text-violet-500', desc: 'Ідеї та пропозиції' },
+    { id: 'info', icon: 'fa-circle-info', label: 'Про Додаток', color: 'text-slate-500', desc: 'Версія v3.1 & Новинки' },
   ];
 
   const themesData: { id: ThemeType, label: string, main: string, nav: string, accent: string }[] = [
@@ -611,6 +612,95 @@ const SettingsView: React.FC = () => {
                 </button>
               </form>
             )}
+          </div>
+        );
+      case 'info':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20">
+            <div className="flex flex-col items-center text-center p-8 bg-gradient-to-b from-[var(--primary)]/5 to-transparent rounded-[2.5rem] border border-[var(--border-color)]">
+              <div className="w-20 h-20 rounded-[2rem] bg-white shadow-xl flex items-center justify-center text-3xl mb-4 text-[var(--primary)] border-4 border-[var(--bg-main)]">
+                <i className="fa-solid fa-mountain"></i>
+              </div>
+              <Typography variant="h2" className="text-2xl font-black uppercase tracking-tight">12TR Planner</Typography>
+              <Typography variant="tiny" className="text-[var(--text-muted)] font-black uppercase tracking-[0.3em] mb-4">Engine v3.1.0-beta</Typography>
+              
+              <div className="flex gap-2">
+                <Badge variant="indigo" className="text-[8px] px-3">BUILD 2024.03</Badge>
+                <Badge variant="emerald" className="text-[8px] px-3">STABLE</Badge>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Typography variant="h3" className="text-xs font-black uppercase tracking-widest flex items-center gap-2 px-2">
+                <i className="fa-solid fa-sparkles text-amber-500"></i> Журнал Оновлень
+              </Typography>
+              
+              <Card className="p-0 border-theme overflow-hidden bg-white">
+                <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3.1</span>
+                    <span className="text-[11px] font-black uppercase tracking-tight">The Routine & PWA Update</span>
+                  </div>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase">Березень 2024</span>
+                </div>
+                
+                <div className="p-5 space-y-4">
+                  <div className="space-y-2">
+                    <div className="text-[9px] font-black uppercase text-indigo-600 tracking-widest pl-1">Новий Функціонал:</div>
+                    <ul className="space-y-1.5 pl-1">
+                      {[
+                        { icon: 'fa-sidebar', text: 'Today Desktop Sidebar: Ваш розклад тепер завжди під рукою в правому меню.' },
+                        { icon: 'fa-toggle-on', text: 'Routine Toggle: Швидке перемикання між планом та рутиною на мобільних.' },
+                        { icon: 'fa-link', text: 'Smart Blocks: Прив’язка тасків та проєктів до конкретних часових блоків.' },
+                        { icon: 'fa-filter', text: 'Block Filter: Нова вкладка в проєктах, що показує лише актуальні справи прямо зараз.' },
+                      ].map((item, i) => (
+                        <li key={i} className="flex gap-3 text-[11px] font-medium leading-relaxed text-slate-700">
+                          <i className={`fa-solid ${item.icon} mt-0.5 text-indigo-400 w-3 text-center`}></i>
+                          {item.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="h-px bg-slate-50"></div>
+
+                  <div className="space-y-2">
+                    <div className="text-[9px] font-black uppercase text-emerald-600 tracking-widest pl-1">Покращення та Фікси:</div>
+                    <ul className="space-y-1.5 pl-1">
+                      {[
+                        { icon: 'fa-mobile-screen', text: 'PWA Back Button: Виправлено навігацію кнопкою "Назад" на Android.' },
+                        { icon: 'fa-keyboard', text: 'Input Master: Усунено баги з фокусом та зайвими панелями автозаповнення.' },
+                        { icon: 'fa-rotate', text: 'Routine Sync: Оновлено логіку групового редагування повторюваних блоків.' },
+                        { icon: 'fa-cart-shopping', text: 'Shopping Pro: Краща фільтрація та швидке видалення у списку покупок.' },
+                        { icon: 'fa-maximize', text: 'UI Polish: Збільшені шрифти в розкладі та ергономічне розміщення форм.' },
+                      ].map((item, i) => (
+                        <li key={i} className="flex gap-3 text-[11px] font-medium leading-relaxed text-slate-700">
+                          <i className={`fa-solid ${item.icon} mt-0.5 text-emerald-400 w-3 text-center`}></i>
+                          {item.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4 bg-slate-900 text-white border-none rounded-3xl">
+                <div className="flex gap-4 items-center">
+                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-xl text-amber-400">
+                    <i className="fa-solid fa-code-branch"></i>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Версія 3.0.x</div>
+                    <div className="text-[8px] font-bold text-white/50 uppercase tracking-tight">Попередні виправлення та стабілізація ядра</div>
+                  </div>
+                  <i className="fa-solid fa-chevron-down text-[10px] opacity-30"></i>
+                </div>
+              </Card>
+            </div>
+
+            <div className="pt-8 text-center text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] opacity-50">
+              Made with <i className="fa-solid fa-heart text-rose-500 mx-1"></i> by 12TR Team
+            </div>
           </div>
         );
       default: return null;

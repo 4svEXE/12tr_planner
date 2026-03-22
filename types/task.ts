@@ -126,4 +126,5 @@ export interface Task {
   hypothesisNotes?: string;
   tableData?: TableData;
   mindmapData?: MindmapData;
+  timeBlockId?: string;
 }

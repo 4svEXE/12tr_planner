@@ -11,7 +11,7 @@ interface ProjectDetailsProps {
 }
 
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onClose }) => {
-    const { updateProject, deleteProject } = useApp();
+    const { updateProject, deleteProject, timeBlocks = [] } = useApp();
     const [localName, setLocalName] = useState(project.name);
     const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -119,6 +119,23 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onClose }) => 
                                     {s === 'active' ? 'Активний' : 'Архів'}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 mt-4">
+                        <label className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-1.5 block">Блок для цього проєкту</label>
+                        <div className="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 md:py-1.5 border border-[var(--border-color)]">
+                            <i className="fa-solid fa-clock text-[8px] md:text-[10px] text-[var(--text-muted)] shrink-0"></i>
+                            <select
+                                value={project.timeBlockId || ''}
+                                onChange={(e) => updateProject({ ...project, timeBlockId: e.target.value || undefined })}
+                                className="bg-transparent text-[9px] md:text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer w-full truncate"
+                            >
+                                <option value="">Без блоку</option>
+                                {Array.from(new Set(timeBlocks.map(b => b.title))).map(title => (
+                                    <option key={title} value={title}>{title}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>

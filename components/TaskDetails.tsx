@@ -14,7 +14,7 @@ interface TaskDetailsProps {
 }
 
 const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
-  const { updateTask, toggleTaskStatus, deleteTask, addTask, people = [], projects = [] } = useApp();
+  const { updateTask, toggleTaskStatus, deleteTask, addTask, people = [], projects = [], timeBlocks = [] } = useApp();
 
   const isNote = task.category === 'note';
   const isTable = task.category === 'table';
@@ -282,6 +282,21 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               {projects.filter(p => (p.type === 'folder' || p.type === 'list' || !p.type) && p.description !== 'SYSTEM_PLANNER_CONFIG').map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-1 md:py-1.5 border border-[var(--border-color)] max-w-[40vw] md:max-w-none">
+            <i className="fa-solid fa-clock text-[8px] md:text-[10px] text-[var(--text-muted)] shrink-0"></i>
+            <select
+              value={task.timeBlockId || ''}
+              onChange={(e) => updateTask({ ...task, timeBlockId: e.target.value || undefined })}
+              className="bg-transparent text-[9px] md:text-[10px] font-black uppercase tracking-tight border-none focus:ring-0 p-0 h-auto min-h-0 appearance-none pr-4 cursor-pointer w-full truncate"
+            >
+              <option value="">Без блоку</option>
+              {Array.from(new Set(timeBlocks.map(b => b.title))).map(title => {
+                const block = timeBlocks.find(b => b.title === title);
+                return <option key={title} value={title}>{title}</option>;
+              })}
             </select>
           </div>
 
