@@ -108,27 +108,42 @@ const MainLayout: React.FC = () => {
   const [showFocusMode, setShowFocusMode] = React.useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  // Ref so popstate handler always sees the current tab without stale closure
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
   const { activeAlerts, handleDismissAlert, handleSnooze } = useNotificationManager();
   const todayTimestamp = new Date().setHours(0, 0, 0, 0);
 
+  // Apply theme whenever it changes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme || 'midnight');
+  }, [theme]);
+
+  // Back-button / PWA navigation — register once on mount
+  useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // Додаємо початковий стан в историю (щоб перша кнопка назад спрацювала)
-    window.history.pushState({ tab: activeTab }, '', window.location.href);
+    // Push an initial app state so the first back-press doesn't exit
+    window.history.replaceState({ tab: 'app' }, '', window.location.href);
+    window.history.pushState({ tab: 'app' }, '', window.location.href);
 
-    // Handle back button for Mobile/PWA
     const handlePopState = (e: PopStateEvent) => {
-      // If we are navigating back from a detail or special state, let the view handle it
+      // Let individual views (Shopping details, modal, etc.) handle their own states
       if (e.state?.isDetail || e.state?.isModal) return;
 
-      if (activeTab !== 'today') {
+      const current = activeTabRef.current;
+      if (current !== 'today') {
+        // First back — return to Today
         setActiveTab('today');
-        window.history.pushState({ tab: 'today' }, '', window.location.href);
+        // Re-push so next back press is also intercepted
+        window.history.pushState({ tab: 'app' }, '', window.location.href);
+      } else {
+        // Already on Today — allow native back (exit PWA / go back in browser)
+        // Re-push so we always keep at least one state in history
+        window.history.pushState({ tab: 'app' }, '', window.location.href);
       }
     };
 
@@ -140,7 +155,7 @@ const MainLayout: React.FC = () => {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('open-ai-chat', handleOpenAiChat);
     };
-  }, [theme, activeTab, setActiveTab]);
+  }, []); // run once on mount only
 
   const counts = React.useMemo(() => ({
     today: tasks.filter(t => !t.isDeleted && t.status !== TaskStatus.DONE && (t.scheduledDate && new Date(t.scheduledDate).setHours(0, 0, 0, 0) === todayTimestamp)).length,

@@ -30,6 +30,7 @@ const HabitsView: React.FC = () => {
 
   const [activeCell, setActiveCell] = useState<{ habitId: string, dateStr: string } | null>(null);
   const [reportText, setReportText] = useState('');
+  const [showComment, setShowComment] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [touchTargetId, setTouchTargetId] = useState<string | null>(null);
 
@@ -407,10 +408,10 @@ const HabitsView: React.FC = () => {
       </div>
 
       {activeCell && activeHabitForModal && (
-        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[700] flex items-end md:items-center justify-center md:p-4 pb-20 md:pb-0">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveCell(null)}></div>
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl p-4 md:p-6 rounded-[2rem] bg-[var(--bg-card)] border-theme animate-in zoom-in-95 duration-200">
-            <header className="flex justify-between items-start mb-4 md:mb-6">
+          <Card className="w-full md:max-w-sm relative z-10 shadow-2xl p-4 rounded-t-[2rem] md:rounded-[2rem] bg-[var(--bg-card)] border-theme pb-safe">
+            <header className="flex justify-between items-start mb-3">
               <div className="flex flex-col flex-1 min-w-0 pr-2">
                 <Typography variant="tiny" className="text-[var(--text-muted)] uppercase tracking-widest font-bold text-[8px] mb-1">
                   {days.find(d => d.dateStr === activeCell.dateStr)?.label}, {days.find(d => d.dateStr === activeCell.dateStr)?.date}
@@ -425,16 +426,16 @@ const HabitsView: React.FC = () => {
               </button>
             </header>
 
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleSetStatus('completed')}
                   className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed'
                     ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500 shadow-sm scale-[1.02]'
-                    : 'bg-[var(--bg-main)] border-transparent hover:border-emerald-500/30 text-[var(--text-muted)]'
+                    : 'border-transparent hover:border-emerald-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'completed' ? 'bg-emerald-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className="w-7 h-7 flex items-center justify-center text-sm">
                     <i className="fa-solid fa-check text-emerald-500"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit">ВИКОНАНО</span>
@@ -444,10 +445,10 @@ const HabitsView: React.FC = () => {
                   onClick={() => handleSetStatus('none')}
                   className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none'
                     ? 'border-rose-500 bg-rose-500/5 text-rose-500 shadow-sm scale-[1.02]'
-                    : 'bg-[var(--bg-main)] border-transparent hover:border-rose-500/30 text-[var(--text-muted)]'
+                    : 'border-transparent hover:border-rose-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'none' ? 'bg-rose-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className="w-7 h-7 flex items-center justify-center text-sm">
                     <i className="fa-solid fa-xmark text-rose-500"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit leading-none text-center">НЕВИКОНАНО</span>
@@ -457,31 +458,50 @@ const HabitsView: React.FC = () => {
                   onClick={() => handleSetStatus('skipped')}
                   className={`flex flex-col flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all group ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped'
                     ? 'border-slate-500 bg-slate-500/5 text-slate-500 shadow-sm scale-[1.02]'
-                    : 'bg-[var(--bg-main)] border-transparent hover:border-slate-500/30 text-[var(--text-muted)]'
+                    : 'border-transparent hover:border-slate-500/30 text-[var(--text-muted)]'
                     }`}
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all ${activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status === 'skipped' ? 'bg-slate-500/10' : 'bg-white shadow group-hover:scale-110'}`}>
+                  <div className="w-7 h-7 flex items-center justify-center text-sm">
                     <i className="fa-solid fa-minus text-slate-500 opacity-60"></i>
                   </div>
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-inherit opacity-80">ПРОПУСК</span>
                 </button>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest ml-1">Коментар / Інсайт</label>
-                <textarea
-                  value={reportText}
-                  onChange={(e) => setReportText(e.target.value)}
-                  placeholder="Як це було сьогодні?.."
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl p-4 text-xs font-medium outline-none h-24 resize-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all text-[var(--text-main)] shadow-inner"
-                />
+              {/* Коментар — прихований за замовчуванням */}
+              <div>
+                {showComment ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-widest ml-1">Коментар</label>
+                      <button onClick={() => { setShowComment(false); setReportText(''); }} className="text-[8px] text-[var(--text-muted)] hover:text-rose-400 transition-colors">
+                        <i className="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                    <textarea
+                      autoFocus
+                      value={reportText}
+                      onChange={(e) => setReportText(e.target.value)}
+                      placeholder="Як це було сьогодні?.."
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl p-3 text-xs font-medium outline-none h-20 resize-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all text-[var(--text-main)] shadow-inner"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowComment(true)}
+                    className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors px-1"
+                  >
+                    <i className="fa-solid fa-plus text-[8px]"></i>
+                    Коментар
+                  </button>
+                )}
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => setActiveCell(null)} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => { setActiveCell(null); setShowComment(false); setReportText(''); }} className="flex-1 py-3 rounded-2xl font-bold uppercase tracking-widest text-[9px] text-[var(--text-muted)] hover:bg-black/5 transition-all">ЗАКРИТИ</button>
                 <button
                   onClick={() => {
                     const currentStatus = activeHabitForModal.habitHistory?.[activeCell.dateStr]?.status;
@@ -499,7 +519,7 @@ const HabitsView: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 z-[750] flex items-start justify-center p-4 pt-48 md:items-center md:pt-4">
+        <div className="fixed inset-0 z-[750] flex items-end justify-center p-4 pb-4 md:items-center md:pb-0">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAdding(false)}></div>
           <div className="bg-[var(--bg-card)] w-full max-w-xs rounded-[2rem] border border-[var(--border-color)] p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
             <Typography variant="h2" className="mb-6 text-xl">Новий крок</Typography>

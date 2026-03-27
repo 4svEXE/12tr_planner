@@ -134,34 +134,34 @@ const TodayView: React.FC = () => {
 
             {/* СЕКЦІЯ ЗАРАЗ (Moved to Header) */}
             {currentBlock && (
-              <div className="hidden lg:flex items-center gap-4 bg-slate-900 border border-slate-800 rounded-3xl py-2 px-5 text-white shadow-xl animate-in fade-in zoom-in-95 duration-500">
-                <div className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center text-sm shadow-sm">
+              <div className="hidden lg:flex items-center gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl py-2 px-5 text-[var(--text-main)] shadow-xl animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center text-sm shadow-sm text-white">
                   <i className="fa-solid fa-hourglass-start animate-pulse"></i>
                 </div>
                 <div>
                   <div className="text-[8px] font-black uppercase text-orange-400 tracking-widest leading-none mb-1">ЗАРАЗ:</div>
-                  <div className="text-[11px] font-black uppercase truncate max-w-[120px]">{currentBlock.title}</div>
+                  <div className="text-[11px] font-black uppercase truncate max-w-[120px] text-[var(--text-main)]">{currentBlock.title}</div>
                 </div>
-                <div className="w-px h-6 bg-white/10 mx-1"></div>
+                <div className="w-px h-6 bg-[var(--border-color)] mx-1"></div>
                 <div className="text-[9px] font-bold opacity-60 tabular-nums">{currentBlock.startHour}:00 - {currentBlock.endHour}:00</div>
               </div>
             )}
 
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-2 items-center">
               {/* Mobile: кнопка-перемикач рутини */}
               <button
                 onClick={() => setShowRoutineMobile(true)}
-                className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all"
               >
                 <i className="fa-solid fa-calendar-clock text-orange-400"></i>
-                <span>Розклад</span>
+                <span className="hidden xs:inline">Розпорядок</span>
               </button>
               {stats.map(s => (
-                <Card key={s.label} padding="none" className="px-4 py-2 flex items-center gap-3 bg-white border-slate-100 shadow-sm">
-                  <i className={`fa-solid ${s.icon} ${s.color} text-sm`}></i>
+                <Card key={s.label} padding="none" className="px-3 py-2 flex items-center gap-2 bg-[var(--bg-card)] border-[var(--border-color)] shadow-sm">
+                  <i className={`fa-solid ${s.icon} ${s.color} text-xs`}></i>
                   <div>
-                    <div className="text-[7px] font-black uppercase text-slate-400 leading-none">{s.label}</div>
-                    <div className="text-sm font-black text-slate-800">{s.value}</div>
+                    <div className="text-[7px] font-black uppercase text-[var(--text-muted)] leading-none">{s.label}</div>
+                    <div className="text-xs font-black text-[var(--text-main)]">{s.value}</div>
                   </div>
                 </Card>
               ))}
@@ -263,13 +263,13 @@ const TodayView: React.FC = () => {
                           e.dataTransfer.effectAllowed = 'move';
                         }}
                         onClick={() => setSelectedTaskId(task.id)}
-                        className="flex items-center gap-4 p-5 group cursor-pointer hover:border-orange-300 shadow-sm bg-white"
+                        className="flex items-center gap-4 p-5 group cursor-pointer hover:border-orange-300 shadow-sm bg-[var(--bg-card)] border-[var(--border-color)]"
                       >
                         <button onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${task.status === TaskStatus.DONE ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 bg-slate-50 hover:border-orange-500 text-transparent'}`}>
                           <i className="fa-solid fa-check text-[10px]"></i>
                         </button>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[13px] md:text-sm font-black text-slate-800 block truncate group-hover:text-orange-600 transition-colors">{task.title}</span>
+                          <span className="text-[13px] md:text-sm font-black text-[var(--text-main)] block truncate group-hover:text-orange-600 transition-colors">{task.title}</span>
                           <div className="flex items-center gap-2 mt-1">
                             {project && <span className="text-[7px] font-black text-orange-500 uppercase bg-orange-50 px-1.5 py-0.5 rounded"># {project.name}</span>}
                             <span className="text-[7px] font-bold text-slate-300 uppercase">{task.priority}</span>
@@ -287,9 +287,9 @@ const TodayView: React.FC = () => {
                   )}
                   <button
                     onClick={() => setActiveTab('inbox')}
-                    className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary)] hover:border-[var(--primary)]/30 transition-all shadow-sm"
+                    className="w-full py-3.5 flex items-center justify-center gap-2.5 rounded-2xl bg-[var(--primary)]/10 border border-[var(--primary)]/20 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] hover:bg-[var(--primary)]/20 hover:shadow-md transition-all"
                   >
-                    <i className="fa-solid fa-plus-circle text-xs"></i>
+                    <i className="fa-solid fa-plus text-[var(--primary)] text-sm"></i>
                     <span>Додати квест</span>
                   </button>
                 </div>
@@ -345,8 +345,8 @@ const TodayView: React.FC = () => {
                             key={block.id}
                             className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                               isCurrent
-                                ? 'bg-slate-900 border-slate-800 text-white shadow-xl scale-[1.02]'
-                                : 'bg-white border-slate-100 shadow-sm'
+                                ? 'bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--text-main)] shadow-xl scale-[1.02]'
+                                : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-sm'
                             }`}
                           >
                             <div
@@ -354,11 +354,11 @@ const TodayView: React.FC = () => {
                               style={{ backgroundColor: block.color || 'var(--primary)' }}
                             ></div>
                             <div className="flex-1 min-w-0">
-                            <div className={`text-[12px] md:text-[14px] font-black uppercase truncate ${isCurrent ? 'text-white' : 'text-slate-800'}`}>
+                            <div className={`text-[12px] md:text-[14px] font-black uppercase truncate ${isCurrent ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'}`}>
                               {isCurrent && <span className="text-orange-400 mr-2">▶</span>}
                               {block.title}
                             </div>
-                            <div className={`text-[9px] md:text-[10px] font-black tabular-nums opacity-60 ${isCurrent ? 'text-orange-300' : 'text-slate-400'}`}>
+                            <div className={`text-[9px] md:text-[10px] font-black tabular-nums opacity-60 ${isCurrent ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
                               {block.startHour}:00 — {block.endHour}:00
                             </div>
                             </div>
@@ -419,21 +419,19 @@ const TodayView: React.FC = () => {
       </div>
 
       {/* Панель деталей */}
-      <div className={`flex h-full border-l border-[var(--border-color)] z-[110] bg-[var(--bg-card)] shrink-0 transition-all duration-300 ${window.innerWidth < 1024 ? (selectedTaskId ? 'fixed inset-0 w-full translate-x-0' : 'fixed inset-0 w-full translate-x-full') : ''}`}>
-        {!isResizing && window.innerWidth >= 1024 && (
-          <div onMouseDown={startResizing} className="w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] transition-colors"></div>
-        )}
-        <div style={{ width: window.innerWidth < 1024 ? '100vw' : detailsWidth }} className="h-full bg-white relative overflow-hidden flex flex-col shadow-2xl">
-          {selectedTaskId ? (
-            <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-5 grayscale pointer-events-none select-none">
-              <i className="fa-solid fa-compass text-9xl mb-8"></i>
-              <Typography variant="h2" className="text-2xl font-black uppercase tracking-widest">Оберіть квест</Typography>
-            </div>
+      {selectedTaskId && (
+        <div
+          className="fixed inset-0 z-[110] lg:relative lg:inset-auto lg:h-full lg:flex lg:shrink-0 border-l border-[var(--border-color)] bg-[var(--bg-card)]"
+          style={{ ...(window.innerWidth >= 1024 ? { width: detailsWidth } : {}) }}
+        >
+          {!isResizing && window.innerWidth >= 1024 && (
+            <div onMouseDown={startResizing} className="w-[1px] h-full cursor-col-resize hover:bg-[var(--primary)] transition-colors"></div>
           )}
+          <div className="flex-1 h-full bg-[var(--bg-card)] relative overflow-hidden flex flex-col shadow-2xl">
+            <TaskDetails task={tasks.find(t => t.id === selectedTaskId)!} onClose={() => setSelectedTaskId(null)} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Mobile: Модальний розклад дня */}
       {showRoutineMobile && (

@@ -34,7 +34,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
 
   useEffect(() => {
     setLocalTitle(task.title);
-  }, [task.id, task.title]);
+  }, [task.id]); // Only reset when switching to a different task, not on every save
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

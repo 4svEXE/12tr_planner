@@ -11,9 +11,11 @@ const HOUR_HEIGHT = 48;
 export const CalendarRoutineView: React.FC = () => {
     const { timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useApp();
     const [showBlockModal, setShowBlockModal] = useState<Partial<TimeBlock> | null>(null);
+    // Зберігаємо оригінальний title при відкритті модалки (для пошуку пов'язаних блоків)
+    const originalTitleRef = useRef<string>('');
     const [modalDays, setModalDays] = useState<number[]>([]);
 
-    // Resize: зберігаємо ВСЕ в refs, щоб уникнути stale closure
+    // Resize: pointer events (не губимо курсор навіть за межами вікна)
     const resizingRef = useRef<{ id: string; startY: number; startHour: number; origEndHour: number } | null>(null);
     const resizePreviewEndRef = useRef<number | null>(null);
     const [resizePreview, setResizePreview] = useState<{ id: string; endHour: number } | null>(null);
@@ -21,8 +23,9 @@ export const CalendarRoutineView: React.FC = () => {
     // Drag — переміщення блоку
     const draggingBlockRef = useRef<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const dragOverCellRef = useRef<{ day: number; hour: number } | null>(null);
 
-    // refs для timeBlocks щоб не було stale closure у mousemove/mouseup
+    // refs для timeBlocks щоб не було stale closure у pointermove/pointerup
     const timeBlocksRef = useRef(timeBlocks);
     useEffect(() => { timeBlocksRef.current = timeBlocks; }, [timeBlocks]);
     const updateTimeBlockRef = useRef(updateTimeBlock);
@@ -35,15 +38,18 @@ export const CalendarRoutineView: React.FC = () => {
         }
     }, []);
 
-    // Знайти "дублі" блоку
-    const findRelatedBlocks = useCallback((block: Partial<TimeBlock>, useCurrentTitle = false) => {
-        const titleToMatch = useCurrentTitle ? block.title : (timeBlocks.find(b => b.id === block.id)?.title || block.title);
-        return timeBlocks.filter(b =>
+    // Знайти "дублі" блоку — по ОРИГІНАЛЬНОМУ title (збереженому при відкритті)
+    const findRelatedBlocks = useCallback((block: Partial<TimeBlock>) => {
+        const titleToMatch = originalTitleRef.current || block.title;
+        const stored = timeBlocksRef.current.find(b => b.id === block.id);
+        const sh = stored?.startHour ?? block.startHour;
+        const eh = stored?.endHour ?? block.endHour;
+        return timeBlocksRef.current.filter(b =>
             b.title === titleToMatch &&
-            b.startHour === block.startHour &&
-            b.endHour === block.endHour
+            b.startHour === sh &&
+            b.endHour === eh
         );
-    }, [timeBlocks]);
+    }, []);
 
     const handleSaveBlock = (data: Omit<TimeBlock, 'id'>, applyToAll: boolean) => {
         if (!showBlockModal) return;
@@ -85,8 +91,8 @@ export const CalendarRoutineView: React.FC = () => {
         setShowBlockModal(null);
     };
 
-    // ---- Resize — виправлений, без stale closure ----
-    const handleResizeMouseMove = useCallback((e: MouseEvent) => {
+    // ---- Resize — pointer events (плавний навіть за межами вікна) ----
+    const handleResizePointerMove = useCallback((e: PointerEvent) => {
         if (!resizingRef.current) return;
         const deltaY = e.clientY - resizingRef.current.startY;
         const deltaHours = Math.round(deltaY / HOUR_HEIGHT);
@@ -95,23 +101,25 @@ export const CalendarRoutineView: React.FC = () => {
         setResizePreview({ id: resizingRef.current.id, endHour: newEndHour });
     }, []);
 
-    const handleResizeMouseUp = useCallback(() => {
+    const handleResizePointerUp = useCallback((e: PointerEvent) => {
         if (resizingRef.current && resizePreviewEndRef.current !== null) {
             const block = timeBlocksRef.current.find(b => b.id === resizingRef.current!.id);
             if (block) {
                 updateTimeBlockRef.current({ ...block, endHour: resizePreviewEndRef.current });
             }
         }
+        (e.target as Element)?.releasePointerCapture?.(e.pointerId);
         resizingRef.current = null;
         resizePreviewEndRef.current = null;
         setResizePreview(null);
-        window.removeEventListener('mousemove', handleResizeMouseMove);
-        window.removeEventListener('mouseup', handleResizeMouseUp);
-    }, [handleResizeMouseMove]);
+        window.removeEventListener('pointermove', handleResizePointerMove);
+        window.removeEventListener('pointerup', handleResizePointerUp);
+    }, [handleResizePointerMove]);
 
-    const startResize = (e: React.MouseEvent, block: TimeBlock) => {
+    const startResize = (e: React.PointerEvent, block: TimeBlock) => {
         e.stopPropagation();
         e.preventDefault();
+        (e.target as Element).setPointerCapture(e.pointerId);
         resizingRef.current = {
             id: block.id,
             startY: e.clientY,
@@ -120,8 +128,8 @@ export const CalendarRoutineView: React.FC = () => {
         };
         resizePreviewEndRef.current = block.endHour;
         setResizePreview({ id: block.id, endHour: block.endHour });
-        window.addEventListener('mousemove', handleResizeMouseMove);
-        window.addEventListener('mouseup', handleResizeMouseUp);
+        window.addEventListener('pointermove', handleResizePointerMove);
+        window.addEventListener('pointerup', handleResizePointerUp);
     };
 
     // ---- Drag-and-drop переміщення ----
@@ -130,11 +138,17 @@ export const CalendarRoutineView: React.FC = () => {
     const handleDragOver = (e: React.DragEvent, day: number, hour: number) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        setDragOverCell({ day, hour });
+        // Throttle state updates - only update when cell actually changes
+        const prev = dragOverCellRef.current;
+        if (!prev || prev.day !== day || prev.hour !== hour) {
+            dragOverCellRef.current = { day, hour };
+            setDragOverCell({ day, hour });
+        }
     };
 
     const handleDrop = (e: React.DragEvent, targetDay: number, targetHour: number) => {
         e.preventDefault();
+        dragOverCellRef.current = null;
         setDragOverCell(null);
         const blockId = e.dataTransfer.getData('blockId');
         if (!blockId) return;
@@ -147,6 +161,8 @@ export const CalendarRoutineView: React.FC = () => {
     };
 
     const openModal = (block: Partial<TimeBlock>) => {
+        // Зберігаємо оригінальний title для пошуку пов'язаних блоків
+        originalTitleRef.current = block.title || '';
         setShowBlockModal(block);
         setModalDays(block.dayOfWeek !== undefined ? [block.dayOfWeek] : [1]);
     };
@@ -224,7 +240,7 @@ export const CalendarRoutineView: React.FC = () => {
                                                 key={i}
                                                 onClick={() => openModal({ dayOfWeek: dayOfWeekNum, startHour: i, endHour: i + 1 })}
                                                 onDragOver={(e) => handleDragOver(e, dayOfWeekNum, i)}
-                                                onDragLeave={() => setDragOverCell(null)}
+                                                onDragLeave={() => { dragOverCellRef.current = null; setDragOverCell(null); }}
                                                 onDrop={(e) => handleDrop(e, dayOfWeekNum, i)}
                                                 style={{ height: HOUR_HEIGHT }}
                                                 className={`border-b border-[var(--border-color)]/10 cursor-crosshair z-0 relative transition-colors ${isOver ? 'bg-[var(--primary)]/20' : 'hover:bg-[var(--primary)]/10'}`}
@@ -255,17 +271,17 @@ export const CalendarRoutineView: React.FC = () => {
                                                 className={`absolute left-1 right-1 rounded-xl shadow-sm border border-black/10 p-2 cursor-pointer transition-all hover:shadow-md z-10 flex flex-col justify-start min-h-[24px] overflow-hidden group/block select-none ${isResizingThis ? 'opacity-80 scale-[1.02] z-20 cursor-ns-resize' : 'hover:scale-[1.02]'}`}
                                                 style={{ top: top + 1, height: h - 2, backgroundColor: block.color || 'var(--primary)', color: '#fff' }}
                                             >
-                                                <div className="text-[12px] md:text-[15px] font-black tracking-tight leading-tight truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
+                                                <div className="text-[14px] md:text-[17px] font-black tracking-tight leading-tight truncate mb-1 text-white drop-shadow-md pointer-events-none">{block.title}</div>
                                                 {h >= HOUR_HEIGHT / 1.5 && (
-                                                    <div className="text-[9px] md:text-[11px] font-bold opacity-95 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
+                                                    <div className="text-[11px] md:text-[13px] font-bold opacity-95 mt-0.5 truncate flex items-center gap-1 text-white drop-shadow-md pointer-events-none">
                                                         <i className="fa-regular fa-clock"></i>
                                                         {block.startHour}:00 - {endHour}:00
                                                     </div>
                                                 )}
                                                 {/* Resize handle */}
                                                 <div
-                                                    className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover/block:opacity-100 bg-black/10 transition-opacity flex items-center justify-center hover:bg-black/20"
-                                                    onMouseDown={e => startResize(e, block)}
+                                                    className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize opacity-0 group-hover/block:opacity-100 bg-black/10 transition-opacity flex items-center justify-center hover:bg-black/20 touch-none"
+                                                    onPointerDown={e => startResize(e, block)}
                                                     onClick={e => e.stopPropagation()}
                                                 >
                                                     <div className="w-4 h-0.5 bg-white/50 rounded-full"></div>

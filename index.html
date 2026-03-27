@@ -7,6 +7,8 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <!-- Вимикаємо автозаповнення для всього PWA на рівні мета-тегів -->
   <meta name="format-detection" content="telephone=no, address=no, email=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>12TR: Ігровий Двигун Життя</title>
 
   <link rel="manifest" href="/manifest.json" />
@@ -374,6 +376,29 @@
       -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
     }
 
+    /* Агресивне приховування Android Chrome autofill overlay (панель з ключем/адресою) */
+    input::-webkit-textfield-decoration-container {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    /* Прибираємо sticky toolbar autofill suggestion bar */
+    input[type="text"],
+    input[type="email"],
+    input[type="search"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="number"],
+    input:not([type]) {
+      -webkit-text-security: none;
+    }
+
+    /* Загальне відключення Android suggestion strip */
+    [data-no-autofill] input,
+    [data-no-autofill] textarea {
+      background-color: var(--bg-input) !important;
+    }
+
 
     .tiktok-blur {
       backdrop-filter: blur(24px);
@@ -413,7 +438,7 @@
     // всіх форм і прибираємо autofill на Android
     // ============================================
     (function() {
-      // Додаємо autocomplete=off до всіх форм після рендеру
+      // Додаємо autocomplete=off до всіх форм і інпутів після рендеру
       const disableAutofill = () => {
         // Для всіх існуючих форм
         document.querySelectorAll('form').forEach(form => {
@@ -421,7 +446,16 @@
             form.setAttribute('autocomplete', 'off');
           }
         });
-        // MutationObserver — слідкуємо за новими формами
+        // Для всіх інпутів (крім тих що мають явний inputmode, кнопки, checkbox, radio)
+        document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"])').forEach(input => {
+          if (!input.getAttribute('autocomplete')) {
+            input.setAttribute('autocomplete', 'off');
+          }
+          // Прибираємо suggestion bar на Android Chrome
+          if (!input.getAttribute('autocorrect')) input.setAttribute('autocorrect', 'off');
+          if (!input.getAttribute('autocapitalize')) input.setAttribute('autocapitalize', 'none');
+          if (!input.getAttribute('spellcheck')) input.setAttribute('spellcheck', 'false');
+        });
       };
 
       // Спостерігаємо за новими елементами в DOM
@@ -432,8 +466,18 @@
               if (node.tagName === 'FORM') {
                 node.setAttribute('autocomplete', 'off');
               }
+              if (node.tagName === 'INPUT' && !['checkbox','radio','range','submit','button'].includes(node.type || '')) {
+                if (!node.getAttribute('autocomplete')) node.setAttribute('autocomplete', 'off');
+                if (!node.getAttribute('autocorrect')) node.setAttribute('autocorrect', 'off');
+                if (!node.getAttribute('autocapitalize')) node.setAttribute('autocapitalize', 'none');
+              }
               node.querySelectorAll && node.querySelectorAll('form').forEach(f => {
                 f.setAttribute('autocomplete', 'off');
+              });
+              node.querySelectorAll && node.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"])').forEach(inp => {
+                if (!inp.getAttribute('autocomplete')) inp.setAttribute('autocomplete', 'off');
+                if (!inp.getAttribute('autocorrect')) inp.setAttribute('autocorrect', 'off');
+                if (!inp.getAttribute('autocapitalize')) inp.setAttribute('autocapitalize', 'none');
               });
             }
           });
@@ -448,6 +492,16 @@
       // Також запускаємо через невеликий delay (для React-рендерених форм)
       setTimeout(disableAutofill, 500);
       setTimeout(disableAutofill, 2000);
+      
+      // Додаємо inputmode="text" щоб приховати Android autofill suggestion strip
+      const addInputMode = () => {
+        document.querySelectorAll('input:not([type="number"]):not([type="email"]):not([type="url"]):not([type="tel"]):not([type="date"]):not([type="color"])').forEach(input => {
+          if (!input.getAttribute('inputmode')) input.setAttribute('inputmode', 'text');
+          if (!input.getAttribute('x-ms-format-detection')) input.setAttribute('x-ms-format-detection', 'none');
+        });
+      };
+      setTimeout(addInputMode, 600);
+      setTimeout(addInputMode, 2500);
     })();
 
     // EXE Build Helpers
