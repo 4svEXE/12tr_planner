@@ -242,30 +242,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
       </aside>
 
       {/* Мобільний навбар */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-[1090] flex items-center justify-around px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-[1090] flex items-center justify-around px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {[
-          { id: 'today', icon: 'fa-star', label: 'Сьогодні' },
+          { id: 'diary', icon: 'fa-book-open', label: 'Щоденник' },
           { id: 'lists', icon: 'fa-layer-group', label: 'Списки' },
           { id: 'calendar', icon: 'fa-calendar-days', label: 'Календар' },
           { id: 'habits', icon: 'fa-repeat', label: 'Звички' },
+          { id: 'shopping', icon: 'fa-cart-shopping', label: 'Покупки' },
+          { id: 'settings', icon: 'fa-gear', label: 'Налаштування' },
         ].map(item => (
           <button
             key={item.id}
             onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
+            className={`flex flex-col items-center justify-center min-w-[48px] h-12 rounded-2xl ${activeTab === item.id ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
           >
             <i className={`fa-solid ${item.icon} text-lg`}></i>
             <span className="text-[6px] font-bold uppercase tracking-tighter mt-0.5">{item.label}</span>
           </button>
         ))}
-        {/* Бургер меню праворуч */}
-        <button
-          onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl ${showMobileMenu ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
-        >
-          <i className={`fa-solid ${showMobileMenu ? 'fa-xmark' : 'fa-bars'} text-lg`}></i>
-          <span className="text-[6px] font-bold uppercase tracking-tighter mt-0.5">Меню</span>
-        </button>
       </div>
 
       {showMobileMenu && (
@@ -298,7 +292,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, counts }) =>
           </header>
 
           <div className="overflow-y-auto p-4 grid grid-cols-3 gap-3 pb-32 no-scrollbar">
-            {sections.flatMap(s => s.items).filter(item => !['today', 'lists', 'calendar', 'habits'].includes(item.id)).map(item => (
+            {sections.flatMap(s => s.items).filter(item => !['diary', 'lists', 'calendar', 'habits', 'shopping', 'settings'].includes(item.id)).map(item => (
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id!); setShowMobileMenu(false); }}

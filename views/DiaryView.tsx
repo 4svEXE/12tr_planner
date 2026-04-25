@@ -273,22 +273,22 @@ const DiaryView: React.FC = () => {
                 <i className="fa-solid fa-magnifying-glass text-sm"></i>
               </button>
 
-              {/* Desktop: report button */}
+              {/* Report button (Desktop only) */}
               <button
                 onClick={() => setIsReportWizardOpen(true)}
-                className="hidden md:flex px-5 h-10 bg-indigo-600 text-white rounded-2xl items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                className="hidden md:flex h-10 px-5 bg-indigo-600 text-white rounded-2xl items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <i className="fa-solid fa-scroll text-[10px]"></i>
-                Звіт дня
+                <span>Звіт дня</span>
               </button>
 
-              {/* New entry */}
+              {/* New entry (Desktop only) */}
               <button
                 onClick={() => setEditingEntryId('new')}
-                className="h-10 px-3 md:px-5 bg-[var(--primary)] text-white rounded-2xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="hidden md:flex h-10 px-5 bg-[var(--primary)] text-white rounded-2xl items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <i className="fa-solid fa-plus text-sm"></i>
-                <span className="hidden md:inline">НОВИЙ</span>
+                <span>НОВИЙ</span>
               </button>
             </div>
           </div>
@@ -525,6 +525,13 @@ const DiaryView: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setIsReportWizardOpen(true)}
+                    className="lg:hidden w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center transition-all active:scale-90"
+                    title="Звіт дня"
+                  >
+                    <i className="fa-solid fa-scroll text-xs"></i>
+                  </button>
                   {editingEntryId !== 'new' && (
                     <button
                       onClick={e => handleDeleteEntry(e, editingEntryId)}
@@ -567,6 +574,27 @@ const DiaryView: React.FC = () => {
       </div>
 
       {showAiWizard && aiSuggestions && <DailyReportAiWizard suggestions={aiSuggestions} onClose={() => setShowAiWizard(false)} />}
+
+      {/* Mobile Floating Action Buttons */}
+      {!editingEntryId && (
+        <>
+          {/* Report Button (Left) */}
+          <button
+            onClick={() => setIsReportWizardOpen(true)}
+            className="md:hidden fixed bottom-20 left-6 w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-600/40 z-[1000] active:scale-90 transition-all border border-white/20"
+          >
+            <i className="fa-solid fa-scroll text-xl"></i>
+          </button>
+
+          {/* New Entry Button (Right) */}
+          <button
+            onClick={() => setEditingEntryId('new')}
+            className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-[var(--primary)] text-white rounded-2xl flex items-center justify-center shadow-xl shadow-[var(--primary)]/40 z-[1000] active:scale-90 transition-all border border-white/20"
+          >
+            <i className="fa-solid fa-plus text-xl"></i>
+          </button>
+        </>
+      )}
     </div>
   );
 };
